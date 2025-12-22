@@ -6,10 +6,6 @@ import lombok.Getter;
 @Getter
 public class PlayerProfile {
 
-    private final Long playerId;
-    private final String name;
-    private final TeamRole teamRole;
-
     public static PlayerProfile create(Long id, String name, TeamRole teamRole) {
         return new PlayerProfile(id, name, teamRole);
     }
@@ -19,6 +15,10 @@ public class PlayerProfile {
         this.name = name;
         this.teamRole = teamRole;
     }
+
+    private final Long playerId;
+    private final String name;
+    private final TeamRole teamRole;
 
     public Player toPlayer(Money startingMoney) {
         return Player.create(this.playerId, this.name, this.teamRole, startingMoney);

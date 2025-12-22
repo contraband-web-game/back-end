@@ -8,11 +8,6 @@ import lombok.Getter;
 @EqualsAndHashCode(of = "id")
 public class Player {
 
-    private final Long id;
-    private final String name;
-    private final TeamRole teamRole;
-    private final Money balance;
-
     public static Player create(Long id, String name, TeamRole teamRole, Money balance) {
         return new Player(id, name, teamRole, balance);
     }
@@ -23,6 +18,11 @@ public class Player {
         this.teamRole = teamRole;
         this.balance = balance;
     }
+
+    private final Long id;
+    private final String name;
+    private final TeamRole teamRole;
+    private final Money balance;
 
     public boolean canTransfer(Money amount) {
         return balance.isGreaterThanOrEqual(amount);

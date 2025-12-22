@@ -27,11 +27,11 @@ public final class Money {
         }
     }
 
-    private final int amount;
-
     private Money(int amount) {
         this.amount = amount;
     }
+
+    private final int amount;
 
     public boolean isGreaterThan(Money other) {
         return this.amount > other.amount;
