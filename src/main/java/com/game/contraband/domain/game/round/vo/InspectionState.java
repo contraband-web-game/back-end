@@ -40,4 +40,8 @@ public class InspectionState {
     public boolean isDecisionNone() {
         return decision.isNone();
     }
+
+    public boolean isNotProvided() {
+        return !this.provided;
+    }
 }

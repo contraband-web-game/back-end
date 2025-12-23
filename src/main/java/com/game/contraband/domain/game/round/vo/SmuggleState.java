@@ -26,4 +26,8 @@ public class SmuggleState {
         }
         return new SmuggleState(smugglerId, newAmount, true);
     }
+
+    public boolean isNotDeclared() {
+        return !this.declared;
+    }
 }

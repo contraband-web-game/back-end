@@ -269,7 +269,7 @@ class RoundTest {
         // when & then
         assertThatThrownBy(() -> round.settle(smuggler, inspector, ruleSelector))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("정산은 검사관의 선택이 끝난 후에만 수행할 수 있습니다.");
+                .hasMessage("밀수 금액이 선언되어야 정산할 수 있습니다.");
     }
 
     @Test
@@ -354,6 +354,106 @@ class RoundTest {
 
         // then
         assertThat(actual).isFalse();
+    }
+
+    @Test
+    void 밀수_금액이_결정된_상태인지_여부를_반환한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .declareSmuggleAmount(
+                                   Money.from(1_000),
+                                   Money.from(3_000)
+                           );
+
+        // when
+        boolean actual = round.isSmuggleAmountDeclared();
+
+        // then
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void 밀수_금액이_결정되지_않은_상태인지_여부를_반환한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .decidePass();
+
+        // when
+        boolean actual = round.isNotSmuggleAmountDeclared();
+
+        // then
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void 새_상태나_검문만_선택된_상태에서는_밀수_금액을_선언할_수_있다() {
+        // given
+        Round newRound = Round.newRound(1, 1L, 2L);
+        Round inspectionDeclared = newRound.decidePass();
+
+        // when
+        boolean newRoundResult = newRound.canDeclareSmuggleAmount();
+        boolean inspectionDeclaredResult = inspectionDeclared.canDeclareSmuggleAmount();
+
+        // then
+        assertAll(
+                () -> assertThat(newRoundResult).isTrue(),
+                () -> assertThat(inspectionDeclaredResult).isTrue()
+        );
+    }
+
+    @Test
+    void 밀수_선언이_이미_완료되었거나_검문까지_결정된_상태에서는_밀수_금액을_선언할_수_없다() {
+        // given
+        Round smuggleDeclared = Round.newRound(1, 1L, 2L)
+                                     .declareSmuggleAmount(
+                                             Money.from(1_000),
+                                             Money.from(3_000)
+                                     );
+        Round inspectionDecided = smuggleDeclared.decidePass();
+
+        // when
+        boolean smuggleDeclaredResult = smuggleDeclared.canDeclareSmuggleAmount();
+        boolean inspectionDecidedResult = inspectionDecided.canDeclareSmuggleAmount();
+
+        // then
+        assertAll(
+                () -> assertThat(smuggleDeclaredResult).isFalse(),
+                () -> assertThat(inspectionDecidedResult).isFalse()
+        );
+    }
+
+    @Test
+    void 밀수만_선언된_상태를_확인한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .declareSmuggleAmount(
+                                   Money.from(1_000),
+                                   Money.from(3_000)
+                           );
+
+        // when
+        boolean actual = round.isSmuggleDeclaredOnly();
+
+        // then
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void 검문까지_결정된_상태를_확인한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .declareSmuggleAmount(
+                                   Money.from(1_000),
+                                   Money.from(3_000)
+                           )
+                           .decidePass();
+
+        // when
+        boolean actual = round.isInspectionDecisionCompleted();
+
+        // then
+        assertThat(actual).isTrue();
     }
 }
 
