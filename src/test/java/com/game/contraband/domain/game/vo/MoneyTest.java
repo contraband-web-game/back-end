@@ -268,4 +268,28 @@ class MoneyTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("2로 나눌 수 없는 금액입니다.");
     }
+
+    @Test
+    void 금액이_100원_단위인지_확인한다() {
+        // given
+        Money money = Money.from(1_000);
+
+        // when
+        boolean actual = money.isHundredsUnit();
+
+        // then
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void 금액이_100원_단위가_아닌지_확인한다() {
+        // given
+        Money money = Money.from(1_050);
+
+        // when
+        boolean actual = money.isNotHundredsUnit();
+
+        // then
+        assertThat(actual).isTrue();
+    }
 }
