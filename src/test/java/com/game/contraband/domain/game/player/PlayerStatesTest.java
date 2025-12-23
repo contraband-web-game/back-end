@@ -18,14 +18,12 @@ class PlayerStatesTest {
     void 두_개의_팀_로스터로부터_플레이어_상태를_생성한다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "S1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "I1", TeamRole.INSPECTOR))
         );
@@ -47,14 +45,12 @@ class PlayerStatesTest {
         // given
         PlayerProfile duplicateProfile = PlayerProfile.create(1L, "중복", TeamRole.SMUGGLER);
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(duplicateProfile)
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of(duplicateProfile)
         );
@@ -69,14 +65,12 @@ class PlayerStatesTest {
     void 존재하는_플레이어를_조회한다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "S1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of()
         );
@@ -97,14 +91,12 @@ class PlayerStatesTest {
     void 존재하지_않는_플레이어는_조회할_수_없다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "S1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of()
         );
@@ -126,14 +118,12 @@ class PlayerStatesTest {
         PlayerProfile s1 = PlayerProfile.create(1L, "S1", TeamRole.SMUGGLER);
         PlayerProfile s2 = PlayerProfile.create(2L, "S2", TeamRole.SMUGGLER);
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(s1, s2)
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of()
         );
@@ -154,14 +144,12 @@ class PlayerStatesTest {
     void 플레이어_정보를_대체한다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
-                "밀수범팀",
+                "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "S1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
-                "검문관팀",
+                "검문관 팀",
                 TeamRole.INSPECTOR,
                 List.of()
         );

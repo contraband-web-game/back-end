@@ -23,13 +23,11 @@ class TeamStateTest {
     void 팀_역할이_잘못되면_생성할_수_없다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼1", TeamRole.SMUGGLER))
         );
         TeamRoster wrongInspectorRoster = TeamRoster.create(
-                2L,
                 "잘못된 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(2L, "검사관1", TeamRole.INSPECTOR))
@@ -46,13 +44,11 @@ class TeamStateTest {
     void 같은_팀이_아니면_송금_대상이_될_수_없다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관1", TeamRole.INSPECTOR))
@@ -73,13 +69,11 @@ class TeamStateTest {
     void 로스터에_없는_플레이어는_유효하지_않다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼1", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관1", TeamRole.INSPECTOR))

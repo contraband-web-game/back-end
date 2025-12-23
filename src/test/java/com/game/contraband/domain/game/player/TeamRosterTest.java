@@ -25,12 +25,11 @@ class TeamRosterTest {
         );
 
         // when
-        TeamRoster actual = TeamRoster.create(1L, "밀수범팀", TeamRole.SMUGGLER, players);
+        TeamRoster actual = TeamRoster.create("밀수꾼 팀", TeamRole.SMUGGLER, players);
 
         // then
         assertAll(
-                () -> assertThat(actual.getId()).isEqualTo(1L),
-                () -> assertThat(actual.getName()).isEqualTo("밀수범팀"),
+                () -> assertThat(actual.getName()).isEqualTo("밀수꾼 팀"),
                 () -> assertThat(actual.getRole()).isEqualTo(TeamRole.SMUGGLER),
                 () -> assertThat(actual.getPlayers()).hasSize(2)
         );
@@ -45,12 +44,12 @@ class TeamRosterTest {
 
     @ParameterizedTest(name = "{0} 역할일 때 {1}을 반환한다")
     @MethodSource("smugglerTeamTestArguments")
-    void 밀수범_팀인지_확인한다(TeamRole teamRole, boolean expected) {
+    void 밀수꾼_팀인지_확인한다(TeamRole teamRole, boolean expected) {
         // given
         List<PlayerProfile> players = List.of(
                 PlayerProfile.create(1L, "플레이어1", teamRole)
         );
-        TeamRoster teamRoster = TeamRoster.create(1L, "팀1", teamRole, players);
+        TeamRoster teamRoster = TeamRoster.create("밀수꾼 팀", teamRole, players);
 
         // when
         boolean actual = teamRoster.isSmugglerTeam();
@@ -68,12 +67,12 @@ class TeamRosterTest {
 
     @ParameterizedTest(name = "{0} 역할일 때 {1}을 반환한다")
     @MethodSource("inspectorTeamTestArguments")
-    void 검문관_팀인지_확인한다(TeamRole teamRole, boolean expected) {
+    void 검사관_팀인지_확인한다(TeamRole teamRole, boolean expected) {
         // given
         List<PlayerProfile> players = List.of(
                 PlayerProfile.create(1L, "플레이어1", teamRole)
         );
-        TeamRoster teamRoster = TeamRoster.create(1L, "팀1", teamRole, players);
+        TeamRoster teamRoster = TeamRoster.create("검사관 팀", teamRole, players);
 
         // when
         boolean actual = teamRoster.isInspectorTeam();
@@ -89,7 +88,7 @@ class TeamRosterTest {
                 PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER),
                 PlayerProfile.create(2L, "플레이어2", TeamRole.SMUGGLER)
         );
-        TeamRoster teamRoster = TeamRoster.create(1L, "밀수범팀", TeamRole.SMUGGLER, players);
+        TeamRoster teamRoster = TeamRoster.create("밀수꾼 팀", TeamRole.SMUGGLER, players);
 
         // when
         boolean actual = teamRoster.hasPlayer(1L);
@@ -105,7 +104,7 @@ class TeamRosterTest {
                 PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER),
                 PlayerProfile.create(2L, "플레이어2", TeamRole.SMUGGLER)
         );
-        TeamRoster teamRoster = TeamRoster.create(1L, "밀수범팀", TeamRole.SMUGGLER, players);
+        TeamRoster teamRoster = TeamRoster.create("밀수꾼 팀", TeamRole.SMUGGLER, players);
 
         // when
         boolean actual = teamRoster.lacksPlayer(-999L);

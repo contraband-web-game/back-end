@@ -29,8 +29,8 @@ class ContrabandGameTest {
         PlayerProfile inspector1 = PlayerProfile.create(3L, "검사관1", TeamRole.INSPECTOR);
         PlayerProfile inspector2 = PlayerProfile.create(4L, "검사관2", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector1, inspector2));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector1, inspector2));
 
         // when
         ContrabandGame actual = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 5);
@@ -52,8 +52,8 @@ class ContrabandGameTest {
         PlayerProfile inspector1 = PlayerProfile.create(3L, "검사관1", TeamRole.INSPECTOR);
         PlayerProfile inspector2 = PlayerProfile.create(4L, "검사관2", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector1, inspector2));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector1, inspector2));
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 5);
 
         // when
@@ -72,8 +72,8 @@ class ContrabandGameTest {
         // given
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
         // when
@@ -89,8 +89,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler1 = PlayerProfile.create(1L, "밀수꾼1", TeamRole.SMUGGLER);
         PlayerProfile smuggler2 = PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster wrongRoster = TeamRoster.create(2L, "잘못된팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster wrongRoster = TeamRoster.create("잘못된팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
 
         // when & then
         assertThatThrownBy(() -> ContrabandGame.notStarted(smugglerRoster, wrongRoster, 5))
@@ -104,8 +104,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler1 = PlayerProfile.create(1L, "밀수꾼1", TeamRole.SMUGGLER);
         PlayerProfile inspector1 = PlayerProfile.create(2L, "검사관1", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector1));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector1));
 
         // when & then
         assertThatThrownBy(() -> ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 0))
@@ -119,8 +119,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -143,8 +143,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 1);
 
@@ -165,8 +165,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -184,8 +184,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -201,8 +201,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
         game.startNewRound(1L, 2L);
@@ -225,8 +225,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -242,8 +242,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -262,8 +262,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -285,8 +285,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -311,8 +311,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -337,8 +337,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -357,8 +357,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 1);
 
@@ -379,8 +379,8 @@ class ContrabandGameTest {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 1);
         game.startNewRound(1L, 2L);
@@ -401,8 +401,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -419,8 +419,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler2 = PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(3L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -441,8 +441,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler2 = PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(3L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 1);
 
@@ -463,8 +463,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -481,8 +481,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler2 = PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(3L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -498,8 +498,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler = PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 
@@ -516,8 +516,8 @@ void 게임이_종료되지_않으면_승리한_팀을_확인할_수_없다() {
         PlayerProfile smuggler2 = PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER);
         PlayerProfile inspector = PlayerProfile.create(3L, "검사관", TeamRole.INSPECTOR);
 
-        TeamRoster smugglerRoster = TeamRoster.create(1L, "밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
-        TeamRoster inspectorRoster = TeamRoster.create(2L, "검사관팀", TeamRole.INSPECTOR, List.of(inspector));
+        TeamRoster smugglerRoster = TeamRoster.create("밀수꾼팀", TeamRole.SMUGGLER, List.of(smuggler1, smuggler2));
+        TeamRoster inspectorRoster = TeamRoster.create("검사관팀", TeamRole.INSPECTOR, List.of(inspector));
 
         ContrabandGame game = ContrabandGame.notStarted(smugglerRoster, inspectorRoster, 3);
 

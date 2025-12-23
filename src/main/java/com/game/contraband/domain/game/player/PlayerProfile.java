@@ -24,6 +24,18 @@ public class PlayerProfile {
         return Player.create(this.playerId, this.name, this.teamRole, startingMoney);
     }
 
+    public PlayerProfile withTeamRole(TeamRole newTeamRole) {
+        if (newTeamRole == null) {
+            throw new IllegalArgumentException("팀 역할은 비어 있을 수 없습니다.");
+        }
+        if (this.teamRole == newTeamRole) {
+            return this;
+        }
+
+        return new PlayerProfile(playerId, name, newTeamRole);
+    }
+
+
     public boolean isSmugglerTeam() {
         return teamRole.isSmuggler();
     }
