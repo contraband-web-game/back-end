@@ -21,7 +21,7 @@ class InspectionHitSettlementRuleTest {
         int smugglerAmount = 3_000;
         int inspectorAmount = 5_000;
 
-        Player smuggler = Player.create(1L, "밀수범", TeamRole.SMUGGLER, Money.from(smugglerAmount));
+        Player smuggler = Player.create(1L, "밀수꾼", TeamRole.SMUGGLER, Money.from(smugglerAmount));
         Player inspector = Player.create(2L, "검사관", TeamRole.INSPECTOR, Money.from(inspectorAmount));
         InspectionHitSettlementRule rule = new InspectionHitSettlementRule();
 
@@ -39,8 +39,8 @@ class InspectionHitSettlementRuleTest {
         // 밀수꾼의 소지 금액은 3_000원을 유지한다
         assertAll(
                 () -> assertThat(actual.outcomeType()).isEqualTo(RoundOutcomeType.INSPECTION_HIT),
-                () -> assertThat(actual.smuggler().getBalance()).isEqualTo(Money.from(3_000)),
-                () -> assertThat(actual.inspector().getBalance()).isEqualTo(Money.from(6_000))
+                () -> assertThat(actual.smuggler().getBalance()).isEqualTo(Money.from(3_000)), // 3_000원 그대로 유지
+                () -> assertThat(actual.inspector().getBalance()).isEqualTo(Money.from(6_000)) // 5_000 + 1_000
         );
     }
 }

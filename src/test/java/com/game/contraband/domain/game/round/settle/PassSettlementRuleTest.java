@@ -21,7 +21,7 @@ class PassSettlementRuleTest {
         int smugglerAmount = 3_000;
         int inspectorAmount = 3_000;
 
-        Player smuggler = Player.create(1L, "밀수범", TeamRole.SMUGGLER, Money.from(smugglerAmount));
+        Player smuggler = Player.create(1L, "밀수꾼", TeamRole.SMUGGLER, Money.from(smugglerAmount));
         Player inspector = Player.create(2L, "검문관", TeamRole.INSPECTOR, Money.from(inspectorAmount));
         PassSettlementRule rule = new PassSettlementRule();
 
@@ -49,7 +49,7 @@ class PassSettlementRuleTest {
         int smugglerAmount = 3_000;
         int inspectorAmount = 3_000;
 
-        Player smuggler = Player.create(1L, "밀수범", TeamRole.SMUGGLER, Money.from(smugglerAmount));
+        Player smuggler = Player.create(1L, "밀수꾼", TeamRole.SMUGGLER, Money.from(smugglerAmount));
         Player inspector = Player.create(2L, "검문관", TeamRole.INSPECTOR, Money.from(inspectorAmount));
         PassSettlementRule rule = new PassSettlementRule();
 
@@ -65,7 +65,7 @@ class PassSettlementRuleTest {
         // 밀수꾼의 잔액은 3_000 + 1_000 = 4_000원이 된다
         assertAll(
                 () -> assertThat(actual.smuggler().getBalance()).isEqualTo(Money.from(4_000)), // 3_000 + 1_000
-                () -> assertThat(actual.inspector().getBalance()).isEqualTo(Money.from(3_000)),
+                () -> assertThat(actual.inspector().getBalance()).isEqualTo(Money.from(3_000)), // 3_000원 그대로 유지
                 () -> assertThat(actual.outcomeType()).isEqualTo(RoundOutcomeType.PASS)
         );
     }

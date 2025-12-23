@@ -21,7 +21,7 @@ class InspectionUnderSettlementRuleTest {
         int smugglerAmount = 1_000;
         int inspectorAmount = 2_000;
 
-        Player smuggler = Player.create(1L, "밀수범", TeamRole.SMUGGLER, Money.from(smugglerAmount));
+        Player smuggler = Player.create(1L, "밀수꾼", TeamRole.SMUGGLER, Money.from(smugglerAmount));
         Player inspector = Player.create(2L, "검사관", TeamRole.INSPECTOR, Money.from(inspectorAmount));
         InspectionUnderSettlementRule rule = new InspectionUnderSettlementRule();
 
