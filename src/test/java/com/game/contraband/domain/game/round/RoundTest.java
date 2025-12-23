@@ -38,13 +38,12 @@ class RoundTest {
     void 라운드_시작_직후에_밀수_금액을_선언한다() {
         // given
         Round round = Round.newRound(1, 1L, 2L);
-        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(5_000));
+        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(3_000));
 
         // when
         Round actual = round.declareSmuggleAmount(
                 Money.from(1_000),
-                smuggler.getBalance(),
-                Money.from(10_000)
+                smuggler.getBalance()
         );
 
         // then
@@ -64,8 +63,7 @@ class RoundTest {
                 () -> round.declareSmuggleAmount(
                         999L,
                         Money.from(1_000),
-                        Money.from(5_000),
-                        Money.from(10_000)
+                        Money.from(3_000)
                 )
         ).isInstanceOf(IllegalArgumentException.class)
          .hasMessage("라운드에 지정된 밀수꾼만 밀수 금액을 선언할 수 있습니다.");
@@ -77,16 +75,14 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            );
 
         // when & then
         assertThatThrownBy(
                 () -> round.declareSmuggleAmount(
                         Money.from(2_000),
-                        Money.from(5_000),
-                        Money.from(10_000)
+                        Money.from(3_000)
                 )
         ).isInstanceOf(IllegalStateException.class)
          .hasMessage("이미 밀수 금액을 선언했습니다.");
@@ -101,8 +97,7 @@ class RoundTest {
         assertThatThrownBy(
                 () -> round.declareSmuggleAmount(
                         Money.from(-1_000),
-                        Money.from(5_000),
-                        Money.from(10_000)
+                        Money.from(3_000)
                 )
         ).isInstanceOf(IllegalArgumentException.class)
          .hasMessage("금액은 0원 이상이어야 합니다.");
@@ -116,9 +111,8 @@ class RoundTest {
         // when & then
         assertThatThrownBy(
                 () -> round.declareSmuggleAmount(
-                        Money.from(11_000),
-                        Money.from(15_000),
-                        Money.from(10_000)
+                        Money.from(1_100),
+                        Money.from(3_000)
                 )
         ).isInstanceOf(IllegalArgumentException.class)
          .hasMessage("허용된 최대 밀수 금액을 초과할 수 없습니다.");
@@ -132,9 +126,8 @@ class RoundTest {
         // when & then
         assertThatThrownBy(
                 () -> round.declareSmuggleAmount(
-                        Money.from(6_000),
-                        Money.from(5_000),
-                        Money.from(10_000)
+                        Money.from(1_000),
+                        Money.from(900)
                 )
         ).isInstanceOf(IllegalArgumentException.class)
          .hasMessage("보유 금액보다 많이 밀수할 수 없습니다.");
@@ -148,9 +141,8 @@ class RoundTest {
         // when & then
         assertThatThrownBy(
                 () -> round.declareSmuggleAmount(
-                        Money.from(1_050),
-                        Money.from(5_000),
-                        Money.from(10_000)
+                        Money.from(950),
+                        Money.from(3_000)
                 )
         ).isInstanceOf(IllegalArgumentException.class)
          .hasMessage("밀수 금액은 100원 단위여야 합니다.");
@@ -162,8 +154,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            )
                            .decidePass();
 
@@ -192,8 +183,7 @@ class RoundTest {
         // when
         Round actual = round.declareSmuggleAmount(
                 Money.from(1_000),
-                Money.from(5_000),
-                Money.from(10_000)
+                Money.from(3_000)
         );
 
         // then
@@ -206,7 +196,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L).decideInspection(Money.from(500));
 
         // when
-        Round actual = round.declareSmuggleAmount(Money.from(1_000), Money.from(5_000), Money.from(10_000));
+        Round actual = round.declareSmuggleAmount(Money.from(1_000), Money.from(3_000));
 
         // then
         assertThat(actual.getStatus()).isEqualTo(RoundStatus.INSPECTION_DECIDED);
@@ -229,8 +219,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            );
 
         // when & then
@@ -245,12 +234,11 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            );
 
         // when & then
-        assertThatThrownBy(() -> round.decideInspection(Money.from(1_050)))
+        assertThatThrownBy(() -> round.decideInspection(Money.from(950)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("검문 기준 금액은 100원 단위여야 합니다.");
     }
@@ -261,8 +249,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            );
 
         // when & then
@@ -275,8 +262,8 @@ class RoundTest {
     void 검사관의_선택이_끝나지_않은_상태에서_정산할_수_없다() {
         // given
         Round round = Round.newRound(1, 1L, 2L);
-        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(5_000));
-        Player inspector = Player.create(2L, "I1", TeamRole.INSPECTOR, Money.from(5_000));
+        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(3_000));
+        Player inspector = Player.create(2L, "I1", TeamRole.INSPECTOR, Money.from(3_000));
         RoundSettlementRuleSelector ruleSelector = new RoundSettlementRuleSelector();
 
         // when & then
@@ -291,12 +278,11 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            )
                            .decidePass();
-        Player wrongSmuggler = Player.create(3L, "참여하지 않은 플레이어", TeamRole.SMUGGLER, Money.from(5_000));
-        Player inspector = Player.create(2L, "검사관", TeamRole.INSPECTOR, Money.from(5_000));
+        Player wrongSmuggler = Player.create(3L, "참여하지 않은 플레이어", TeamRole.SMUGGLER, Money.from(3_000));
+        Player inspector = Player.create(2L, "검사관", TeamRole.INSPECTOR, Money.from(3_000));
         RoundSettlementRuleSelector ruleSelector = new RoundSettlementRuleSelector();
 
         // when & then
@@ -311,12 +297,11 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            )
                            .decidePass();
-        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(5_000));
-        Player inspector = Player.create(2L, "I1", TeamRole.INSPECTOR, Money.from(5_000));
+        Player smuggler = Player.create(1L, "S1", TeamRole.SMUGGLER, Money.from(3_000));
+        Player inspector = Player.create(2L, "I1", TeamRole.INSPECTOR, Money.from(3_000));
         RoundSettlementRuleSelector ruleSelector = new RoundSettlementRuleSelector();
 
         // when
@@ -344,8 +329,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            );
 
         // when
@@ -361,8 +345,7 @@ class RoundTest {
         Round round = Round.newRound(1, 1L, 2L)
                            .declareSmuggleAmount(
                                    Money.from(1_000),
-                                   Money.from(5_000),
-                                   Money.from(10_000)
+                                   Money.from(3_000)
                            )
                            .decidePass();
 
@@ -373,3 +356,4 @@ class RoundTest {
         assertThat(actual).isFalse();
     }
 }
+

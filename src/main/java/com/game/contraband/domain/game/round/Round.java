@@ -12,6 +12,9 @@ import lombok.Getter;
 @Getter
 public class Round {
 
+    private static final Money MAX_INSPECTION_THRESHOLD = Money.from(1_000);
+    private static final Money MAX_SMUGGLE_AMOUNT = Money.from(1_000);
+
     public static Round newRound(int roundNumber, Long smugglerId, Long inspectorId) {
         return new Round(
                 roundNumber,
@@ -33,36 +36,18 @@ public class Round {
         this.inspectionState = inspectionState;
     }
 
-    private static final Money MAX_INSPECTION_THRESHOLD = Money.from(1_000);
-
     private final int roundNumber;
     private final RoundStatus status;
     private final SmuggleState smuggleState;
     private final InspectionState inspectionState;
 
-    public Round declareSmuggleAmount(Money amount, Money smugglerBalance, Money maxSmuggle) {
-        return declareSmuggleAmount(smuggleState.getSmugglerId(), amount, smugglerBalance, maxSmuggle);
+    public Round declareSmuggleAmount(Money amount, Money smugglerBalance) {
+        return declareSmuggleAmount(smuggleState.getSmugglerId(), amount, smugglerBalance);
     }
 
-    public Round declareSmuggleAmount(long requesterId, Money amount, Money smugglerBalance, Money maxSmuggle) {
+    public Round declareSmuggleAmount(long requesterId, Money amount, Money smugglerBalance) {
         validateSmuggler(requesterId, smuggleState.getSmugglerId());
-        validateSmuggleDeclaration(amount, smugglerBalance, maxSmuggle);
-
-        if (smuggleState.isDeclared()) {
-            throw new IllegalStateException("이미 밀수 금액을 선언했습니다.");
-        }
-        if (amount.isLessThan(Money.ZERO)) {
-            throw new IllegalArgumentException("밀수 금액은 0 이상이어야 합니다.");
-        }
-        if (amount.isGreaterThan(maxSmuggle)) {
-            throw new IllegalArgumentException("허용된 최대 밀수 금액을 초과할 수 없습니다.");
-        }
-        if (amount.isGreaterThan(smugglerBalance)) {
-            throw new IllegalArgumentException("보유 금액보다 많이 밀수할 수 없습니다.");
-        }
-        if (amount.getAmount() % 100 != 0) {
-            throw new IllegalArgumentException("밀수 금액은 100원 단위여야 합니다.");
-        }
+        validateSmuggleDeclaration(amount, smugglerBalance);
 
         return new Round(
                 roundNumber,
@@ -136,14 +121,14 @@ public class Round {
         }
     }
 
-    private void validateSmuggleDeclaration(Money amount, Money smugglerBalance, Money maxSmuggle) {
+    private void validateSmuggleDeclaration(Money amount, Money smugglerBalance) {
         if (smuggleState.isDeclared()) {
             throw new IllegalStateException("이미 밀수 금액을 선언했습니다.");
         }
         if (amount.isLessThan(Money.ZERO)) {
             throw new IllegalArgumentException("밀수 금액은 0 이상이어야 합니다.");
         }
-        if (amount.isGreaterThan(maxSmuggle)) {
+        if (amount.isGreaterThan(MAX_SMUGGLE_AMOUNT)) {
             throw new IllegalArgumentException("허용된 최대 밀수 금액을 초과할 수 없습니다.");
         }
         if (amount.isGreaterThan(smugglerBalance)) {
@@ -161,7 +146,7 @@ public class Round {
         if (!inspectionThreshold.isGreaterThan(Money.ZERO)) {
             throw new IllegalArgumentException("검문 기준 금액은 0보다 커야 합니다.");
         }
-        if (inspectionThreshold.getAmount() % 100 != 0) {
+        if (inspectionThreshold.isNotHundredsUnit()) {
             throw new IllegalArgumentException("검문 기준 금액은 100원 단위여야 합니다.");
         }
         if (inspectionThreshold.isGreaterThan(MAX_INSPECTION_THRESHOLD)) {
