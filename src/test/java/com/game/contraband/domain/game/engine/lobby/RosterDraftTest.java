@@ -1,4 +1,4 @@
-package com.game.contraband.domain.game.engine;
+package com.game.contraband.domain.game.engine.lobby;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
