@@ -3,7 +3,7 @@ package com.game.contraband.domain.game.round.settle;
 import com.game.contraband.domain.game.player.Player;
 import com.game.contraband.domain.game.round.Round;
 
-public final class RoundSettlementProcessor {
+public class RoundSettlementProcessor {
 
     public static RoundSettlementProcessor create() {
         return new RoundSettlementProcessor(new RoundSettlementRuleSelector());
