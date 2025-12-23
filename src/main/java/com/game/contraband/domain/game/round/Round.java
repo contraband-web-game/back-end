@@ -154,12 +154,18 @@ public class Round {
         }
     }
 
-    private void validateReadyToSettle() {
-        if (status.isNotInspectionDecided()) {
-            throw new IllegalStateException("정산은 검사관의 선택이 끝난 후에만 수행할 수 있습니다.");
+    public void validateReadyToSettle() {
+        if (smuggleState.isNotDeclared()) {
+            throw new IllegalStateException("밀수 금액이 선언되어야 정산할 수 있습니다.");
+        }
+        if (inspectionState.isNotProvided()) {
+            throw new IllegalStateException("정산을 위해서는 검사관 선택이 완료된 상태여야 합니다.");
         }
         if (inspectionState.isDecisionNone()) {
             throw new IllegalStateException("검사관의 선택이 설정되지 않았습니다.");
+        }
+        if (status.isNotInspectionDecided()) {
+            throw new IllegalStateException("정산은 검사관의 선택이 끝난 후에만 수행할 수 있습니다.");
         }
     }
 
@@ -204,16 +210,32 @@ public class Round {
         return smuggleState.isDeclared();
     }
 
+    public boolean isInspectionDecisionCompleted() {
+        return status.isInspectionDecided();
+    }
+
+    public boolean isSmuggleDeclaredOnly() {
+        return status.isSmuggleDeclared() && status.isNotInspectionDecided();
+    }
+
+    public boolean isNotSmuggleAmountDeclared() {
+        return !this.smuggleState.isDeclared();
+    }
+
+    public boolean isInspectionDecisionProvided() {
+        return inspectionState.isProvided();
+    }
+
+    public boolean canDeclareSmuggleAmount() {
+        return status.isNew() || status.isInspectionDecisionDeclared();
+    }
+
     public InspectionDecision getInspectionDecision() {
         return inspectionState.getDecision();
     }
 
     public Money getInspectionThreshold() {
         return inspectionState.getThreshold();
-    }
-
-    public boolean isInspectionDecisionProvided() {
-        return inspectionState.isProvided();
     }
 
     public Long getSmugglerId() {
