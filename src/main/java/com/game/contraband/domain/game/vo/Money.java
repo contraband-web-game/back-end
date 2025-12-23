@@ -81,4 +81,12 @@ public final class Money {
 
         return new Money(this.amount / 2);
     }
+
+    public boolean isHundredsUnit() {
+        return this.amount % 100 == 0;
+    }
+
+    public boolean isNotHundredsUnit() {
+        return !isHundredsUnit();
+    }
 }

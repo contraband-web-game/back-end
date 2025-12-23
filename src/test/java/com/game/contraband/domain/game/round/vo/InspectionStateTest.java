@@ -82,5 +82,18 @@ class InspectionStateTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("검사관의 선택은 한 번만 할 수 있습니다.");
     }
+
+    @Test
+    void 검사관이_행동을_결정했는지_여부를_확인한다() {
+        // given
+        InspectionState inspectionState = InspectionState.initial(2L)
+                                                         .decideInspection(2L, Money.from(400));
+
+        // when
+        boolean actual = inspectionState.isDecisionNone();
+
+        // then
+        assertThat(actual).isFalse();
+    }
 }
 

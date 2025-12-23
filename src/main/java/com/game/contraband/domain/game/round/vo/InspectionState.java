@@ -36,4 +36,8 @@ public class InspectionState {
         }
         return new InspectionState(InspectionDecision.INSPECTION, threshold, true, inspectorId);
     }
+
+    public boolean isDecisionNone() {
+        return decision.isNone();
+    }
 }
