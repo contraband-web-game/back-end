@@ -1,4 +1,4 @@
-package com.game.contraband.domain.game.engine;
+package com.game.contraband.domain.game.engine.lobby;
 
 import com.game.contraband.domain.game.player.PlayerProfile;
 import com.game.contraband.domain.game.player.TeamRole;

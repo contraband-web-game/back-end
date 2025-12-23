@@ -1,4 +1,4 @@
-package com.game.contraband.domain.game.engine;
+package com.game.contraband.domain.game.engine.match;
 
 import com.game.contraband.domain.game.player.Player;
 import com.game.contraband.domain.game.round.Round;
