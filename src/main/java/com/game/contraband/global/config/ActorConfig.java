@@ -1,5 +1,6 @@
 package com.game.contraband.global.config;
 
+import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.global.actor.GuardianActor;
 import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
 import com.typesafe.config.Config;
@@ -24,6 +25,7 @@ import org.springframework.core.env.Environment;
 public class ActorConfig {
 
     private final Environment environment;
+    private final ChatBlacklistRepository chatBlacklistRepository;
 
     @Bean
     public ClusterSharding clusterSharding(ActorSystem<GuardianCommand> system) {
@@ -34,7 +36,7 @@ public class ActorConfig {
     public ActorSystem<GuardianCommand> actorSystem() {
         Config config = buildConfig();
         ActorSystem<GuardianCommand> system = ActorSystem.create(
-                GuardianActor.create(),
+                GuardianActor.create(chatBlacklistRepository),
                 "ChatCluster",
                 config
         );
