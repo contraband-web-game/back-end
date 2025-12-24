@@ -3,9 +3,11 @@ package com.game.contraband.infrastructure.actor.client;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.global.actor.CborSerializable;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
+import com.game.contraband.infrastructure.actor.directory.RoomDirectorySubscriberActor.LocalDirectoryCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.PostStop;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -16,6 +18,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     public static Behavior<ClientSessionCommand> create(
             Long playerId,
             ClientWebSocketMessageSender clientWebSocketMessageSender,
+            ActorRef<LocalDirectoryCommand> roomDirectoryCache,
             ChatBlacklistRepository chatBlacklistRepository
     ) {
         return Behaviors.setup(
@@ -29,7 +32,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                             "session-inbound-" + playerId
                     );
                     ActorRef<PresenceCommand> presence = context.spawn(
-                            SessionPresenceActor.create(playerId, outbound, context.getSelf()),
+                            SessionPresenceActor.create(playerId, outbound, context.getSelf(), roomDirectoryCache),
                             "session-presence-" + playerId
                     );
                     ActorRef<ChatCommand> chat = context.spawn(
@@ -69,6 +72,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(PresenceCommand.class, this::forwardToPresence)
                                   .onMessage(ChatCommand.class, this::forwardToChat)
                                   .onMessage(ReSyncConnection.class, this::onReSyncConnection)
+                                  .onSignal(PostStop.class, this::onPostStop)
                                   .build();
     }
 
@@ -95,6 +99,11 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     private Behavior<ClientSessionCommand> onReSyncConnection(ReSyncConnection command) {
         inbound.tell(new SessionInboundActor.ReSyncConnection(command.playerId()));
         presence.tell(new SessionPresenceActor.ResubscribeRoomDirectory());
+        return this;
+    }
+
+    private Behavior<ClientSessionCommand> onPostStop(PostStop signal) {
+        presence.tell(new SessionPresenceActor.UnregisterSessionCommand());
         return this;
     }
 

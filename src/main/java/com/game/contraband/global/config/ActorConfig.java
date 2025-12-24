@@ -3,6 +3,8 @@ package com.game.contraband.global.config;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.global.actor.GuardianActor;
 import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
+import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor;
+import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
@@ -10,10 +12,14 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.pekko.actor.Address;
 import org.apache.pekko.actor.AddressFromURIString;
+import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.ActorSystem;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
 import org.apache.pekko.cluster.typed.Cluster;
+import org.apache.pekko.cluster.typed.ClusterSingleton;
 import org.apache.pekko.cluster.typed.JoinSeedNodes;
+import org.apache.pekko.cluster.typed.SingletonActor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -36,7 +42,21 @@ public class ActorConfig {
     public ActorSystem<GuardianCommand> actorSystem() {
         Config config = buildConfig();
         ActorSystem<GuardianCommand> system = ActorSystem.create(
-                GuardianActor.create(chatBlacklistRepository),
+                Behaviors.setup(context -> {
+                    ClusterSingleton clusterSingleton = ClusterSingleton.get(context.getSystem());
+
+                    ActorRef<RoomDirectoryCommand> roomDirectory = clusterSingleton.init(
+                            SingletonActor.of(
+                                    RoomDirectoryActor.create(),
+                                    "room-directory"
+                            )
+                    );
+
+                    return GuardianActor.create(
+                            roomDirectory,
+                            chatBlacklistRepository
+                    );
+                }),
                 "ChatCluster",
                 config
         );
