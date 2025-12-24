@@ -24,13 +24,31 @@ repositories {
 	mavenCentral()
 }
 
+def versions = [
+		PekkoVersion: "1.2.1",
+		ScalaBinary: "2.13"
+]
+
 dependencies {
+	implementation "org.apache.pekko:pekko-actor-typed_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-stream_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-cluster-typed_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-cluster-sharding-typed_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-serialization-jackson_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-slf4j_${versions.ScalaBinary}:${versions.PekkoVersion}"
+	implementation "org.apache.pekko:pekko-discovery_${versions.ScalaBinary}:${versions.PekkoVersion}"
+
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
+
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation "org.apache.pekko:pekko-actor-testkit-typed_${versions.ScalaBinary}:${versions.PekkoVersion}"
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
