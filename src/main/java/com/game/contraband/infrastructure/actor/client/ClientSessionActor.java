@@ -9,4 +9,6 @@ public class ClientSessionActor {
     public interface ChatCommand extends ClientSessionCommand { }
 
     public interface InboundCommand extends ClientSessionCommand { }
+
+    public interface OutboundCommand extends ClientSessionCommand { }
 }
