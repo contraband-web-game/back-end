@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: contraband
+  profiles:
+    active: dev
+    default: dev
