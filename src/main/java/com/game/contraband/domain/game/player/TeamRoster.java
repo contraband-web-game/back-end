@@ -6,18 +6,16 @@ import lombok.Getter;
 @Getter
 public class TeamRoster {
 
-    public static TeamRoster create(Long id, String name, TeamRole role, List<PlayerProfile> players) {
-        return new TeamRoster(id, name, role, List.copyOf(players));
+    public static TeamRoster create(String name, TeamRole role, List<PlayerProfile> players) {
+        return new TeamRoster(name, role, List.copyOf(players));
     }
 
-    private TeamRoster(Long id, String name, TeamRole role, List<PlayerProfile> players) {
-        this.id = id;
+    private TeamRoster(String name, TeamRole role, List<PlayerProfile> players) {
         this.name = name;
         this.role = role;
         this.players = players;
     }
 
-    private final Long id;
     private final String name;
     private final TeamRole role;
     private final List<PlayerProfile> players;

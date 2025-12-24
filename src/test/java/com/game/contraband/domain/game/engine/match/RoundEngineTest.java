@@ -23,13 +23,11 @@ class RoundEngineTest {
     void 다음_라운드에서_아직_송금하지_않은_플레이어만_송금할_수_있다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR))
@@ -52,13 +50,11 @@ class RoundEngineTest {
     void 라운드가_없는_상태에서_정산을_시도하면_예외가_발생한다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR))
@@ -77,13 +73,11 @@ class RoundEngineTest {
     void 밀수_금액을_선언하지_않으면_정산을_완료할_수_없다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR))
@@ -106,13 +100,11 @@ class RoundEngineTest {
     void 검사관_선택이_완료되지_않으면_정산을_완료할_수_없다() {
         // given
         TeamRoster smugglerRoster = TeamRoster.create(
-                1L,
                 "밀수꾼 팀",
                 TeamRole.SMUGGLER,
                 List.of(PlayerProfile.create(1L, "밀수꾼", TeamRole.SMUGGLER))
         );
         TeamRoster inspectorRoster = TeamRoster.create(
-                2L,
                 "검사관 팀",
                 TeamRole.INSPECTOR,
                 List.of(PlayerProfile.create(2L, "검사관", TeamRole.INSPECTOR))

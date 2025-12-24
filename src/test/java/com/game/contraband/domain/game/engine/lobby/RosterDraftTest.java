@@ -19,7 +19,7 @@ class RosterDraftTest {
     @Test
     void 팀_구성을_위한_임시_드래프트를_초기화_한다() {
         // when
-        RosterDraft actual = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft actual = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
 
         // then
         assertThat(actual.players()).isEmpty();
@@ -28,7 +28,7 @@ class RosterDraftTest {
     @Test
     void 올바른_역할의_플레이어를_추가한다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
         PlayerProfile profile = PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER);
 
         // when
@@ -45,7 +45,7 @@ class RosterDraftTest {
     @Test
     void 잘못된_역할의_플레이어는_추가할_수_없다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
         PlayerProfile wrongProfile = PlayerProfile.create(1L, "플레이어1", TeamRole.INSPECTOR);
 
         // when & then
@@ -57,7 +57,7 @@ class RosterDraftTest {
     @Test
     void 최대_인원수를_초과하면_플레이어를_추가할_수_없다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 3);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 3);
         PlayerProfile profile = PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER);
 
         for (long i = 0L; i < 3L; i++) {
@@ -73,7 +73,7 @@ class RosterDraftTest {
     @Test
     void 플레이어를_제거한다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
         PlayerProfile profile1 = PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER);
         PlayerProfile profile2 = PlayerProfile.create(2L, "플레이어2", TeamRole.SMUGGLER);
         draft.add(profile1);
@@ -93,7 +93,7 @@ class RosterDraftTest {
     @Test
     void 존재하지_않는_플레이어_제거는_무시한다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
 
         // when & then
         assertDoesNotThrow(() -> draft.remove(999L));
@@ -102,7 +102,7 @@ class RosterDraftTest {
     @Test
     void 특정_플레이어가_포함되어_있는지_확인한다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
         PlayerProfile profile = PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER);
         draft.add(profile);
 
@@ -116,7 +116,7 @@ class RosterDraftTest {
     @Test
     void 최소_인원_미달시_팀_로스터를_만들_수_없다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
 
         // when & then
         assertThatThrownBy(() -> draft.toRoster())
@@ -127,7 +127,7 @@ class RosterDraftTest {
     @Test
     void 최소_인원_이상일_때_팀_로스터로_만든다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
 
         draft.add(PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER));
         draft.add(PlayerProfile.create(2L, "플레이어2", TeamRole.SMUGGLER));
@@ -137,7 +137,6 @@ class RosterDraftTest {
 
         // then
         assertAll(
-                () -> assertThat(actual.getId()).isEqualTo(1L),
                 () -> assertThat(actual.getName()).isEqualTo("밀수꾼 팀"),
                 () -> assertThat(actual.getRole()).isEqualTo(TeamRole.SMUGGLER),
                 () -> assertThat(actual.getPlayers()).hasSize(2)
@@ -147,7 +146,7 @@ class RosterDraftTest {
     @Test
     void 플레이어_ID로_플레이어를_조회한다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
         PlayerProfile profile = PlayerProfile.create(1L, "플레이어1", TeamRole.SMUGGLER);
         draft.add(profile);
 
@@ -161,7 +160,7 @@ class RosterDraftTest {
     @Test
     void 존재하지_않는_플레이어_ID로는_플레이어를_조회할_수_없다() {
         // given
-        RosterDraft draft = RosterDraft.create(1L, "밀수꾼 팀", TeamRole.SMUGGLER, 4);
+        RosterDraft draft = RosterDraft.create("밀수꾼 팀", TeamRole.SMUGGLER, 4);
 
         // when & then
         assertThatThrownBy(() -> draft.getPlayer(999L))

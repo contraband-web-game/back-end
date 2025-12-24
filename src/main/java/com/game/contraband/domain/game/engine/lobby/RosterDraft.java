@@ -10,16 +10,16 @@ import java.util.Map;
 
 public class RosterDraft {
 
-    public static RosterDraft create(long id, String name, TeamRole role, int maxTeamSize) {
+    public static RosterDraft create(String name, TeamRole role, int maxTeamSize) {
         if (maxTeamSize < MIN_TEAM_SIZE) {
             throw new IllegalArgumentException("팀 인원은 최소 " + MIN_TEAM_SIZE + "명 이상이어야 합니다.");
         }
         Map<Long, PlayerProfile> players = new LinkedHashMap<>();
-        return new RosterDraft(id, name, role, maxTeamSize, players);
+
+        return new RosterDraft(name, role, maxTeamSize, players);
     }
 
-    private RosterDraft(long id, String name, TeamRole role, int maxTeamSize, Map<Long, PlayerProfile> players) {
-        this.id = id;
+    private RosterDraft(String name, TeamRole role, int maxTeamSize, Map<Long, PlayerProfile> players) {
         this.name = name;
         this.role = role;
         this.players = players;
@@ -28,7 +28,6 @@ public class RosterDraft {
 
     private static final int MIN_TEAM_SIZE = 1;
 
-    private final long id;
     private final String name;
     private final TeamRole role;
     private final Map<Long, PlayerProfile> players;
@@ -61,6 +60,10 @@ public class RosterDraft {
         return players.size() < maxTeamSize;
     }
 
+    public boolean isFull() {
+        return !this.hasCapacity();
+    }
+
     public void updateMaxTeamSize(int maxTeamSize) {
         if (maxTeamSize < MIN_TEAM_SIZE) {
             throw new IllegalArgumentException("팀 인원은 최소 " + MIN_TEAM_SIZE + "명 이상이어야 합니다.");
@@ -85,6 +88,6 @@ public class RosterDraft {
             throw new IllegalStateException("팀 인원은 최소 " + MIN_TEAM_SIZE + "명 이상이어야 합니다.");
         }
 
-        return TeamRoster.create(id, name, role, players());
+        return TeamRoster.create(name, role, players());
     }
 }
