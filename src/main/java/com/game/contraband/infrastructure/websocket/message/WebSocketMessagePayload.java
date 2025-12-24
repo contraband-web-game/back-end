@@ -1,4 +1,4 @@
-package com.game.contraband.infrastructure.message;
+package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

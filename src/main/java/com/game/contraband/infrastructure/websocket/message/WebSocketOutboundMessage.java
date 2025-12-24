@@ -1,6 +1,6 @@
-package com.game.contraband.infrastructure.message;
+package com.game.contraband.infrastructure.websocket.message;
 
-import com.game.contraband.infrastructure.message.WebSocketMessagePayload.WebSocketEmptyPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.WebSocketEmptyPayload;
 
 public record WebSocketOutboundMessage(WebSocketOutboundMessageType type, WebSocketMessagePayload payload) {
 

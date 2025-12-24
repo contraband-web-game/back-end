@@ -1,17 +1,21 @@
-package com.game.contraband.infrastructure.message;
+package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum WebSocketInboundMessageType {
+public enum WebSocketOutboundMessageType {
 
+    WS_HEALTH_PING("WS_HEALTH_PING"),
+    WS_RECONNECT("WS_RECONNECT"),
     HEARTBEAT_PING("PING"),
-    SESSION_HEALTH_PONG("WS_PONG");
+    HEARTBEAT_PONG("PONG"),
+    SESSION_HEALTH_PONG("WS_PONG"),
+    EXCEPTION_MESSAGE("EXCEPTION_MESSAGE");
 
     private final String type;
 
-    WebSocketInboundMessageType(String type) {
+    WebSocketOutboundMessageType(String type) {
         this.type = type;
     }
 
@@ -24,7 +28,7 @@ public enum WebSocketInboundMessageType {
         return type.equalsIgnoreCase(rawType);
     }
 
-    public static Optional<WebSocketInboundMessageType> from(String rawType) {
+    public static Optional<WebSocketOutboundMessageType> from(String rawType) {
         return Arrays.stream(values())
                      .filter(value -> value.isSameType(rawType))
                      .findFirst();

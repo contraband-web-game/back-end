@@ -1,9 +1,9 @@
 package com.game.contraband.infrastructure.websocket;
 
-import com.game.contraband.infrastructure.message.ExceptionCode;
-import com.game.contraband.infrastructure.message.WebSocketMessagePayload.ExceptionMessagePayload;
-import com.game.contraband.infrastructure.message.WebSocketOutboundMessage;
-import com.game.contraband.infrastructure.message.WebSocketOutboundMessageType;
+import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ExceptionMessagePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessage;
+import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessageType;
 import java.util.concurrent.atomic.AtomicReference;
 import reactor.core.publisher.Sinks.Many;
 
