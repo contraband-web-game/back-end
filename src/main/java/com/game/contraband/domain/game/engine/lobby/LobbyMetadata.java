@@ -51,6 +51,10 @@ public class LobbyMetadata {
         return new LobbyMetadata(id, name, hostId, newMaxPlayerCount);
     }
 
+    public boolean isHost(Long playerId) {
+        return hostId.equals(playerId);
+    }
+
     public int maxTeamSize() {
         return maxPlayerCount / 2;
     }

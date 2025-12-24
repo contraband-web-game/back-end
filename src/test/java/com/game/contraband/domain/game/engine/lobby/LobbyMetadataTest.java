@@ -4,9 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @SuppressWarnings("NonAsciiCharacters")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -75,5 +79,26 @@ class LobbyMetadataTest {
                 () -> assertThat(actual.getHostId()).isEqualTo(metadata.getHostId()),
                 () -> assertThat(actual.maxTeamSize()).isEqualTo(4)
         );
+    }
+
+    private static Stream<Arguments> isHostTestArguments() {
+        return Stream.of(
+                Arguments.of(10L, true),
+                Arguments.of(11L, false),
+                Arguments.of(null, false)
+        );
+    }
+
+    @ParameterizedTest(name = "{0} 플레이어가 방장인지 여부는 {1}을 반환한다")
+    @MethodSource("isHostTestArguments")
+    void 플레이어가_방장인지_확인한다(Long playerId, boolean expected) {
+        // given
+        LobbyMetadata metadata = LobbyMetadata.create(1L, "게임방", 10L, 6);
+
+        // when
+        boolean actual = metadata.isHost(playerId);
+
+        // then
+        assertThat(actual).isEqualTo(expected);
     }
 }
