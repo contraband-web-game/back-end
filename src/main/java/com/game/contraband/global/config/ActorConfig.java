@@ -5,6 +5,8 @@ import com.game.contraband.global.actor.GuardianActor;
 import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
+import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity;
+import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.GameRoomCoordinatorCommand;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ import org.springframework.core.env.Environment;
 @RequiredArgsConstructor
 public class ActorConfig {
 
+    private static final int DEFAULT_MAX_ROOMS_PER_ENTITY = 30;
+
     private final Environment environment;
     private final ChatBlacklistRepository chatBlacklistRepository;
 
@@ -51,9 +55,18 @@ public class ActorConfig {
                                     "room-directory"
                             )
                     );
+                    ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator = clusterSingleton.init(
+                            SingletonActor.of(
+                                    GameRoomCoordinatorEntity.create(
+                                            DEFAULT_MAX_ROOMS_PER_ENTITY
+                                    ),
+                                    "game-rooms-coordinator"
+                            )
+                    );
 
                     return GuardianActor.create(
                             roomDirectory,
+                            gameRoomsCoordinator,
                             chatBlacklistRepository
                     );
                 }),
