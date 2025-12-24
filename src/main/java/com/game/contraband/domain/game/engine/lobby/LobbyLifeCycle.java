@@ -29,7 +29,7 @@ public class LobbyLifeCycle {
     private final LobbyGuards guards;
 
     public boolean isLobbyPhase() {
-        return phase == LobbyPhase.LOBBY;
+        return phase.isLobby();
     }
 
     public ContrabandGame currentGame() {

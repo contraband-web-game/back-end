@@ -10,7 +10,7 @@ public class LobbyGuards {
     }
 
     public void requireLobbyPhase(LobbyPhase phase) {
-        if (phase != LobbyPhase.LOBBY) {
+        if (phase.isNotLobby()) {
             throw new IllegalStateException("로비 상태에서만 로스터를 수정할 수 있습니다.");
         }
     }
