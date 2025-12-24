@@ -7,4 +7,6 @@ public class ClientSessionActor {
     public interface ClientSessionCommand extends CborSerializable { }
 
     public interface ChatCommand extends ClientSessionCommand { }
+
+    public interface InboundCommand extends ClientSessionCommand { }
 }
