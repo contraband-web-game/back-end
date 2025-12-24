@@ -8,6 +8,7 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectorySubscriberActor;
+import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.GameRoomCoordinatorCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
@@ -20,28 +21,40 @@ public class GuardianActor extends AbstractBehavior<GuardianCommand>  {
 
     public static Behavior<GuardianCommand> create(
             ActorRef<RoomDirectoryCommand> roomDirectory,
+            ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator,
             ChatBlacklistRepository chatBlacklistRepository
     ) {
-        return Behaviors.setup(context -> new GuardianActor(context, roomDirectory, chatBlacklistRepository));
+        return Behaviors.setup(
+                context -> new GuardianActor(
+                        context,
+                        roomDirectory,
+                        gameRoomsCoordinator,
+                        chatBlacklistRepository
+                )
+        );
     }
 
     private GuardianActor(
             ActorContext<GuardianCommand> context,
             ActorRef<RoomDirectoryCommand> roomDirectory,
+            ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator,
             ChatBlacklistRepository chatBlacklistRepository
     ) {
         super(context);
 
         this.roomDirectory = roomDirectory;
+        this.gameRoomsCoordinator = gameRoomsCoordinator;
         this.chatBlacklistRepository = chatBlacklistRepository;
     }
 
     private final ActorRef<RoomDirectoryCommand> roomDirectory;
+    private final ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator;
     private final ChatBlacklistRepository chatBlacklistRepository;
 
     @Override
     public Receive<GuardianCommand> createReceive() {
         return newReceiveBuilder().onMessage(SpawnClientSession.class, this::onSpawnClientSession)
+                                  .onMessage(GetGameRoomsCoordinator.class, this::onGetGameRoomsCoordinator)
                                   .build();
     }
 
@@ -64,9 +77,18 @@ public class GuardianActor extends AbstractBehavior<GuardianCommand>  {
         return this;
     }
 
+    private Behavior<GuardianCommand> onGetGameRoomsCoordinator(GetGameRoomsCoordinator command) {
+        command.replyTo()
+               .tell(gameRoomsCoordinator);
+
+        return this;
+    }
+
     public interface GuardianCommand extends CborSerializable { }
 
     public record SpawnClientSession(Long playerId, ClientWebSocketMessageSender clientWebSocketMessageSender, ActorRef<GuardianCommand> replyTo) implements GuardianCommand { }
 
     public record SpawnedClientSession(ActorRef<ClientSessionCommand> clientSession) implements GuardianCommand { }
+
+    public record GetGameRoomsCoordinator(ActorRef<ActorRef<GameRoomCoordinatorCommand>> replyTo) implements GuardianCommand { }
 }
