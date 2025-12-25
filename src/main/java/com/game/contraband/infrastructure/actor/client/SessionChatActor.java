@@ -46,6 +46,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(PropagateLeftMessage.class, this::onPropagateLeftMessage)
                                   .onMessage(PropagateKickedMessage.class, this::onPropagateKickedMessage)
                                   .onMessage(PropagateMaskedChatMessage.class, this::onPropagateMaskedChatMessage)
+                                  .onMessage(PropagateSmugglerTeamChat.class, this::onPropagateSmugglerTeamChat)
+                                  .onMessage(PropagateInspectorTeamChat.class, this::onPropagateInspectorTeamChat)
+                                  .onMessage(PropagateRoundChat.class, this::onPropagateRoundChat)
                                   .build();
     }
 
@@ -74,6 +77,21 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         return this;
     }
 
+    private Behavior<ChatCommand> onPropagateSmugglerTeamChat(PropagateSmugglerTeamChat command) {
+        sender.sendSmugglerTeamChatMessage(command.chatMessage());
+        return this;
+    }
+
+    private Behavior<ChatCommand> onPropagateInspectorTeamChat(PropagateInspectorTeamChat command) {
+        sender.sendInspectorTeamChatMessage(command.chatMessage());
+        return this;
+    }
+
+    private Behavior<ChatCommand> onPropagateRoundChat(PropagateRoundChat command) {
+        sender.sendRoundChatMessage(command.chatMessage());
+        return this;
+    }
+
     public record PropagateWelcomeMessage(String playerName) implements ChatCommand { }
 
     public record PropagateNewMessage(ChatMessage chatMessage) implements ChatCommand { }
@@ -87,4 +105,10 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     // 여러 채팅 메시지가 차단되었음을 알리기 위한 Actor 메시지
     public record PropagateMaskedChatBatch(List<Long> messageIds, ChatEventType chatEvent) implements ChatCommand { }
+
+    public record PropagateSmugglerTeamChat(ChatMessage chatMessage) implements ChatCommand { }
+
+    public record PropagateInspectorTeamChat(ChatMessage chatMessage) implements ChatCommand { }
+
+    public record PropagateRoundChat(ChatMessage chatMessage) implements ChatCommand { }
 }

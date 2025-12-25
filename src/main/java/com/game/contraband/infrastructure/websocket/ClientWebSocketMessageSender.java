@@ -118,6 +118,40 @@ public class ClientWebSocketMessageSender {
         emit(payload);
     }
 
+    public void sendSmugglerTeamChatMessage(ChatMessage chatMessage) {
+        ChatMessagePayload payload = new ChatMessagePayload(
+                chatMessage.id(),
+                chatMessage.writerId(),
+                chatMessage.writerName(),
+                chatMessage.message(),
+                chatMessage.createdAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        );
+
+        emit(new WebSocketOutboundMessage(WebSocketOutboundMessageType.SMUGGLER_TEAM_CHAT_MESSAGE, payload));
+    }
+
+    public void sendInspectorTeamChatMessage(ChatMessage chatMessage) {
+        ChatMessagePayload payload = new ChatMessagePayload(
+                chatMessage.id(),
+                chatMessage.writerId(),
+                chatMessage.writerName(),
+                chatMessage.message(),
+                chatMessage.createdAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        );
+        emit(new WebSocketOutboundMessage(WebSocketOutboundMessageType.INSPECTOR_TEAM_CHAT_MESSAGE, payload));
+    }
+
+    public void sendRoundChatMessage(ChatMessage chatMessage) {
+        ChatMessagePayload payload = new ChatMessagePayload(
+                chatMessage.id(),
+                chatMessage.writerId(),
+                chatMessage.writerName(),
+                chatMessage.message(),
+                chatMessage.createdAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        );
+        emit(new WebSocketOutboundMessage(WebSocketOutboundMessageType.ROUND_CHAT_MESSAGE, payload));
+    }
+
     public void sendWebSocketPing() {
         emit(WebSocketOutboundMessage.PING_MESSAGE);
     }
