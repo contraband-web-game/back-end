@@ -10,6 +10,9 @@ import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.Que
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryEvent;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
+import com.game.contraband.infrastructure.event.MonitorEventBroadcaster;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorRole;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,11 +28,16 @@ import org.apache.pekko.actor.typed.pubsub.Topic;
 
 public class RoomDirectorySubscriberActor extends AbstractBehavior<LocalDirectoryCommand> {
 
-    public static Behavior<LocalDirectoryCommand> create(ActorRef<RoomDirectoryCommand> roomDirectory) {
+    public static Behavior<LocalDirectoryCommand> create(
+            ActorRef<RoomDirectoryCommand> roomDirectory,
+            MonitorEventBroadcaster monitorEventBroadcaster
+    ) {
         return Behaviors.setup(context -> {
-            ActorRef<RoomDirectoryEvent> roomEventAdapter = context.messageAdapter(RoomDirectoryEvent.class, WrappedRoomEvent::new);
-            ActorRef<QueryRoomsResult> roomDirectoryQueryAdapter = context.messageAdapter(QueryRoomsResult.class, WrappedRoomDirectoryQueryResult::new);
-            ActorRef<Topic.Command<RoomDirectoryEvent>> topicRef = context.spawn(
+            ActorRef<RoomDirectoryEvent> roomEventAdapter =
+                    context.messageAdapter(RoomDirectoryEvent.class, WrappedRoomEvent::new);
+            ActorRef<QueryRoomsResult> roomDirectoryQueryAdapter =
+                    context.messageAdapter(QueryRoomsResult.class, WrappedRoomDirectoryQueryResult::new);
+            ActorRef<Topic.Command<RoomDirectoryEvent>> topic = context.spawn(
                     Topic.create(RoomDirectoryEvent.class, RoomDirectoryActor.TOPIC_NAME),
                     RoomDirectoryActor.TOPIC_NAME + "-subscriber-" + context.getSelf().path().name()
             );
@@ -38,10 +46,11 @@ public class RoomDirectorySubscriberActor extends AbstractBehavior<LocalDirector
                     roomDirectory,
                     roomEventAdapter,
                     roomDirectoryQueryAdapter,
-                    topicRef
+                    topic,
+                    monitorEventBroadcaster
             );
 
-            topicRef.tell(Topic.subscribe(roomEventAdapter));
+            topic.tell(Topic.subscribe(roomEventAdapter));
             actor.requestPage();
             return actor;
         });
@@ -52,7 +61,8 @@ public class RoomDirectorySubscriberActor extends AbstractBehavior<LocalDirector
     private final ActorRef<QueryRoomsResult> roomDirectoryQueryAdapter;
     private final List<RoomDirectorySnapshot> roomCache = new ArrayList<>();
     private final Map<Long, ActorRef<ClientSessionCommand>> sessionSubscribers = new HashMap<>();
-    private final ActorRef<Topic.Command<RoomDirectoryEvent>> topicRef;
+    private final ActorRef<Topic.Command<RoomDirectoryEvent>> topic;
+    private final MonitorEventBroadcaster monitorEventBroadcaster;
     private int currentPage = 0;
     private int pageSize = 10;
     private int totalCount = 0;
@@ -62,14 +72,16 @@ public class RoomDirectorySubscriberActor extends AbstractBehavior<LocalDirector
             ActorRef<RoomDirectoryCommand> roomDirectory,
             ActorRef<RoomDirectoryEvent> roomEventAdapter,
             ActorRef<QueryRoomsResult> roomDirectoryQueryAdapter,
-            ActorRef<Topic.Command<RoomDirectoryEvent>> topicRef
+            ActorRef<Topic.Command<RoomDirectoryEvent>> topic,
+            MonitorEventBroadcaster monitorEventBroadcaster
     ) {
         super(context);
 
         this.roomDirectory = roomDirectory;
         this.roomEventAdapter = roomEventAdapter;
         this.roomDirectoryQueryAdapter = roomDirectoryQueryAdapter;
-        this.topicRef = topicRef;
+        this.topic = topic;
+        this.monitorEventBroadcaster = monitorEventBroadcaster;
     }
 
     @Override
@@ -120,14 +132,30 @@ public class RoomDirectorySubscriberActor extends AbstractBehavior<LocalDirector
 
         sessionSubscribers.values()
                           .forEach(sub -> sub.tell(new RoomDirectoryUpdated(snapshot, totalCount)));
+
+        if (monitorEventBroadcaster != null) {
+            monitorEventBroadcaster.publishRoomDirectorySnapshot(snapshot);
+        }
     }
 
     private Behavior<LocalDirectoryCommand> onPostStop(PostStop signal) {
-        if (topicRef != null) {
-            topicRef.tell(Topic.unsubscribe(roomEventAdapter));
+        if (topic != null) {
+            topic.tell(Topic.unsubscribe(roomEventAdapter));
         }
 
+        publishStoppedActorEvent();
         return this;
+    }
+
+    private void publishStoppedActorEvent() {
+        if (monitorEventBroadcaster != null) {
+            monitorEventBroadcaster.publishActorEvent(
+                    getContext().getSelf().path().toString(),
+                    getContext().getSelf().path().parent().toString(),
+                    MonitorActorRole.ROOM_DIRECTORY_SUBSCRIBER_ACTOR,
+                    MonitorActorState.STOPPED
+            );
+        }
     }
 
     private void requestPage() {
