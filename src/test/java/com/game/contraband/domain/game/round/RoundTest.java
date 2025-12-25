@@ -455,5 +455,39 @@ class RoundTest {
         // then
         assertThat(actual).isTrue();
     }
+
+    @Test
+    void 라운드에_검문을_하지_않고_통과를_선택했는지_확인한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .declareSmuggleAmount(
+                                   Money.from(1_000),
+                                   Money.from(3_000)
+                           )
+                           .decidePass();
+
+        // when
+        boolean actual = round.isPass();
+
+        // then
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void 라운드에_검문을_선택했는지_확인한다() {
+        // given
+        Round round = Round.newRound(1, 1L, 2L)
+                           .declareSmuggleAmount(
+                                   Money.from(1_000),
+                                   Money.from(3_000)
+                           )
+                           .decideInspection(Money.from(1_000));
+
+        // when
+        boolean actual = round.isInspection();
+
+        // then
+        assertThat(actual).isTrue();
+    }
 }
 

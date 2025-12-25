@@ -1,6 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.round;
 
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundReady;
+import com.game.contraband.infrastructure.actor.game.engine.match.round.ContrabandRoundActor.RoundReadySelection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -13,7 +13,7 @@ public class RoundFlowState {
     private Long inspectorId;
     private final RoundRuntimeState runtimeState = new RoundRuntimeState();
 
-    public void assignRound(RoundReady selection) {
+    public void assignRound(RoundReadySelection selection) {
         this.currentRound = selection.round();
         this.smugglerId = selection.smugglerId();
         this.inspectorId = selection.inspectorId();

@@ -3,6 +3,7 @@ package com.game.contraband.infrastructure.actor.client;
 import com.game.contraband.domain.game.engine.match.GameWinnerType;
 import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
+import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClearActiveGame;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.OutboundCommand;
@@ -64,6 +65,11 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(PropagateStartNewRound.class, this::onPropagateStartNewRound)
                                   .onMessage(PropagateFinishedRound.class, this::onPropagateFinishedRound)
                                   .onMessage(PropagateFinishedGame.class, this::onPropagateFinishedGame)
+                                  .onMessage(PropagateTransferFailed.class, this::onPropagateTransferFailed)
+                                  .onMessage(PropagateDecidedPass.class, this::onPropagateDecidedPass)
+                                  .onMessage(PropagateDecidedInspection.class, this::onPropagateDecidedInspection)
+                                  .onMessage(PropagateDecidedSmuggleAmount.class, this::onPropagateDecidedSmuggleAmount)
+                                  .onMessage(PropagateTransfer.class, this::onPropagateTransfer)
                                   .build();
     }
 
@@ -220,6 +226,52 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateTransferFailed(PropagateTransferFailed command) {
+        sender.sendTransferFailed(command.reason(), command.message());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateDecidedPass(PropagateDecidedPass command) {
+        if (this.teamRole != null && this.teamRole.isSmuggler()) {
+            sender.sendDecideInspectorBehaviorForSmugglerTeam();
+            return this;
+        }
+
+        sender.sendDecidedPass(command.inspectorId());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateDecidedInspection(PropagateDecidedInspection command) {
+        if (this.teamRole != null && this.teamRole.isSmuggler()) {
+            sender.sendDecideInspectorBehaviorForSmugglerTeam();
+            return this;
+        }
+
+        sender.sendDecidedInspection(command.inspectorId(), command.amount());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateDecidedSmuggleAmount(PropagateDecidedSmuggleAmount command) {
+        if (this.teamRole != null && this.teamRole.isSmuggler()) {
+            sender.sendDecideSmugglerAmountForSmugglerTeam(command.smugglerId(), command.amount());
+            return this;
+        }
+
+        sender.sendDecideSmugglerAmountForInspectorTeam();
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateTransfer(PropagateTransfer command) {
+        sender.sendTransfer(
+                command.senderId(),
+                command.targetId(),
+                command.senderBalance(),
+                command.targetBalance(),
+                command.amount()
+        );
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -253,4 +305,14 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record PropagateFinishedRound(Long smugglerId, int smugglerAmount, Long inspectorId, int inspectorAmount, RoundOutcomeType outcomeType) implements OutboundCommand { }
 
     public record PropagateFinishedGame(GameWinnerType gameWinnerType, int smugglerTotalBalance, int inspectorTotalBalance) implements OutboundCommand { }
+
+    public record PropagateTransferFailed(TransferFailureReason reason, String message) implements OutboundCommand { }
+
+    public record PropagateDecidedPass(Long inspectorId) implements OutboundCommand { }
+
+    public record PropagateDecidedInspection(Long inspectorId, int amount) implements OutboundCommand { }
+
+    public record PropagateDecidedSmuggleAmount(Long smugglerId, int amount) implements OutboundCommand { }
+
+    public record PropagateTransfer(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements OutboundCommand { }
 }
