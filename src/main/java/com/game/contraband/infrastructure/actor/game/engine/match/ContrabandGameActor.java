@@ -9,26 +9,13 @@ import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameCh
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.DecideInspection;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.DecidePass;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.DecideSmuggleAmount;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.FinishCurrentRound;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.FinishedGame;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.FixInspectorId;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.FixSmugglerId;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.GameCleanup;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.PrepareNextSelection;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RegisterInspector;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RegisterInspectorId;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RegisterSmuggler;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RegisterSmugglerId;
+import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundReady;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundSelectionTimeout;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundTimeout;
+import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SelectionCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.StartNewRound;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.StartSelectedRound;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
-import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.TransferAmount;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 import com.game.contraband.infrastructure.actor.game.engine.match.round.ContrabandRoundActor;
 import com.game.contraband.infrastructure.actor.game.engine.match.round.RoundChatCoordinator;
@@ -55,7 +42,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
     public static Behavior<ContrabandGameCommand> create(
             Long roomId,
             String entityId,
-            ContrabandGame contrabandGame,
+            ContrabandGame contrabandGamee,
             ActorRef<LobbyCommand> parent,
             Map<Long, ActorRef<ClientSessionCommand>> clientSessions,
             ChatMessageEventPublisher chatMessageEventPublisher,
@@ -65,7 +52,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
         return Behaviors.setup(
                 context -> {
                     ClientSessionRegistry clientSessionRegistry = ClientSessionRegistry.create(
-                            contrabandGame,
+                            contrabandGamee,
                             clientSessions,
                             context,
                             roomId,
@@ -84,7 +71,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
 
                     clientSessionRegistry.syncGameChatForAll(gameChat);
 
-                    RoundGameContext roundGameContext = new RoundGameContext(contrabandGame);
+                    RoundGameContext roundGameContext = new RoundGameContext(contrabandGamee);
                     RoundClientMessenger roundClientMessenger = new RoundClientMessenger(
                             clientSessionRegistry,
                             parent,
@@ -95,10 +82,10 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
                     );
                     RoundChatCoordinator roundChatCoordinator = new RoundChatCoordinator(gameChat, clientSessionRegistry);
                     SelectionParticipants participants = new SelectionParticipants(
-                            contrabandGame.smugglerPlayers(),
-                            contrabandGame.inspectorPlayers(),
-                            contrabandGame.smugglerTeamSize(),
-                            contrabandGame.inspectorTeamSize()
+                            contrabandGamee.smugglerPlayers(),
+                            contrabandGamee.inspectorPlayers(),
+                            contrabandGamee.smugglerTeamSize(),
+                            contrabandGamee.inspectorTeamSize()
                     );
                     ActorRef<ContrabandGameCommand> roundActor = context.spawn(
                             ContrabandRoundActor.create(
@@ -138,25 +125,12 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
 
     @Override
     public Receive<ContrabandGameCommand> createReceive() {
-        return newReceiveBuilder().onMessage(RegisterSmugglerId.class, this::forwardToSelection)
-                                  .onMessage(RegisterSmuggler.class, this::forwardToSelection)
-                                  .onMessage(FixSmugglerId.class, this::forwardToSelection)
-                                  .onMessage(RegisterInspectorId.class, this::forwardToSelection)
-                                  .onMessage(RegisterInspector.class, this::forwardToSelection)
-                                  .onMessage(FixInspectorId.class, this::forwardToSelection)
-                                  .onMessage(RoundSelectionTimeout.class, this::forwardToSelection)
-                                  .onMessage(PrepareNextSelection.class, this::forwardToSelection)
-                                  .onMessage(RoundReady.class, this::onRoundReady)
+        return newReceiveBuilder().onMessage(RoundReady.class, this::onRoundReady)
                                   .onMessage(StartNewRound.class, this::onStartNewRound)
-                                  .onMessage(TransferAmount.class, this::forwardToRound)
-                                  .onMessage(DecideSmuggleAmount.class, this::forwardToRound)
-                                  .onMessage(DecidePass.class, this::forwardToRound)
-                                  .onMessage(DecideInspection.class, this::forwardToRound)
-                                  .onMessage(FinishCurrentRound.class, this::forwardToRound)
-                                  .onMessage(FinishedGame.class, this::forwardToRound)
-                                  .onMessage(RoundTimeout.class, this::forwardToRound)
                                   .onMessage(SyncReconnectedPlayer.class, this::onSyncReconnectedPlayer)
                                   .onMessage(GameCleanup.class, this::onGameCleanup)
+                                  .onMessage(SelectionCommand.class, this::forwardToSelection)
+                                  .onMessage(RoundCommand.class, this::forwardToRound)
                                   .build();
     }
 

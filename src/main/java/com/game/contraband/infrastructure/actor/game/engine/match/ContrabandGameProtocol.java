@@ -8,43 +8,47 @@ public interface ContrabandGameProtocol {
 
     interface ContrabandGameCommand extends CborSerializable { }
 
-    record RegisterSmugglerId(Long smugglerId, int currentRound) implements ContrabandGameCommand { }
+    interface SelectionCommand extends ContrabandGameCommand { }
 
-    record RegisterSmuggler(Long smugglerId) implements ContrabandGameCommand { }
+    interface RoundCommand extends ContrabandGameCommand { }
 
-    record FixSmugglerId(Long requesterId) implements ContrabandGameCommand { }
+    record RegisterSmugglerId(Long smugglerId, int currentRound) implements SelectionCommand { }
 
-    record RegisterInspectorId(Long inspectorId, int currentRound) implements ContrabandGameCommand { }
+    record RegisterSmuggler(Long smugglerId) implements SelectionCommand { }
 
-    record RegisterInspector(Long inspectorId) implements ContrabandGameCommand { }
+    record FixSmugglerId(Long requesterId) implements SelectionCommand { }
 
-    record FixInspectorId(Long requesterId) implements ContrabandGameCommand { }
+    record RegisterInspectorId(Long inspectorId, int currentRound) implements SelectionCommand { }
+
+    record RegisterInspector(Long inspectorId) implements SelectionCommand { }
+
+    record FixInspectorId(Long requesterId) implements SelectionCommand { }
 
     record StartNewRound() implements ContrabandGameCommand { }
 
-    record TransferAmount(Long fromPlayerId, Long toPlayerId, Money amount) implements ContrabandGameCommand { }
+    record TransferAmount(Long fromPlayerId, Long toPlayerId, Money amount) implements RoundCommand { }
 
-    record DecideSmuggleAmount(Long smugglerId, int amount) implements ContrabandGameCommand { }
+    record DecideSmuggleAmount(Long smugglerId, int amount) implements RoundCommand { }
 
-    record DecidePass(Long inspectorId) implements ContrabandGameCommand { }
+    record DecidePass(Long inspectorId) implements RoundCommand { }
 
-    record DecideInspection(Long inspectorId, int amount) implements ContrabandGameCommand { }
+    record DecideInspection(Long inspectorId, int amount) implements RoundCommand { }
 
-    record FinishCurrentRound() implements ContrabandGameCommand { }
+    record FinishCurrentRound() implements RoundCommand { }
 
-    record FinishedGame() implements ContrabandGameCommand { }
+    record FinishedGame() implements RoundCommand { }
 
-    record RoundTimeout(int round) implements ContrabandGameCommand { }
+    record RoundTimeout(int round) implements RoundCommand { }
 
-    record RoundSelectionTimeout(int round) implements ContrabandGameCommand { }
+    record RoundSelectionTimeout(int round) implements SelectionCommand { }
 
     record SyncReconnectedPlayer(Long playerId) implements ContrabandGameCommand { }
 
-    record PrepareNextSelection(int nextRound) implements ContrabandGameCommand { }
+    record RoundReady(RoundReadySelection selection) implements SelectionCommand { }
 
-    record RoundReady(RoundReadySelection selection) implements ContrabandGameCommand { }
+    record StartSelectedRound(RoundReadySelection selection) implements RoundCommand { }
 
-    record StartSelectedRound(RoundReadySelection selection) implements ContrabandGameCommand { }
+    record PrepareNextSelection(int nextRound) implements SelectionCommand { }
 
     record GameCleanup() implements ContrabandGameCommand { }
 }
