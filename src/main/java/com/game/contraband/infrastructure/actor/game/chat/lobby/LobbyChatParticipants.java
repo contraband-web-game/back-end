@@ -1,7 +1,10 @@
 package com.game.contraband.infrastructure.actor.game.chat.lobby;
 
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
+import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateMaskedChatBatch;
+import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -32,5 +35,13 @@ public final class LobbyChatParticipants {
     public void forEach(Consumer<ActorRef<ClientSessionCommand>> action) {
         sessions.values()
                 .forEach(action);
+    }
+
+    public void broadcastMasked(List<Long> messageIds, ChatEventType chatEvent) {
+        PropagateMaskedChatBatch message = new PropagateMaskedChatBatch(messageIds, chatEvent);
+
+        for (ActorRef<ClientSessionCommand> target : sessions.values()) {
+            target.tell(message);
+        }
     }
 }
