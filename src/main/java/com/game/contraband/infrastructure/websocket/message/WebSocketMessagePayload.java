@@ -19,4 +19,14 @@ public interface WebSocketMessagePayload {
     record RoomDirectoryEntryPayload(Long roomId, String roomIdString, String lobbyName, int maxPlayerCount, int currentPlayerCount, String entityId, boolean gameStarted) implements WebSocketMessagePayload { }
 
     record RoomDirectoryUpdatedPayload(List<RoomDirectoryEntryPayload> rooms, int totalCount) implements WebSocketMessagePayload { }
+
+    record ChatWelcomePayload(String playerName) implements WebSocketMessagePayload { }
+
+    record ChatMessagePayload(Long messageId, Long writerId, String writerName, String message, String createdAt) implements WebSocketMessagePayload { }
+
+    record ChatLeftPayload(String playerName) implements WebSocketMessagePayload { }
+
+    record ChatKickedPayload(String playerName) implements WebSocketMessagePayload { }
+
+    record ChatMessageMaskedPayload(Long messageId, String chatEvent) implements WebSocketMessagePayload { }
 }
