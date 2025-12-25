@@ -2,6 +2,8 @@ package com.game.contraband.infrastructure.event;
 
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.monitor.payload.MonitorActorPayload;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorRole;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorState;
 import com.game.contraband.infrastructure.monitor.payload.MonitorMessage;
 import com.game.contraband.infrastructure.monitor.payload.MonitorRoomDirectoryPayload;
 import org.springframework.stereotype.Component;
@@ -23,7 +25,7 @@ public class MonitorEventBroadcaster {
         sink.tryEmitNext(message);
     }
 
-    public void publishActorEvent(String actorPath, String parentPath, String role, String state) {
+    public void publishActorEvent(String actorPath, String parentPath, MonitorActorRole role, MonitorActorState state) {
         publish(
                 new MonitorMessage(
                         MonitorEventType.ACTOR_EVENT,
