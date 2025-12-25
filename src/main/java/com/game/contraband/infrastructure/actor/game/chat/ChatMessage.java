@@ -8,8 +8,13 @@ public record ChatMessage(
         Long writerId,
         String writerName,
         String message,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean masked
 ) {
+    public ChatMessage(Long id, Long roomId, Long writerId, String writerName, String message, LocalDateTime createdAt) {
+        this(id, roomId, writerId, writerName, message, createdAt, false);
+    }
+
     public ChatMessage {
         if (roomId == null || roomId <= 0) {
             throw new IllegalArgumentException("GameRoom ID는 양수여야 합니다.");
@@ -22,5 +27,9 @@ public record ChatMessage(
         if (message == null || message.isEmpty()) {
             throw new IllegalArgumentException("메시지는 비어 있을 수 없습니다.");
         }
+    }
+
+    public ChatMessage markMasked() {
+        return new ChatMessage(id, roomId, writerId, writerName, message, createdAt, true);
     }
 }

@@ -113,23 +113,16 @@ public class ChatMessages {
         return result;
     }
 
-    public List<ChatMessage> maskMessagesByWriter(Long writerId, String maskedText) {
-        if (writerId == null || maskedText == null) {
+    public List<ChatMessage> maskMessagesByWriter(Long writerId) {
+        if (writerId == null) {
             return List.of();
         }
         List<ChatMessage> updated = new ArrayList<>();
         ChatMessageNode current = head.links().next;
         while (current != tail) {
             ChatMessage message = current.data;
-            if (writerId.equals(message.writerId()) && !maskedText.equals(message.message())) {
-                ChatMessage masked = new ChatMessage(
-                        message.id(),
-                        message.roomId(),
-                        message.writerId(),
-                        message.writerName(),
-                        maskedText,
-                        message.createdAt()
-                );
+            if (writerId.equals(message.writerId()) && !message.masked()) {
+                ChatMessage masked = message.markMasked();
                 ChatMessageNode maskedNode = new ChatMessageNode(masked);
                 current.replaceWith(maskedNode);
                 messageIdMap.put(masked.id(), maskedNode);

@@ -35,7 +35,7 @@ public class LobbyChatTimeline {
         return chatMessage;
     }
 
-    public List<ChatMessage> maskMessagesByWriter(Long playerId, String replacement) {
-        return chatMessages.maskMessagesByWriter(playerId, replacement);
+    public List<ChatMessage> maskMessagesByWriter(Long playerId) {
+        return chatMessages.maskMessagesByWriter(playerId);
     }
 }
