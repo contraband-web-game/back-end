@@ -32,4 +32,6 @@ public interface WebSocketMessagePayload {
     record ChatMessageMaskedPayload(Long messageId, String chatEvent) implements WebSocketMessagePayload { }
 
     record StartGamePayload(Long playerId, List<GameStartPlayer> allPlayers) implements WebSocketMessagePayload { }
+
+    record SelectionTimerPayload(int round, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) implements WebSocketMessagePayload { }
 }

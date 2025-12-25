@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ExceptionMessagePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryEntryPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryUpdatedPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SelectionTimerPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartGamePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessage;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessageType;
@@ -158,6 +159,16 @@ public class ClientWebSocketMessageSender {
         StartGamePayload payload = new StartGamePayload(playerId, allPlayers);
         WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
                 WebSocketOutboundMessageType.START_GAME,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendSelectionTimer(int round, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) {
+        SelectionTimerPayload payload = new SelectionTimerPayload(round, eventAtMillis, durationMillis, serverNowMillis, endAtMillis);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.ROUND_SELECTION_TIMER,
                 payload
         );
 

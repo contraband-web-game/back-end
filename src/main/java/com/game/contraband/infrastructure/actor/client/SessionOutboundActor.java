@@ -48,6 +48,7 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(RequestSessionReconnect.class, this::onRequestSessionReconnect)
                                   .onMessage(RoomDirectoryUpdated.class, this::onRoomDirectoryUpdated)
                                   .onMessage(PropagateStartGame.class, this::onPropagateStartGame)
+                                  .onMessage(PropagateSelectionTimer.class, this::onPropagateSelectionTimer)
                                   .build();
     }
 
@@ -87,6 +88,17 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateSelectionTimer(PropagateSelectionTimer command) {
+        sender.sendSelectionTimer(
+                command.round(),
+                command.eventAtMillis(),
+                command.durationMillis(),
+                command.serverNowMillis(),
+                command.endAtMillis()
+        );
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -96,4 +108,6 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record RoomDirectoryUpdated(List<RoomDirectorySnapshot> rooms, int totalCount) implements OutboundCommand { }
 
     public record PropagateStartGame(ActorRef<ContrabandGameCommand> smugglingGame, Long roomId, String entityId, List<GameStartPlayer> allPlayers) implements OutboundCommand { }
+
+    public record PropagateSelectionTimer(int round, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) implements OutboundCommand { }
 }
