@@ -1,6 +1,7 @@
 package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import java.util.List;
 
 public interface WebSocketMessagePayload {
@@ -29,4 +30,6 @@ public interface WebSocketMessagePayload {
     record ChatKickedPayload(String playerName) implements WebSocketMessagePayload { }
 
     record ChatMessageMaskedPayload(Long messageId, String chatEvent) implements WebSocketMessagePayload { }
+
+    record StartGamePayload(Long playerId, List<GameStartPlayer> allPlayers) implements WebSocketMessagePayload { }
 }

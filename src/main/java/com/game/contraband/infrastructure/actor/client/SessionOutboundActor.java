@@ -3,7 +3,10 @@ package com.game.contraband.infrastructure.actor.client;
 import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.OutboundCommand;
+import com.game.contraband.infrastructure.actor.client.ClientSessionActor.UpdateActiveGame;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
+import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -25,8 +28,14 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return Behaviors.setup(context -> new SessionOutboundActor(context, playerId, sender, gateway));
     }
 
-    private SessionOutboundActor(ActorContext<OutboundCommand> context, Long playerId, ClientWebSocketMessageSender sender, ActorRef<ClientSessionCommand> gateway) {
+    private SessionOutboundActor(
+            ActorContext<OutboundCommand> context,
+            Long playerId,
+            ClientWebSocketMessageSender sender,
+            ActorRef<ClientSessionCommand> gateway
+    ) {
         super(context);
+
         this.playerId = playerId;
         this.sender = sender;
         this.gateway = gateway;
@@ -37,6 +46,8 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return newReceiveBuilder().onMessage(HandleExceptionMessage.class, this::onHandleExceptionMessage)
                                   .onMessage(SendWebSocketPing.class, this::onSendWebSocketPing)
                                   .onMessage(RequestSessionReconnect.class, this::onRequestSessionReconnect)
+                                  .onMessage(RoomDirectoryUpdated.class, this::onRoomDirectoryUpdated)
+                                  .onMessage(PropagateStartGame.class, this::onPropagateStartGame)
                                   .build();
     }
 
@@ -60,6 +71,22 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateStartGame(PropagateStartGame command) {
+        GameStartPlayer targetLobbyParticipant = command.allPlayers().stream()
+                                                        .filter(player -> player.playerId().equals(playerId))
+                                                        .findAny()
+                                                        .orElse(null);
+
+        if (targetLobbyParticipant == null) {
+            return this;
+        }
+
+        this.teamRole = targetLobbyParticipant.teamRole();
+        sender.sendStartGame(playerId, command.allPlayers());
+        gateway.tell(new UpdateActiveGame(command.roomId(), command.entityId()));
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -67,4 +94,6 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record RequestSessionReconnect() implements OutboundCommand { }
 
     public record RoomDirectoryUpdated(List<RoomDirectorySnapshot> rooms, int totalCount) implements OutboundCommand { }
+
+    public record PropagateStartGame(ActorRef<ContrabandGameCommand> smugglingGame, Long roomId, String entityId, List<GameStartPlayer> allPlayers) implements OutboundCommand { }
 }

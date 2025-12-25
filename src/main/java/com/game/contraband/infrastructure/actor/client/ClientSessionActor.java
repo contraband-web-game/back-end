@@ -64,6 +64,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     private final ActorRef<InboundCommand> inbound;
     private final ActorRef<PresenceCommand> presence;
     private final ActorRef<ChatCommand> chat;
+    private ActiveGame activeGame;
 
     @Override
     public Receive<ClientSessionCommand> createReceive() {
@@ -71,6 +72,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(InboundCommand.class, this::forwardToInbound)
                                   .onMessage(PresenceCommand.class, this::forwardToPresence)
                                   .onMessage(ChatCommand.class, this::forwardToChat)
+                                  .onMessage(UpdateActiveGame.class, this::onUpdateActiveGame)
                                   .onMessage(ReSyncConnection.class, this::onReSyncConnection)
                                   .onSignal(PostStop.class, this::onPostStop)
                                   .build();
@@ -96,6 +98,11 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
         return this;
     }
 
+    private Behavior<ClientSessionCommand> onUpdateActiveGame(UpdateActiveGame command) {
+        this.activeGame = new ActiveGame(command.roomId(), command.entityId());
+        return this;
+    }
+
     private Behavior<ClientSessionCommand> onReSyncConnection(ReSyncConnection command) {
         inbound.tell(new SessionInboundActor.ReSyncConnection(command.playerId()));
         presence.tell(new SessionPresenceActor.ResubscribeRoomDirectory());
@@ -117,5 +124,9 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
 
     public interface PresenceCommand extends ClientSessionCommand { }
 
+    public record UpdateActiveGame(Long roomId, String entityId) implements ClientSessionCommand { }
+
     public record ReSyncConnection(Long playerId) implements ClientSessionCommand { }
+
+    private record ActiveGame(Long roomId, String entityId) { }
 }
