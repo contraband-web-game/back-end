@@ -54,6 +54,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(PropagateInspectorTeamChat.class, this::onPropagateInspectorTeamChat)
                                   .onMessage(PropagateRoundChat.class, this::onPropagateRoundChat)
                                   .onMessage(SyncContrabandGameChat.class, this::onSyncContrabandGameChat)
+                                  .onMessage(ClearContrabandGameChat.class, this::onClearContrabandGameChat)
                                   .build();
     }
 
@@ -102,6 +103,11 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         return this;
     }
 
+    private Behavior<ChatCommand> onClearContrabandGameChat(ClearContrabandGameChat command) {
+        contrabandGameChatHolder.clear();
+        return this;
+    }
+
     private static class ContrabandGameChatHolder {
 
         private GameChatRef ref;
@@ -147,4 +153,6 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     public record PropagateRoundChat(ChatMessage chatMessage) implements ChatCommand { }
 
     public record SyncContrabandGameChat(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
+
+    public record ClearContrabandGameChat() implements ChatCommand { }
 }
