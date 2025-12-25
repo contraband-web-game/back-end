@@ -9,6 +9,9 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.Client
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectorySubscriberActor;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.GameRoomCoordinatorCommand;
+import com.game.contraband.infrastructure.event.MonitorEventBroadcaster;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorRole;
+import com.game.contraband.infrastructure.monitor.payload.MonitorActorState;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
@@ -22,33 +25,56 @@ public class GuardianActor extends AbstractBehavior<GuardianCommand>  {
     public static Behavior<GuardianCommand> create(
             ActorRef<RoomDirectoryCommand> roomDirectory,
             ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator,
+            MonitorEventBroadcaster monitorEventBroadcaster,
             ChatBlacklistRepository chatBlacklistRepository
     ) {
         return Behaviors.setup(
-                context -> new GuardianActor(
-                        context,
-                        roomDirectory,
-                        gameRoomsCoordinator,
-                        chatBlacklistRepository
-                )
+                context -> {
+                    publishCreatedActorEvent(context, monitorEventBroadcaster);
+
+                    return new GuardianActor(
+                            context,
+                            roomDirectory,
+                            gameRoomsCoordinator,
+                            monitorEventBroadcaster,
+                            chatBlacklistRepository
+                    );
+                }
         );
+    }
+
+    private static void publishCreatedActorEvent(
+            ActorContext<GuardianCommand> context,
+            MonitorEventBroadcaster monitorEventBroadcaster
+    ) {
+        if (monitorEventBroadcaster != null) {
+            monitorEventBroadcaster.publishActorEvent(
+                    context.getSelf().path().toString(),
+                    context.getSelf().path().parent().toString(),
+                    MonitorActorRole.GUARDIAN_ACTOR,
+                    MonitorActorState.CREATED
+            );
+        }
     }
 
     private GuardianActor(
             ActorContext<GuardianCommand> context,
             ActorRef<RoomDirectoryCommand> roomDirectory,
             ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator,
+            MonitorEventBroadcaster monitorEventBroadcaster,
             ChatBlacklistRepository chatBlacklistRepository
     ) {
         super(context);
 
         this.roomDirectory = roomDirectory;
         this.gameRoomsCoordinator = gameRoomsCoordinator;
+        this.monitorEventBroadcaster = monitorEventBroadcaster;
         this.chatBlacklistRepository = chatBlacklistRepository;
     }
 
     private final ActorRef<RoomDirectoryCommand> roomDirectory;
     private final ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator;
+    private final MonitorEventBroadcaster monitorEventBroadcaster;
     private final ChatBlacklistRepository chatBlacklistRepository;
 
     @Override
@@ -60,7 +86,7 @@ public class GuardianActor extends AbstractBehavior<GuardianCommand>  {
 
     private Behavior<GuardianCommand> onSpawnClientSession(SpawnClientSession command) {
         ActorRef<LocalDirectoryCommand> localCache = getContext().spawn(
-                RoomDirectorySubscriberActor.create(roomDirectory),
+                RoomDirectorySubscriberActor.create(roomDirectory, monitorEventBroadcaster),
                 "room-directory-cache-" + command.playerId()
         );
         ActorRef<ClientSessionCommand> clientSession = getContext().spawn(

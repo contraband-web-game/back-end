@@ -5,8 +5,10 @@ import com.game.contraband.global.actor.GuardianActor;
 import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
+import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.GameRoomCoordinatorCommand;
+import com.game.contraband.infrastructure.event.MonitorEventBroadcaster;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
@@ -36,6 +38,8 @@ public class ActorConfig {
 
     private final Environment environment;
     private final ChatBlacklistRepository chatBlacklistRepository;
+    private final MonitorEventBroadcaster monitorEventBroadcaster;
+    private final GameLifecycleEventPublisher gameLifecycleEventPublisher;
 
     @Bean
     public ClusterSharding clusterSharding(ActorSystem<GuardianCommand> system) {
@@ -58,7 +62,8 @@ public class ActorConfig {
                     ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator = clusterSingleton.init(
                             SingletonActor.of(
                                     GameRoomCoordinatorEntity.create(
-                                            DEFAULT_MAX_ROOMS_PER_ENTITY
+                                            DEFAULT_MAX_ROOMS_PER_ENTITY,
+                                            gameLifecycleEventPublisher
                                     ),
                                     "game-rooms-coordinator"
                             )
@@ -67,6 +72,7 @@ public class ActorConfig {
                     return GuardianActor.create(
                             roomDirectory,
                             gameRoomsCoordinator,
+                            monitorEventBroadcaster,
                             chatBlacklistRepository
                     );
                 }),

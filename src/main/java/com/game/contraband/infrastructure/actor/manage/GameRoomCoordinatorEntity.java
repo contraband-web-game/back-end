@@ -3,6 +3,7 @@ package com.game.contraband.infrastructure.actor.manage;
 import static com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.*;
 
 import com.game.contraband.global.actor.CborSerializable;
+import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -17,19 +18,30 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
 
     private static final String ENTITY_ID_PREFIX = "game-rooms-";
 
-    public static Behavior<GameRoomCoordinatorCommand> create(int maxRoomsPerEntity) {
-        return Behaviors.setup(context -> new GameRoomCoordinatorEntity(context, maxRoomsPerEntity));
+    public static Behavior<GameRoomCoordinatorCommand> create(
+            int maxRoomsPerEntity,
+            GameLifecycleEventPublisher gameLifecycleEventPublisher
+    ) {
+        return Behaviors.setup(
+                context -> new GameRoomCoordinatorEntity(context, maxRoomsPerEntity, gameLifecycleEventPublisher)
+        );
     }
 
-    private GameRoomCoordinatorEntity(ActorContext<GameRoomCoordinatorCommand> context, int maxRoomsPerEntity) {
+    private GameRoomCoordinatorEntity(
+            ActorContext<GameRoomCoordinatorCommand> context,
+            int maxRoomsPerEntity,
+            GameLifecycleEventPublisher gameLifecycleEventPublisher
+    ) {
         super(context);
 
         this.maxRoomsPerEntity = maxRoomsPerEntity;
+        this.gameLifecycleEventPublisher = gameLifecycleEventPublisher;
     }
 
     private final int maxRoomsPerEntity;
     private final Map<String, Integer> entityRoomCounts = new HashMap<>();
     private final Map<Long, String> roomToEntity = new HashMap<>();
+    private final GameLifecycleEventPublisher gameLifecycleEventPublisher;
     private Long entityIdSequence = 1L;
 
     @Override
@@ -56,9 +68,18 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
 
         if (entityId != null && entityRoomCounts.containsKey(entityId)) {
             entityRoomCounts.compute(entityId, (k, v) -> v == null || v <= 1 ? 0 : v - 1);
+            publishRoomRemovedEvent(command, entityId);
         }
 
         return this;
+    }
+
+    private void publishRoomRemovedEvent(SyncRoomRemoved command, String entityId) {
+        if (entityRoomCounts.get(entityId) == 0) {
+            gameLifecycleEventPublisher.publishEntityRemoved(entityId);
+        }
+
+        gameLifecycleEventPublisher.publishRoomRemoved(entityId, command.roomId());
     }
 
     private Behavior<GameRoomCoordinatorCommand> onResolveEntityId(ResolveEntityId command) {
@@ -103,6 +124,7 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
         String newId = entityIdForSequence(entityIdSequence++);
 
         entityRoomCounts.put(newId, 0);
+        gameLifecycleEventPublisher.publishEntityCreated(newId);
         return newId;
     }
 
