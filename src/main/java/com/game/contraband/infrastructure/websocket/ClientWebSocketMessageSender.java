@@ -1,5 +1,7 @@
 package com.game.contraband.infrastructure.websocket;
 
+import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
@@ -10,6 +12,8 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessagePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatWelcomePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ExceptionMessagePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FinishedGamePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FinishedRoundPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedInspectorIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.InspectorApprovalStatePayload;
@@ -20,6 +24,7 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SelectionTimerPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SmugglerApprovalStatePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartGamePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartNewRoundPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.WebSocketEmptyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessage;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessageType;
@@ -264,6 +269,60 @@ public class ClientWebSocketMessageSender {
         );
         WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
                 WebSocketOutboundMessageType.INSPECTOR_APPROVAL_STATE,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendStartNewRound(
+            int currentRound,
+            Long smugglerId,
+            Long inspectorId,
+            long eventAtMillis,
+            long durationMillis,
+            long serverNowMillis,
+            long endAtMillis
+    ) {
+        StartNewRoundPayload payload = new StartNewRoundPayload(currentRound, smugglerId, inspectorId, eventAtMillis, durationMillis, serverNowMillis, endAtMillis);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.START_NEW_ROUND,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFinishedRound(
+            Long smugglerId,
+            int smugglerAmount,
+            Long inspectorId,
+            int inspectorAmount,
+            RoundOutcomeType outcomeType
+    ) {
+        FinishedRoundPayload payload = new FinishedRoundPayload(
+                smugglerId,
+                smugglerAmount,
+                inspectorId,
+                inspectorAmount,
+                outcomeType
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FINISHED_ROUND,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFinishedGame(GameWinnerType gameWinnerType, int smugglerTotalBalance, int inspectorTotalBalance) {
+        FinishedGamePayload payload = new FinishedGamePayload(
+                gameWinnerType,
+                smugglerTotalBalance,
+                inspectorTotalBalance
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FINISHED_GAME,
                 payload
         );
 

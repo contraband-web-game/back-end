@@ -1,6 +1,9 @@
 package com.game.contraband.infrastructure.actor.client;
 
+import com.game.contraband.domain.game.engine.match.GameWinnerType;
 import com.game.contraband.domain.game.player.TeamRole;
+import com.game.contraband.domain.game.round.RoundOutcomeType;
+import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClearActiveGame;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.OutboundCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.UpdateActiveGame;
@@ -58,6 +61,9 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(PropagateFixedInspectorIdForSmuggler.class, this::onPropagateFixedInspectorIdForSmuggler)
                                   .onMessage(PropagateSmugglerApprovalState.class, this::onPropagateSmugglerApprovalState)
                                   .onMessage(PropagateInspectorApprovalState.class, this::onPropagateInspectorApprovalState)
+                                  .onMessage(PropagateStartNewRound.class, this::onPropagateStartNewRound)
+                                  .onMessage(PropagateFinishedRound.class, this::onPropagateFinishedRound)
+                                  .onMessage(PropagateFinishedGame.class, this::onPropagateFinishedGame)
                                   .build();
     }
 
@@ -180,6 +186,40 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateStartNewRound(PropagateStartNewRound command) {
+        sender.sendStartNewRound(
+                command.currentRound(),
+                command.smugglerId(),
+                command.inspectorId(),
+                command.eventAtMillis(),
+                command.durationMillis(),
+                command.serverNowMillis(),
+                command.endAtMillis()
+        );
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateFinishedRound(PropagateFinishedRound command) {
+        sender.sendFinishedRound(
+                command.smugglerId(),
+                command.smugglerAmount(),
+                command.inspectorId(),
+                command.inspectorAmount(),
+                command.outcomeType()
+        );
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateFinishedGame(PropagateFinishedGame command) {
+        sender.sendFinishedGame(
+                command.gameWinnerType(),
+                command.smugglerTotalBalance(),
+                command.inspectorTotalBalance()
+        );
+        gateway.tell(new ClearActiveGame());
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -207,4 +247,10 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record PropagateSmugglerApprovalState(Long candidateId, Set<Long> approverIds, boolean fixed) implements OutboundCommand { }
 
     public record PropagateInspectorApprovalState(Long candidateId, Set<Long> approverIds, boolean fixed) implements OutboundCommand { }
+
+    public record PropagateStartNewRound(int currentRound, Long smugglerId, Long inspectorId, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) implements OutboundCommand { }
+
+    public record PropagateFinishedRound(Long smugglerId, int smugglerAmount, Long inspectorId, int inspectorAmount, RoundOutcomeType outcomeType) implements OutboundCommand { }
+
+    public record PropagateFinishedGame(GameWinnerType gameWinnerType, int smugglerTotalBalance, int inspectorTotalBalance) implements OutboundCommand { }
 }

@@ -1,6 +1,8 @@
 package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import java.util.List;
 
@@ -46,4 +48,10 @@ public interface WebSocketMessagePayload {
     record SmugglerApprovalStatePayload(Long candidateId, List<Long> approverIds, boolean fixed) implements WebSocketMessagePayload { }
 
     record InspectorApprovalStatePayload(Long candidateId, List<Long> approverIds, boolean fixed) implements WebSocketMessagePayload { }
+
+    record StartNewRoundPayload(int currentRound, Long smugglerId, Long inspectorId, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) implements WebSocketMessagePayload { }
+
+    record FinishedRoundPayload(Long smugglerId, int smugglerAmount, Long inspectorId, int inspectorAmount, RoundOutcomeType outcomeType) implements WebSocketMessagePayload { }
+
+    record FinishedGamePayload(GameWinnerType gameWinnerType, int smugglerTotalBalance, int inspectorTotalBalance) implements WebSocketMessagePayload { }
 }
