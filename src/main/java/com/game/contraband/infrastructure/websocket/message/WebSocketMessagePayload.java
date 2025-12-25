@@ -34,4 +34,16 @@ public interface WebSocketMessagePayload {
     record StartGamePayload(Long playerId, List<GameStartPlayer> allPlayers) implements WebSocketMessagePayload { }
 
     record SelectionTimerPayload(int round, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) implements WebSocketMessagePayload { }
+
+    record RegisteredSmugglerIdPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record FixedSmugglerIdPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record RegisteredInspectorIdPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record FixedInspectorIdPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record SmugglerApprovalStatePayload(Long candidateId, List<Long> approverIds, boolean fixed) implements WebSocketMessagePayload { }
+
+    record InspectorApprovalStatePayload(Long candidateId, List<Long> approverIds, boolean fixed) implements WebSocketMessagePayload { }
 }

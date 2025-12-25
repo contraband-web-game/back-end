@@ -5,4 +5,6 @@ public enum ExceptionCode {
 
     CHAT_MESSAGE_EMPTY,
     CHAT_USER_BLOCKED,
+
+    GAME_INVALID_STATE
 }
