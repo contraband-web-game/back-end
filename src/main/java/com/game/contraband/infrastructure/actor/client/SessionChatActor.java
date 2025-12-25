@@ -41,7 +41,12 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     @Override
     public Receive<ChatCommand> createReceive() {
-        return newReceiveBuilder().build();
+        return newReceiveBuilder().onMessage(PropagateWelcomeMessage.class, this::onPropagateWelcomeMessage)
+                                  .onMessage(PropagateNewMessage.class, this::onPropagateNewMessage)
+                                  .onMessage(PropagateLeftMessage.class, this::onPropagateLeftMessage)
+                                  .onMessage(PropagateKickedMessage.class, this::onPropagateKickedMessage)
+                                  .onMessage(PropagateMaskedChatMessage.class, this::onPropagateMaskedChatMessage)
+                                  .build();
     }
 
     private Behavior<ChatCommand> onPropagateWelcomeMessage(PropagateWelcomeMessage command) {
