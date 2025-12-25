@@ -2,7 +2,7 @@ package com.game.contraband.infrastructure.actor.game.engine.match;
 
 import com.game.contraband.domain.game.vo.Money;
 import com.game.contraband.global.actor.CborSerializable;
-import com.game.contraband.infrastructure.actor.game.engine.match.round.ContrabandRoundActor.RoundReadySelection;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 
 public interface ContrabandGameProtocol {
 
@@ -42,7 +42,7 @@ public interface ContrabandGameProtocol {
 
     record PrepareNextSelection(int nextRound) implements ContrabandGameCommand { }
 
-    record RoundReady(Long smugglerId, Long inspectorId, int round) implements ContrabandGameCommand { }
+    record RoundReady(RoundReadySelection selection) implements ContrabandGameCommand { }
 
     record StartSelectedRound(RoundReadySelection selection) implements ContrabandGameCommand { }
 

@@ -32,6 +32,7 @@ import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGame
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.TransferAmount;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.time.Duration;
 import java.time.Instant;
@@ -69,20 +70,12 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
         );
     }
 
+    private final Long roomId;
+    private final String entityId;
     private final RoundGameContext gameContext;
     private final RoundClientMessenger clientMessenger;
     private final RoundChatCoordinator chatCoordinator;
     private final RoundFlowState roundState;
-    private final Long roomId;
-    private final String entityId;
-
-    private interface ClientCommand {
-        void execute();
-    }
-
-    private interface TotalCommand {
-        void execute();
-    }
 
     private ContrabandRoundActor(
             ActorContext<ContrabandGameCommand> context,
@@ -519,5 +512,11 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
         return gameContext.buildStartPlayerEntries();
     }
 
-    public record RoundReadySelection(Long smugglerId, Long inspectorId, int round) { }
+    private interface ClientCommand {
+        void execute();
+    }
+
+    private interface TotalCommand {
+        void execute();
+    }
 }

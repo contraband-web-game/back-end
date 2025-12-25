@@ -1,6 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.round;
 
-import com.game.contraband.infrastructure.actor.game.engine.match.round.ContrabandRoundActor.RoundReadySelection;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;

@@ -24,6 +24,7 @@ import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGame
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.RoundSelectionTimeout;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.StartNewRound;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.time.Duration;
 import java.time.Instant;
@@ -57,12 +58,6 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
         );
     }
 
-    private final SelectionClientMessenger clientMessenger;
-    private final SelectionChatCoordinator chatCoordinator;
-    private final ActorRef<ContrabandGameCommand> facade;
-    private final SelectionState selectionState;
-    private final SelectionParticipants participants;
-
     private ContrabandSelectionActor(
             ActorContext<ContrabandGameCommand> context,
             SelectionClientMessenger clientMessenger,
@@ -77,6 +72,12 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
         this.selectionState = new SelectionState();
         this.participants = participants;
     }
+
+    private final SelectionClientMessenger clientMessenger;
+    private final SelectionChatCoordinator chatCoordinator;
+    private final ActorRef<ContrabandGameCommand> facade;
+    private final SelectionState selectionState;
+    private final SelectionParticipants participants;
 
     private ContrabandSelectionActor initialize() {
         seedInitialRoundIfSinglePerTeam();
@@ -234,9 +235,11 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
             cancelSelectionTimeout();
             facade.tell(
                     new RoundReady(
-                            selectionState.smugglerId(),
-                            selectionState.inspectorId(),
-                            selectionState.currentRound()
+                            new RoundReadySelection(
+                                    selectionState.smugglerId(),
+                                    selectionState.inspectorId(),
+                                    selectionState.currentRound()
+                            )
                     )
             );
             facade.tell(new StartNewRound());
@@ -268,7 +271,7 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
         clientMessenger.tellTeam(TeamRole.INSPECTOR, new PropagateRegisterInspectorId(inspector));
         clientMessenger.tellTeam(TeamRole.INSPECTOR, new PropagateFixedInspectorId(inspector));
         chatCoordinator.syncRoundChatId(smuggler, inspector);
-        facade.tell(new RoundReady(smuggler, inspector, selectionState.currentRound()));
+        facade.tell(new RoundReady(new RoundReadySelection(smuggler, inspector, selectionState.currentRound())));
         facade.tell(new StartNewRound());
     }
 
