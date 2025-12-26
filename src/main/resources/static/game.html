@@ -1325,6 +1325,9 @@
       const serverNow = payload?.serverNowMillis ?? Date.now();
       const eventAt = payload?.eventAtMillis ?? serverNow;
       const alreadyRunning = serverNow >= eventAt + 1000; // 재접속 시 이미 진행 중이면 모달 생략
+      const nextRoundNumber = payload?.currentRound ?? state.round ?? 1;
+      const isHeadToHead = (state.players?.length || 0) === 2;
+      const skipSelectionModalForHeadToHead = isHeadToHead && nextRoundNumber >= 2;
 
       // Show Selection Complete Modal, then proceed
       const smugglerMessage = `<div class="text-xl mb-2 text-ink">짐을 정리해라. 곧 관문을 통과한다.</div>`;
@@ -1336,7 +1339,7 @@
           roundStartLogic();
       };
 
-      if (alreadyRunning) {
+      if (alreadyRunning || skipSelectionModalForHeadToHead) {
           closeGameModal();
           proceed();
           return;
