@@ -75,6 +75,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(UpdateActiveGame.class, this::onUpdateActiveGame)
                                   .onMessage(ClearActiveGame.class, this::onClearActiveGame)
                                   .onMessage(ReSyncClientSession.class, this::onReSyncClientSession)
+                                  .onMessage(FetchRoomDirectoryPage.class, this::onFetchRoomDirectoryPage)
                                   .onSignal(PostStop.class, this::onPostStop)
                                   .build();
     }
@@ -115,6 +116,11 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
         return this;
     }
 
+    private Behavior<ClientSessionCommand> onFetchRoomDirectoryPage(FetchRoomDirectoryPage command) {
+        presence.tell(new SessionPresenceActor.RequestRoomDirectoryPageCommand(command.page(), command.size()));
+        return this;
+    }
+
     private Behavior<ClientSessionCommand> onPostStop(PostStop signal) {
         presence.tell(new SessionPresenceActor.UnregisterSessionCommand());
         return this;
@@ -135,6 +141,8 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     public record ReSyncClientSession(Long playerId) implements ClientSessionCommand { }
 
     public record ClearActiveGame() implements ClientSessionCommand { }
+
+    public record FetchRoomDirectoryPage(int page, int size) implements ClientSessionCommand { }
 
     private record ActiveGame(Long roomId, String entityId) { }
 }

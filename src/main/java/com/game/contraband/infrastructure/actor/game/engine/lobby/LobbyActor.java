@@ -93,7 +93,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
                                   .onMessage(ToggleTeam.class, this::onToggleTeam)
                                   .onMessage(LeaveLobby.class, this::onLeaveLobby)
                                   .onMessage(KickPlayer.class, this::onKickPlayer)
-                                  .onMessage(DeleteLobby.class, this::onDeleteLobby)
+                                  .onMessage(RequestDeleteLobby.class, this::onDeleteLobby)
                                   .onMessage(StartGame.class, this::onStartGame)
                                   .onMessage(EndGame.class, this::onEndGame)
                                   .onMessage(ReSyncPlayer.class, this::onResyncPlayer)
@@ -337,7 +337,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         return this;
     }
 
-    private Behavior<LobbyCommand> onDeleteLobby(DeleteLobby command) {
+    private Behavior<LobbyCommand> onDeleteLobby(RequestDeleteLobby command) {
         ActorRef<ClientSessionCommand> executorClientSession = sessionRegistry.get(command.executorId());
 
         if (executorClientSession == null) {
@@ -470,7 +470,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
 
     public record KickPlayer(Long executorId, Long targetPlayerId) implements LobbyCommand { }
 
-    public record DeleteLobby(Long executorId) implements LobbyCommand { }
+    public record RequestDeleteLobby(Long executorId) implements LobbyCommand { }
 
     public record StartGame(Long executorId, int totalRounds) implements LobbyCommand { }
 
