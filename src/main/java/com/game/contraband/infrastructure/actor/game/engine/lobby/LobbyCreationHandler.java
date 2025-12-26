@@ -45,7 +45,7 @@ public class LobbyCreationHandler {
             String lobbyName,
             ChatMessageEventPublisher chatMessageEventPublisher
     ) {
-        long roomId = roomSequenceGenerator.nextSequence();
+        Long roomId = roomSequenceGenerator.nextSequence();
         String resolvedLobbyName = resolveLobbyName(lobbyName, roomId);
         PlayerProfile hostProfile = PlayerProfile.create(hostId, hostName, TeamRole.INSPECTOR);
         Lobby lobby = Lobby.create(roomId, resolvedLobbyName, hostProfile, maxPlayerCount);
