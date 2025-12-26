@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Contraband Actor Monitor</title>
+    <script src="js/rules-modal.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Inter','Noto Sans KR',system-ui,-apple-system,sans-serif; background:#0f172a; color:#e5e7eb; padding:16px; }
+        h1 { margin:0 0 12px; }
+        #status { margin-bottom:10px; color:#a5b4fc; }
+        #tree { background:#0b1220; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px; min-height:200px; max-height:80vh; overflow:auto; }
+        ul { list-style:none; padding-left:16px; }
+        li { margin:4px 0; }
+        .node { padding:4px 6px; border-radius:6px; display:inline-block; background:#111827; border:1px solid rgba(255,255,255,0.06); }
+        .state-created { color:#34d399; }
+        .state-stopped { color:#f87171; text-decoration:line-through; }
+        * { scrollbar-width: thin; scrollbar-color: #94a3b8 #0b1220; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0b1220; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; border: 1px solid #111827; }
+    </style>
+</head>
+<body>
+<h1>Actor 트리 모니터</h1>
+<div id="status">연결 중...</div>
+<div id="tree"></div>
+
+<script>
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/monitor-ws');
+    const statusEl = document.getElementById('status');
+    const treeEl = document.getElementById('tree');
+
+    const actors = new Map(); // path -> { parent, role, state }
+
+    ws.onopen = () => statusEl.textContent = '연결됨';
+    ws.onclose = () => statusEl.textContent = '연결 종료됨';
+    ws.onerror = (err) => statusEl.textContent = '에러: ' + err;
+    ws.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            if (msg.type !== 'ACTOR_EVENT') return;
+            const p = msg.payload;
+            if (p.state === 'CREATED') {
+                actors.set(p.actorPath, { parent: p.parentPath, role: p.role, state: 'CREATED' });
+            } else if (p.state === 'STOPPED') {
+                if (actors.has(p.actorPath)) {
+                    actors.get(p.actorPath).state = 'STOPPED';
+                } else {
+                    actors.set(p.actorPath, { parent: p.parentPath, role: p.role, state: 'STOPPED' });
+                }
+            }
+            render();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    function render() {
+        // build tree: parent->children
+        const childrenMap = new Map();
+        actors.forEach((v, path) => {
+            const parent = v.parent || 'ROOT';
+            if (!childrenMap.has(parent)) childrenMap.set(parent, []);
+            childrenMap.get(parent).push({ path, ...v });
+        });
+
+        const roots = childrenMap.get('ROOT') || [];
+        treeEl.innerHTML = renderNodes(roots, childrenMap);
+    }
+
+    function renderNodes(nodes, childrenMap) {
+        let html = '<ul>';
+        nodes.forEach(node => {
+            const cls = node.state === 'STOPPED' ? 'state-stopped' : 'state-created';
+            html += `<li><span class="node ${cls}">${node.role} ${node.path}</span>`;
+            const kids = childrenMap.get(node.path) || [];
+            if (kids.length > 0) {
+                html += renderNodes(kids, childrenMap);
+            }
+            html += '</li>';
+        });
+        html += '</ul>';
+        return html;
+    }
+</script>
+</body>
+</html>

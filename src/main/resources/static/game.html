@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTRABAND: Operation</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&family=Gloria+Hallelujah&family=East+Sea+Dokdo&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/cb-common.js"></script>
+  <script src="js/rules-modal.js"></script>
+
+  <!-- Config & Styles -->
+  <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    display: ['Creepster', 'East Sea Dokdo', 'cursive'],
+                    hand: ['Amatic SC', 'East Sea Dokdo', 'cursive'],
+                    body: ['Gloria+Hallelujah', 'Nanum Pen Script', 'cursive'],
+                },
+                colors: {
+                    paper: { DEFAULT: '#d5bdaf', dark: '#b08968' },
+                    ink: { DEFAULT: '#2f1b1b', red: '#7f1d1d' }
+                },
+                boxShadow: { 'sketch': '2px 2px 0px 0px rgba(0,0,0,0.8)' },
+                animation: {
+                    'wiggle': 'wiggle 1s ease-in-out infinite',
+                    'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) infinite',
+                },
+                keyframes: {
+                    wiggle: {
+                        '0%, 100%': { transform: 'rotate(-1deg)' },
+                        '50%': { transform: 'rotate(1deg)' },
+                    },
+                    shake: {
+                        '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                        '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                        '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                        '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                    }
+                }
+            }
+        }
+    }
+  </script>
+  <style>
+    body {
+        background-color: #1a1515;
+        color: #2f1b1b;
+        background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+    }
+    .sketch-box {
+        background-color: #d5bdaf;
+        border: 2px solid #000;
+        position: relative;
+        border-radius: 4px;
+        box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+        transition: all 0.2s ease-in-out;
+        background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    }
+    .sketch-btn {
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-weight: 700;
+        font-size: 1.5rem;
+        background: #2f1b1b;
+        color: #d5bdaf;
+        border: none;
+        clip-path: polygon(0% 5%, 5% 0%, 95% 0%, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0% 95%, 2% 50%, 0% 5%);
+        transition: transform 0.1s;
+        cursor: pointer;
+    }
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #d5bdaf #2f1b1b;
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #2f1b1b; }
+    ::-webkit-scrollbar-thumb { background: #d5bdaf; border: 2px solid #000; }
+    .sketch-btn:hover { transform: scale(1.05) rotate(1deg); color: #fff; }
+    .sketch-btn.red { background: #7f1d1d; color: white; }
+    .sketch-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #555; }
+
+    .hand-input {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid #2f1b1b;
+        font-family: 'Nanum Pen Script', cursive;
+        font-size: 1.8rem;
+        color: #2f1b1b;
+        outline: none;
+        width: 100%;
+        text-align: center;
+    }
+
+    .hand-input::-webkit-outer-spin-button,
+    .hand-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .hand-input[type=number] { -moz-appearance: textfield; }
+
+    .amount-stepper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: rgba(0,0,0,0.06);
+        padding: 0.75rem 1rem;
+        border: 2px solid #2f1b1b;
+        border-radius: 10px;
+        box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+    }
+    .amount-display {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f8f1e6;
+        border: 2px dashed #2f1b1b;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        min-width: 140px;
+        justify-content: center;
+    }
+    .amount-display .currency {
+        font-family: 'Creepster', cursive;
+        font-size: 1.6rem;
+        color: #7f1d1d;
+    }
+    .amount-arrow {
+        width: 52px;
+        height: 52px;
+        border: 2px solid #2f1b1b;
+        background: linear-gradient(135deg, #2f1b1b, #4a2f2f);
+        color: #d5bdaf;
+        border-radius: 50%;
+        box-shadow: 3px 3px 0 rgba(0,0,0,0.35);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .amount-arrow:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 4px 6px 0 rgba(0,0,0,0.4);
+        background: linear-gradient(135deg, #4a2f2f, #7f1d1d);
+    }
+    .amount-hint {
+        font-family: 'Nanum Pen Script', cursive;
+        font-size: 1.1rem;
+        color: #2f1b1b;
+        opacity: 0.7;
+    }
+    .amount-stepper.red { border-color: #7f1d1d; }
+    .amount-arrow.red {
+        border-color: #7f1d1d;
+        background: linear-gradient(135deg, #7f1d1d, #9a2f2f);
+    }
+    .amount-arrow.red:hover {
+        background: linear-gradient(135deg, #9a2f2f, #b53a3a);
+    }
+
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+        pointer-events: none;
+        z-index: 50;
+    }
+
+    .player-card {
+        border: 2px solid #2f1b1b;
+        padding: 8px;
+        margin-bottom: 8px;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255,255,255,0.1);
+        transform: rotate(-0.5deg);
+        border-radius: 4px;
+    }
+    .player-card.active {
+        background: #e3d5ca;
+        border-color: #7f1d1d;
+        color: #7f1d1d;
+        font-weight: bold;
+        transform: scale(1.02);
+    }
+    .player-card.transferred {
+        opacity: 0.6;
+        text-decoration: line-through;
+        border-color: #555;
+    }
+    .transfer-btn {
+        font-size: 1.2rem;
+        padding: 2px 8px;
+        margin-left: 8px;
+        background: #2f1b1b;
+        color: #d5bdaf;
+        border: 1px dashed #d5bdaf;
+        transform: rotate(2deg);
+        cursor: pointer;
+        z-index: 10;
+        position: relative;
+    }
+    .transfer-btn:hover {
+        background: #7f1d1d;
+        color: white;
+        transform: scale(1.1) rotate(0deg);
+    }
+
+    .money-hidden {
+        filter: blur(5px);
+        opacity: 0.7;
+        user-select: none;
+        cursor: default;
+    }
+
+    /* Timer Styles */
+    .timer-bar-container {
+        width: 100%;
+        height: 12px;
+        border: 2px solid #2f1b1b;
+        border-radius: 6px;
+        margin: 10px 0;
+        overflow: hidden;
+        background: rgba(47, 27, 27, 0.1);
+    }
+    .timer-bar {
+        height: 100%;
+        background: #ffffff; /* 초기값: 흰색 */
+        width: 100%;
+        transition: width 1s linear, background-color 0.3s;
+    }
+    .timer-bar.warning { background: #f97316; /* 주황색 (10초 이하) */ }
+    .timer-bar.urgent { background: #ef4444; /* 빨간색 (5초 이하) */ }
+
+    /* Timer Text Animation */
+    #timer-text {
+        display: inline-block;
+        min-width: 60px;
+        text-align: left;
+    }
+
+    /* 10 seconds remaining (Orange) */
+    .warning-text {
+        color: #f97316 !important;
+        text-shadow: 1px 1px 0px #000;
+        font-weight: bold;
+    }
+
+    /* 5 seconds remaining (Red + Strong Shake) */
+    @keyframes strong-shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(-3px, 0px) rotate(1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-3px, 1px) rotate(0deg); }
+        70% { transform: translate(3px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+
+    .urgent-text {
+        color: #ef4444 !important;
+        animation: strong-shake 0.5s infinite; /* 애니메이션 강화 */
+        text-shadow: 2px 2px 0px #000;
+        font-weight: bold;
+        display: inline-block;
+    }
+
+    .chat-container {
+        height: 200px;
+        overflow-y: auto;
+        font-family: 'Nanum Pen Script', cursive;
+        font-size: 1.2rem;
+        border-top: 1px dashed #2f1b1b;
+        padding-top: 5px;
+    }
+    .chat-msg {
+        margin-bottom: 4px;
+        text-align: left; /* FORCE LEFT ALIGN */
+        color: #2f1b1b;
+    }
+    .chat-msg.me {
+        /* No right align, just color change */
+        color: #7f1d1d;
+        font-weight: bold;
+    }
+    .chat-blocked {
+        color: #6b7280;
+        text-decoration: line-through;
+    }
+
+    .blurred { filter: blur(2px); opacity: 0.7; pointer-events: none; }
+    .hidden-view { display: none !important; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2f1b1b; border-radius: 3px; }
+
+    /* Toast Notification Styles */
+    #toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast-message {
+        background-color: #2f1b1b;
+        color: #d5bdaf;
+        padding: 12px 20px;
+        border: 2px solid #000;
+        border-radius: 2px 15px 3px 10px;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+        font-weight: bold;
+        box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.5s ease-out;
+        pointer-events: auto;
+    }
+
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .chat-scroll {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    /* Selection Phase */
+    .selection-slot {
+        cursor: pointer;
+        transition: background-color 0.1s;
+    }
+    .selection-slot.disabled-selection {
+        cursor: default;
+    }
+    .selection-slot.locked {
+        pointer-events: none;
+        background-color: #064e3b33 !important;
+        border-color: #064e3b !important;
+        box-shadow: 0 0 10px rgba(6, 78, 59, 0.5);
+    }
+    .selection-slot.candidate {
+        background-color: #7f1d1d1a;
+        border-color: #7f1d1d80;
+    }
+    .selection-slot:not(.locked):hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .selection-slot.disabled-selection:hover {
+        background-color: inherit;
+    }
+    .lock-btn {
+        background-color: #2f1b1b;
+        color: #d5bdaf;
+    }
+    .lock-btn.approved {
+        background-color: #064e3b;
+        color: white;
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
+
+<div class="vignette"></div>
+<div class="fixed inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ce6fec56?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center pointer-events-none grayscale contrast-150"></div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Game Notification Modal -->
+<div id="game-modal" class="hidden-view fixed inset-0 z-50 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/95 backdrop-blur-md transition-opacity"></div>
+  <div class="sketch-box p-8 w-full max-w-lg relative z-10 rotate-1 bg-[#e3d5ca] text-center border-4 border-ink">
+    <h2 id="modal-title" class="font-display text-5xl text-ink mb-4 border-b-2 border-dashed border-ink/50 pb-2">NOTIFICATION</h2>
+    <div id="modal-content" class="font-hand text-3xl text-ink mb-8 leading-relaxed"></div>
+
+    <div id="modal-countdown" class="font-hand text-xl text-ink/30 mb-2"></div>
+
+  </div>
+</div>
+
+<!-- Header Info -->
+<header class="bg-[#2a2422] border-b-4 border-[#1a1515] p-2 shadow-lg relative z-20 flex justify-between items-center text-[#d5bdaf]">
+  <div class="flex items-center gap-4 pl-4">
+    <h1 class="font-display text-3xl tracking-widest">Round <span id="round-number" class="text-red-500">1</span></h1>
+    <span id="zone-name" class="font-hand text-2xl opacity-70">Operation Zone #404</span>
+  </div>
+
+  <!-- Global Timer -->
+  <div class="flex flex-col items-center w-1/3">
+    <div class="flex items-center gap-2">
+      <i data-lucide="hourglass" class="w-5 h-5 animate-pulse"></i>
+      <span id="phase-text" class="font-hand text-3xl">선발 단계</span>
+      <span id="timer-text" class="font-hand text-3xl font-bold ml-2">30초</span>
+    </div>
+    <div class="timer-bar-container">
+      <div id="timer-bar" class="timer-bar"></div>
+    </div>
+  </div>
+
+  <div class="pr-4 flex items-center gap-4">
+    <div class="text-right">
+      <div class="font-hand text-2xl">My Funds</div>
+      <div class="font-display text-xl text-amber-400">$<span id="my-money">3,000</span></div>
+    </div>
+    <button class="text-[#d5bdaf] hover:text-red-500"><i data-lucide="log-out" class="w-6 h-6"></i></button>
+  </div>
+</header>
+
+<!-- Main Game Board -->
+<main class="flex-1 w-full p-4 grid grid-cols-12 gap-4 relative z-10 overflow-y-auto">
+
+  <!-- Left: Smuggler Team (S-Team) -->
+  <div class="col-span-3 flex flex-col gap-2">
+    <div class="sketch-box p-4 bg-[#d5bdaf] flex-1 flex flex-col">
+      <h2 class="font-display text-3xl text-center border-b-2 border-ink pb-2 mb-2 flex items-center justify-center gap-2">
+        <i data-lucide="briefcase"></i> Smugglers
+      </h2>
+      <div id="smuggler-roster" class="flex-1 overflow-y-auto pr-1"></div>
+
+      <!-- Team Chat -->
+      <div class="mt-2 border-t-2 border-ink pt-2 flex flex-col h-1/3">
+        <div class="font-hand font-bold text-2xl mb-1">Team Chat (Secure)</div>
+        <div id="s-team-chat" class="chat-container bg-black/5 p-2 rounded"></div>
+        <form class="flex mt-2" onsubmit="sendChat(event, 's-team-chat')">
+          <input type="text" class="hand-input text-left px-2 text-xl" placeholder="팀원에게..." required>
+          <button class="text-ink hover:text-ink-red"><i data-lucide="send" class="w-5 h-5"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center: Action & Negotiation -->
+  <div class="col-span-6 flex flex-col gap-4">
+
+    <!-- Dynamic Action Area -->
+    <div id="action-area" class="sketch-box p-6 bg-[#e3d5ca] flex-1 flex flex-col items-center justify-center text-center relative rotate-1">
+
+      <!-- Phase 1: Selection UI -->
+      <div id="selection-ui" class="w-full">
+        <h3 class="font-display text-5xl text-ink mb-4">선발 단계</h3>
+        <p id="selection-instruction" class="font-hand text-3xl mb-8 text-ink">"이번 작전에 투입될 요원을 선정하라."</p>
+
+        <div class="grid grid-cols-2 gap-8 mb-8">
+          <div id="selected-smuggler-container" onclick="handleSelectionClick('SMUGGLER')" class="selection-slot border-2 border-dashed border-ink p-4 rounded bg-black/5 flex flex-col items-center justify-between">
+            <div class="font-bold text-2xl mb-2 font-hand">밀수꾼<br>(Smuggler)</div>
+            <div id="selected-smuggler" class="font-display text-4xl text-ink-red animate-pulse">?</div>
+            <div class="mt-2">
+              <button id="lock-smuggler-btn" onclick="handleLockClick('SMUGGLER', event)" class="sketch-btn px-4 py-1 text-base bg-ink text-white lock-btn hidden-view">찬성</button>
+            </div>
+          </div>
+          <div id="selected-inspector-container" onclick="handleSelectionClick('INSPECTOR')" class="selection-slot border-2 border-dashed border-ink p-4 rounded bg-black/5 flex flex-col items-center justify-between">
+            <div class="font-bold text-2xl mb-2 font-hand">검사관<br>(Inspector)</div>
+            <div id="selected-inspector" class="font-display text-4xl text-ink-red animate-pulse">?</div>
+            <div class="mt-2">
+              <button id="lock-inspector-btn" onclick="handleLockClick('INSPECTOR', event)" class="sketch-btn px-4 py-1 text-base bg-ink text-white lock-btn hidden-view">찬성</button>
+            </div>
+          </div>
+        </div>
+        <div class="text-xl font-hand text-ink/50" id="selection-status">선발 중</div>
+      </div>
+
+      <!-- Phase 2: Action/Negotiation UI (Hidden initially) -->
+      <div id="action-ui" class="w-full hidden-view">
+        <div class="absolute top-2 left-2 bg-ink-red text-white px-2 py-1 rounded font-bold text-lg font-hand rotate-[-5deg]">1:1 SECURE LINE</div>
+
+        <div class="flex justify-between items-center w-full mb-4 px-8">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-ink rounded-full flex items-center justify-center text-[#d5bdaf] mx-auto mb-2">
+              <i data-lucide="briefcase" class="w-8 h-8"></i>
+            </div>
+            <div class="font-hand font-bold text-3xl" id="active-smuggler-name">Smuggler</div>
+          </div>
+          <div class="font-display text-5xl text-ink-red">VS</div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-ink-red rounded-full flex items-center justify-center text-white mx-auto mb-2">
+              <i data-lucide="search" class="w-8 h-8"></i>
+            </div>
+            <div class="font-hand font-bold text-3xl" id="active-inspector-name">Inspector</div>
+          </div>
+        </div>
+
+        <!-- Negotiation Chat (Ephemeral) -->
+        <div id="round-chat" class="w-full h-48 bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] border-2 border-ink mb-4 p-4 text-left overflow-y-auto font-hand text-2xl leading-relaxed shadow-inner">
+          <div class="text-center text-ink/40 text-xl">-- 암호화 채널 생성됨 (기록되지 않음) --</div>
+        </div>
+
+        <form class="flex w-full mb-6" onsubmit="sendChat(event, 'round-chat')">
+          <input type="text" class="hand-input text-left px-2 text-2xl bg-white/50" placeholder="상대를 떠봐라..." required>
+          <button class="text-ink-red hover:scale-110 ml-2"><i data-lucide="message-square" class="w-8 h-8"></i></button>
+        </form>
+
+        <!-- Decision Controls (Context Sensitive) -->
+        <div id="decision-controls" class="w-full border-t-2 border-dashed border-ink pt-4">
+          <!-- Smuggler View -->
+          <div id="smuggler-controls" class="hidden-view">
+            <label class="block font-hand text-3xl mb-2">얼마를 빼돌릴 것인가?</label>
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="amount-stepper">
+                <button type="button" class="amount-arrow" data-target="smuggle-amount" data-delta="-100">
+                  <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                </button>
+                <div class="amount-display">
+                  <span class="currency">$</span>
+                  <input type="number" id="smuggle-amount" class="hand-input w-24 font-bold text-4xl bg-transparent" placeholder="0" min="0" step="100">
+                </div>
+                <button type="button" class="amount-arrow" data-target="smuggle-amount" data-delta="100">
+                  <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                </button>
+              </div>
+              <div class="amount-hint text-center">화살표로 100 단위 증감</div>
+              <button onclick="commitAction('SMUGGLE')" class="sketch-btn px-6 py-2 text-2xl w-full max-w-xs mt-4">밀수 (Smuggle)</button>
+            </div>
+          </div>
+          <!-- Inspector View -->
+          <div id="inspector-controls" class="hidden-view">
+            <label class="block font-hand text-3xl mb-2">검문할 금액은?</label>
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="amount-stepper red">
+                <button type="button" class="amount-arrow red" data-target="inspection-amount" data-delta="-100">
+                  <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                </button>
+                <div class="amount-display">
+                  <span class="currency">$</span>
+                  <input type="number" id="inspection-amount" class="hand-input w-24 font-bold text-4xl bg-transparent" placeholder="0" min="1" step="100">
+                </div>
+                <button type="button" class="amount-arrow red" data-target="inspection-amount" data-delta="100">
+                  <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                </button>
+              </div>
+              <div class="amount-hint text-center text-ink-red">화살표로 100 단위 증감</div>
+              <div class="flex gap-4 w-full max-w-xs mt-4">
+                <button onclick="commitAction('INSPECTION')" class="sketch-btn red px-6 py-2 text-2xl flex-1">검문 (Inspect)</button>
+                <button onclick="commitAction('PASS')" class="sketch-btn green px-6 py-2 text-2xl flex-1">통과 (Pass)</button>
+              </div>
+            </div>
+          </div>
+          <!-- Spectator View -->
+          <div id="spectator-msg" class="font-hand text-2xl text-ink/60">
+            "검문이 진행 중이다..."
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Inspector Team (I-Team) -->
+  <div class="col-span-3 flex flex-col gap-2">
+    <div class="sketch-box p-4 bg-[#e3d5ca] flex-1 flex flex-col -rotate-1">
+      <h2 class="font-display text-3xl text-center text-ink-red border-b-2 border-ink-red pb-2 mb-2 flex items-center justify-center gap-2">
+        <i data-lucide="search"></i> Inspectors
+      </h2>
+      <div id="inspector-roster" class="flex-1 overflow-y-auto pr-1"></div>
+
+      <!-- Team Chat -->
+      <div class="mt-2 border-t-2 border-ink-red pt-2 flex flex-col h-1/3">
+        <div class="font-hand font-bold text-2xl mb-1 text-ink-red">Team Chat (Secure)</div>
+        <div id="i-team-chat" class="chat-container bg-black/5 p-2 rounded"></div>
+        <form class="flex mt-2" onsubmit="sendChat(event, 'i-team-chat')">
+          <input type="text" class="hand-input text-left px-2 text-xl text-ink-red" placeholder="팀원에게..." required>
+          <button class="text-ink-red hover:scale-110"><i data-lucide="send" class="w-5 h-5"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Transfer Modal -->
+<div id="transfer-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden-view">
+  <div class="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity" onclick="closeTransferModal()"></div>
+  <div class="sketch-box p-6 w-full max-w-sm relative z-10 rotate-2 bg-[#d5bdaf] border-2 border-ink-red">
+    <h2 class="font-display text-4xl text-ink-red text-center mb-4 border-b-2 border-ink-red/50 pb-2">
+      <i data-lucide="arrow-right-left" class="inline w-6 h-6 mr-1"></i> 자금 이체
+    </h2>
+    <p class="font-hand text-2xl text-center mb-4">
+      수취인: <span class="text-ink-red font-bold underline decoration-wavy" id="transfer-target-name">Target</span>
+    </p>
+
+    <form onsubmit="confirmTransfer(event)" class="flex flex-col gap-4">
+      <input type="hidden" id="transfer-target-id">
+      <div class="flex items-center justify-center gap-2 bg-black/10 p-2 rounded transform -rotate-1">
+        <span class="font-display text-3xl">$</span>
+        <input type="number" id="transfer-amount" class="hand-input w-32 font-bold text-4xl bg-transparent" placeholder="0" min="1" required>
+      </div>
+      <p class="text-center font-hand text-ink/80 text-xl leading-tight">
+        <span class="text-ink-red font-bold">경고:</span> 이번 라운드에서 <br>우리 팀에게 허락된 <br>단 한 번의 기회다.
+      </p>
+      <div id="transfer-status" class="text-center font-hand text-xl text-red-600 hidden-view">에러</div>
+
+      <div class="flex justify-between gap-4 mt-2">
+        <button type="button" onclick="closeTransferModal()" class="sketch-btn px-4 py-1 text-xl text-white bg-ink/80">취소</button>
+        <button type="submit" class="sketch-btn px-4 py-1 text-xl text-white bg-ink-red font-bold">송금</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  const DEFAULT_ROUND_DURATION_MS = 30000;
+
+  const state = {
+      socket: null,
+      userId: null,
+      nickname: null,
+      players: [],
+      round: 1,
+      requiresSelection: false,
+      smugglerId: null,
+      inspectorId: null,
+      myRole: null,
+      roundActive: false,
+      smugglerActionDone: false,
+      inspectorActionDone: false,
+      roundTimerId: null,
+      roundTimerSource: null,
+      serverClockOffset: 0,
+      pendingRoundStartPayload: null,
+      awaitingRoundResult: false,
+      candidateSmuggler: { playerId: null, playerName: null, locked: false, approvers: [] },
+      candidateInspector: { playerId: null, playerName: null, locked: false, approvers: [] },
+      roundStarting: false,
+      gameFinished: false,
+      transferPending: false,
+      transferDraft: null,
+      chatBlocked: false,
+      lastChatTarget: null,
+      pendingSelectionTimerPayload: null
+  };
+
+  const els = {
+      roundNumber: document.getElementById('round-number'),
+      phaseText: document.getElementById('phase-text'),
+      timerText: document.getElementById('timer-text'),
+      timerBar: document.getElementById('timer-bar'),
+      selectionUI: document.getElementById('selection-ui'),
+      actionUI: document.getElementById('action-ui'),
+      selectedSmuggler: document.getElementById('selected-smuggler'),
+      selectedInspector: document.getElementById('selected-inspector'),
+      selectedSmugglerContainer: document.getElementById('selected-smuggler-container'),
+      selectedInspectorContainer: document.getElementById('selected-inspector-container'),
+      lockSmugglerBtn: document.getElementById('lock-smuggler-btn'),
+      lockInspectorBtn: document.getElementById('lock-inspector-btn'),
+      selectionStatus: document.getElementById('selection-status'),
+      activeSmugglerName: document.getElementById('active-smuggler-name'),
+      activeInspectorName: document.getElementById('active-inspector-name'),
+      smugglerControls: document.getElementById('smuggler-controls'),
+      inspectorControls: document.getElementById('inspector-controls'),
+      spectatorMsg: document.getElementById('spectator-msg'),
+      smuggleAmount: document.getElementById('smuggle-amount'),
+      inspectionAmount: document.getElementById('inspection-amount'),
+      myMoney: document.getElementById('my-money'),
+      sRoster: document.getElementById('smuggler-roster'),
+      iRoster: document.getElementById('inspector-roster'),
+      sChat: document.getElementById('s-team-chat'),
+      iChat: document.getElementById('i-team-chat'),
+      roundChat: document.getElementById('round-chat'),
+      zoneName: document.getElementById('zone-name'),
+
+      // Modal elements
+      gameModal: document.getElementById('game-modal'),
+      modalTitle: document.getElementById('modal-title'),
+      modalContent: document.getElementById('modal-content'),
+      transferModal: document.getElementById('transfer-modal'),
+      transferTargetName: document.getElementById('transfer-target-name'),
+      transferTargetId: document.getElementById('transfer-target-id'),
+      transferAmount: document.getElementById('transfer-amount'),
+      transferStatus: document.getElementById('transfer-status')
+  };
+
+  function toast(msg) {
+      showToast(msg);
+  }
+
+  function showToast(message) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+          toast.classList.remove('show');
+          toast.style.opacity = '0';
+          setTimeout(() => {
+              if (container.contains(toast)) container.removeChild(toast);
+          }, 500);
+      }, 3000);
+  }
+
+  // Modal Logic with Timer
+  let modalTimerInterval;
+
+  /**
+   * @param {string} title
+   * @param {string} content HTML string
+   * @param {string} countdownLabel Text to prefix the countdown with
+   * @param {() => void} onComplete Function to call when modal closes
+   * @param {(label: string, timeLeft: number) => string} countdownFormatter Custom renderer for countdown text
+   */
+  function showGameModal(title, content, countdownLabel, onComplete, countdownFormatter) {
+      els.modalTitle.textContent = title;
+      els.modalContent.innerHTML = content;
+
+      els.gameModal.classList.remove('hidden-view');
+
+      if (modalTimerInterval) clearInterval(modalTimerInterval);
+
+      let timeLeft = 3;
+      let timerEl = document.getElementById('modal-countdown');
+      if (!timerEl) {
+          timerEl = document.createElement('div');
+          timerEl.id = 'modal-countdown';
+          timerEl.className = 'font-hand text-xl text-ink/30 mb-2';
+          els.modalContent.parentNode.appendChild(timerEl);
+      }
+      timerEl.style.display = 'block';
+      const label = countdownLabel || '다음 작전 진입까지...';
+      const renderCountdown = countdownFormatter || ((lbl, t) => `${lbl}${t}초`);
+      timerEl.textContent = renderCountdown(label, timeLeft);
+
+      modalTimerInterval = setInterval(() => {
+          timeLeft--;
+          timerEl.textContent = renderCountdown(label, Math.max(0, timeLeft));
+          if (timeLeft <= 0) {
+              clearInterval(modalTimerInterval);
+              closeGameModal();
+              if (onComplete) onComplete();
+          }
+      }, 1000);
+  }
+
+  function finalizeGame(gameWinnerType, smugglerTotalBalance, inspectorTotalBalance) {
+      if (state.gameFinished) return;
+      closeTransferModal();
+      state.gameFinished = true;
+      stopRoundTimer();
+      state.roundActive = false;
+      state.roundStarting = false;
+      state.awaitingRoundResult = false;
+      state.pendingRoundStartPayload = null;
+
+      const winnerLabelMap = {
+          SMUGGLER_TEAM: '밀수꾼 팀 승리',
+          INSPECTOR_TEAM: '검사관 팀 승리',
+          DRAW: '무승부'
+      };
+      const winnerParam = gameWinnerType === 'SMUGGLER_TEAM'
+              ? 'SMUGGLER'
+              : (gameWinnerType === 'INSPECTOR_TEAM' ? 'INSPECTOR' : 'DRAW');
+      const sTotal = Number(smugglerTotalBalance ?? 0);
+      const iTotal = Number(inspectorTotalBalance ?? 0);
+      const winnerLabel = winnerLabelMap[gameWinnerType] || '게임 종료';
+
+      try {
+          const payload = {
+              winner: winnerParam,
+              sScore: sTotal,
+              iScore: iTotal,
+              at: Date.now()
+          };
+          sessionStorage.setItem('cbGameResult', JSON.stringify(payload));
+      } catch (e) {
+          console.warn('결과 저장 실패', e);
+      }
+
+      showGameModal(
+              '작전 종료',
+              `<div class="font-hand text-3xl mb-4">모든 라운드가 종료되었다.</div>
+               <div class="text-2xl mb-2"><span class="font-bold text-ink-red">${winnerLabel}</span></div>
+               <div class="text-xl mb-2">밀수꾼 총합: $${sTotal.toLocaleString()}</div>
+               <div class="text-xl mb-2">검사관 총합: $${iTotal.toLocaleString()}</div>`,
+              '결과 화면 이동까지...',
+              () => {
+                  window.location.href = '/game-result.html';
+              }
+      );
+  }
+
+  function closeGameModal() {
+      els.gameModal.classList.add('hidden-view');
+      if (modalTimerInterval) clearInterval(modalTimerInterval);
+      // Hide timer element when closing
+      const timerEl = document.getElementById('modal-countdown');
+       if(timerEl) timerEl.style.display = 'none';
+  }
+
+  function bumpAmount(inputEl, delta) {
+      if (!inputEl) return;
+      const current = Number(inputEl.value || 0);
+      const step = Number(inputEl.step || 1);
+      const min = Number(inputEl.min || 0);
+      const next = current + delta;
+      const normalized = Math.max(min, isFinite(step) && step > 0 ? Math.round(next / step) * step : next);
+      inputEl.value = normalized;
+  }
+
+  function queuePendingRoundStart(payload) {
+      state.pendingRoundStartPayload = payload || null;
+  }
+
+  function startPendingRoundIfExists() {
+      if (!state.pendingRoundStartPayload) return false;
+      const payload = state.pendingRoundStartPayload;
+      state.pendingRoundStartPayload = null;
+      startRoundFromPayload(payload);
+      return true;
+  }
+
+  function applySelectionTimer(payload) {
+      if (!payload) return;
+      state.requiresSelection = true;
+      state.awaitingRoundResult = false;
+      state.roundActive = false;
+      state.roundStarting = false;
+      state.round = payload.round || state.round + 1;
+      if (els.roundNumber) els.roundNumber.textContent = state.round;
+      state.smugglerId = null;
+      state.inspectorId = null;
+      state.candidateSmuggler = { playerId: null, playerName: null, locked: false, approvers: [] };
+      state.candidateInspector = { playerId: null, playerName: null, locked: false, approvers: [] };
+      renderSelectionState();
+      els.selectionUI.classList.remove('hidden-view');
+      els.actionUI.classList.add('hidden-view');
+      setPhase('선발 단계');
+      startPendingRoundIfExists();
+      startRoundTimerWithServerClock(
+              payload.eventAtMillis,
+              payload.durationMillis,
+              payload.serverNowMillis,
+              payload.endAtMillis
+      );
+      if ((state.players?.length || 0) >= 4) {
+          showGameModal(
+                  '선발 준비',
+                  `<div class="font-hand text-3xl mb-3">작전에 참여할 팀원을 30초 내에 선정해라.</div>
+                   <div class="text-xl text-ink/70">잠시 후 선발이 시작된다.</div>`,
+                  '선발 ',
+                  null,
+                  (lbl, t) => `선발 ${t}초 전...`
+          );
+      }
+  }
+
+  function addSystemMessage(text) {
+      const chatMsgs = document.getElementById('chat-messages');
+      const line = document.createElement('div');
+      line.className = 'operator-message text-ink';
+      line.innerHTML = `<span class="font-bold">Operator:</span> ${text}`;
+      chatMsgs.appendChild(line);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+
+  function getRoleMessage(role) {
+      if (role === 'SMUGGLER') return '밀수꾼 팀에 합류했다. 물건을 숨길 준비를 해라.';
+      if (role === 'INSPECTOR') return '검사관 팀에 합류했다. 놈들의 거짓말을 꿰뚫어 봐라.';
+      return '신원을 확인했다. 소속 팀을 선택하라.';
+  }
+
+  function appendChat(el, { writerName = '', writerId = null, message = '', messageId = null, isSystem = false }) {
+      if (!el) return;
+      const div = document.createElement('div');
+      const isSelf = writerId != null && state.userId != null && String(writerId) === String(state.userId);
+      div.className = `chat-msg ${isSelf ? 'me' : ''}`;
+      if (messageId != null) div.dataset.messageId = String(messageId);
+
+      if (isSystem) {
+          div.textContent = message;
+      } else {
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = writerName || (isSelf ? '나' : '익명');
+          nameSpan.style.fontWeight = 'bold';
+          if (isSelf) nameSpan.style.color = '#7f1d1d';
+
+          const msgSpan = document.createElement('span');
+          msgSpan.textContent = `: ${message}`;
+
+          div.appendChild(nameSpan);
+          div.appendChild(msgSpan);
+      }
+      el.appendChild(div);
+      el.scrollTop = el.scrollHeight;
+  }
+
+  function maskChat(el, messageId) {
+      if (!el || !messageId) return;
+      const target = el.querySelector(`[data-message-id="${messageId}"]`);
+      if (target) {
+          target.textContent = '[통신 경로 차단됨]';
+          target.classList.add('chat-blocked');
+      }
+  }
+
+  function resolveChatContainer(targetId) {
+      if (targetId === 's-team-chat') return els.sChat;
+      if (targetId === 'i-team-chat') return els.iChat;
+      if (targetId === 'round-chat') return els.roundChat;
+      return els.roundChat || els.sChat || els.iChat;
+  }
+
+  function markChatBlocked(targetId) {
+      if (state.chatBlocked) return;
+      const target = resolveChatContainer(targetId);
+      appendChat(target, { message: '너의 통신 경로는 차단되었다.', isSystem: true });
+      const last = target?.lastElementChild;
+      if (last) {
+          last.style.color = '#8b5f60'; /* muted gray-red */
+          last.style.fontWeight = 'bold';
+      }
+      state.chatBlocked = true;
+  }
+
+  function renderRosters() {
+      const sList = els.sRoster;
+      const iList = els.iRoster;
+      if (!sList || !iList) return;
+      sList.innerHTML = '';
+      iList.innerHTML = '';
+
+      state.players.forEach((p) => {
+          const isMe = String(p.playerId) === String(state.userId);
+          const sameTeam = p.teamRole === state.myRole;
+          const div = document.createElement('div');
+          div.className = `player-card ${isMe ? 'active' : ''}`;
+          const moneyVal = p.amount != null ? Number(p.amount) : null;
+          const money = sameTeam || isMe
+                  ? (moneyVal != null ? `$${moneyVal.toLocaleString()}` : '$-')
+                  : '<span class="money-hidden">$$$$$</span>';
+          const actionBtn = sameTeam && !isMe
+                  ? `<button type="button" class="sketch-btn transfer-btn" onclick="openTransferModal('${p.playerId}', '${p.playerName || p.playerId}')">송금</button>`
+                  : '';
+          div.innerHTML = `
+              <div class="flex items-center">
+                  <span class="${isMe ? 'text-ink-red font-bold' : ''}">${p.playerName || p.playerId}</span>
+                  ${actionBtn}
+              </div>
+              <span class="text-lg font-hand">${money}</span>
+          `;
+          if (p.teamRole === 'SMUGGLER') sList.appendChild(div); else iList.appendChild(div);
+      });
+      lucide.createIcons();
+  }
+
+  function updateMyInfo() {
+      const me = state.players.find((p) => String(p.playerId) === String(state.userId));
+      if (me && els.myMoney) {
+          els.myMoney.textContent = me.amount != null ? Number(me.amount).toLocaleString() : '-';
+      }
+      state.myRole = me?.teamRole || state.myRole;
+      if (state.myRole === 'SMUGGLER') {
+          document.getElementById('i-team-chat').parentElement.classList.add('blurred');
+      } else if (state.myRole === 'INSPECTOR') {
+          document.getElementById('s-team-chat').parentElement.classList.add('blurred');
+      }
+      updateSelectionInstruction();
+  }
+
+  function updateSelectionInstruction() {
+      const desc = document.getElementById('selection-instruction');
+      if (!desc) return;
+      const isSmuggler = state.myRole === 'SMUGGLER';
+      const base = isSmuggler
+              ? '"이번 운반에 투입할 밀수꾼을 선정하라."'
+              : '"이번 작전에 투입될 검사관을 선정하라."';
+      const sub = isSmuggler
+              ? '"누구 돈을 빼돌릴 텐가?"'
+              : '"누가 놈들의 거짓을 꿰뚫어 볼 텐가?"';
+      desc.innerHTML = `${base}<br><span class="font-bold">${sub}</span>`;
+      updateSelectionInteractivity();
+  }
+
+  function updateSelectionInteractivity() {
+      const sContainer = document.getElementById('selected-smuggler-container');
+      const iContainer = document.getElementById('selected-inspector-container');
+      if (!sContainer || !iContainer) return;
+      const smugglerActive = state.myRole === 'SMUGGLER';
+      const inspectorActive = state.myRole === 'INSPECTOR';
+      sContainer.classList.toggle('disabled-selection', !smugglerActive);
+      iContainer.classList.toggle('disabled-selection', !inspectorActive);
+      sContainer.style.pointerEvents = smugglerActive ? 'auto' : 'none';
+      iContainer.style.pointerEvents = inspectorActive ? 'auto' : 'none';
+  }
+
+  function renderSelectionState() {
+      const s = state.candidateSmuggler;
+      const i = state.candidateInspector;
+      const smugglerApprovers = Array.isArray(s.approvers) ? s.approvers : [];
+      const inspectorApprovers = Array.isArray(i.approvers) ? i.approvers : [];
+      const smugglerApprovedByMe = smugglerApprovers.some((id) => String(id) === String(state.userId));
+      const inspectorApprovedByMe = inspectorApprovers.some((id) => String(id) === String(state.userId));
+      const smugglerName = s.playerName || '?';
+      const inspectorName = i.playerName || '?';
+      const smugglerDisplay = s.locked && state.myRole !== 'SMUGGLER' ? '확정' : smugglerName;
+      const inspectorDisplay = i.locked && state.myRole !== 'INSPECTOR' ? '확정' : inspectorName;
+      if (els.selectedSmuggler) els.selectedSmuggler.textContent = smugglerDisplay;
+      if (els.selectedInspector) els.selectedInspector.textContent = inspectorDisplay;
+
+      if (els.selectedSmugglerContainer) {
+          els.selectedSmugglerContainer.classList.toggle('locked', !!s.locked);
+          els.selectedSmugglerContainer.classList.toggle('candidate', !!s.playerId && !s.locked);
+      }
+      if (els.selectedInspectorContainer) {
+          els.selectedInspectorContainer.classList.toggle('locked', !!i.locked);
+          els.selectedInspectorContainer.classList.toggle('candidate', !!i.playerId && !i.locked);
+      }
+
+      if (els.lockSmugglerBtn) {
+          const isSelf = s.playerId != null && String(s.playerId) === String(state.userId);
+          const baseLabel = s.locked ? '확정' : (smugglerApprovedByMe ? '찬성 취소' : '찬성');
+          const countLabel = s.locked ? '' : (smugglerApprovers.length ? ` (${smugglerApprovers.length})` : '');
+          els.lockSmugglerBtn.textContent = `${baseLabel}${countLabel}`;
+          els.lockSmugglerBtn.classList.toggle('hidden-view', isSelf || !s.playerId);
+          els.lockSmugglerBtn.classList.toggle('approved', !!s.locked || smugglerApprovedByMe);
+      }
+      if (els.lockInspectorBtn) {
+          const isSelf = i.playerId != null && String(i.playerId) === String(state.userId);
+          const baseLabel = i.locked ? '확정' : (inspectorApprovedByMe ? '찬성 취소' : '찬성');
+          const countLabel = i.locked ? '' : (inspectorApprovers.length ? ` (${inspectorApprovers.length})` : '');
+          els.lockInspectorBtn.textContent = `${baseLabel}${countLabel}`;
+          els.lockInspectorBtn.classList.toggle('hidden-view', isSelf || !i.playerId);
+          els.lockInspectorBtn.classList.toggle('approved', !!i.locked || inspectorApprovedByMe);
+      }
+
+      if (els.selectionStatus) {
+          let status = '선발 중';
+          if (s.locked && i.locked) status = '선발 완료! 행동 개시 대기 중...';
+          els.selectionStatus.textContent = status;
+      }
+
+      updateSelectionInteractivity();
+      maybeAutoStartRoundFromLocks();
+  }
+
+  function maybeAutoStartRoundFromLocks() {
+      if (!state.requiresSelection) return;
+      if (state.roundActive || state.roundStarting) return;
+      if (state.awaitingRoundResult) return;
+      const hasBothLocked = state.candidateSmuggler.locked && state.candidateInspector.locked;
+      const hasIds = state.candidateSmuggler.playerId != null && state.candidateInspector.playerId != null;
+      if (!hasBothLocked || !hasIds) return;
+      state.roundStarting = true;
+      const payload = {
+          currentRound: state.round || 1,
+          smugglerId: state.candidateSmuggler.playerId,
+          inspectorId: state.candidateInspector.playerId,
+          eventAtMillis: Date.now(),
+          durationMillis: DEFAULT_ROUND_DURATION_MS,
+          serverNowMillis: Date.now(),
+          endAtMillis: Date.now() + DEFAULT_ROUND_DURATION_MS
+      };
+      toast('선발 완료 신호 감지: 라운드 개시');
+      startRoundFromPayload(payload);
+  }
+
+  function handleSelectionClick(role) {
+      if (!state.requiresSelection) {
+          return;
+      }
+      const isSmugglerRole = role === 'SMUGGLER';
+      const myTeamOk = (isSmugglerRole && state.myRole === 'SMUGGLER') || (!isSmugglerRole && state.myRole === 'INSPECTOR');
+      if (!myTeamOk) {
+          toast('해당 팀만 후보를 등록할 수 있다.');
+          return;
+      }
+      const target = isSmugglerRole ? state.candidateSmuggler : state.candidateInspector;
+      if (target.locked) {
+          toast('이미 고정된 후보이다.');
+          return;
+      }
+      const hasApprovals = Array.isArray(target.approvers) && target.approvers.length > 0;
+      if (hasApprovals) {
+          toast('이미 찬성이 진행 중이다. 모든 찬성을 취소한 뒤에만 변경 가능하다.');
+          return;
+      }
+      const type = isSmugglerRole ? 'REGISTER_SMUGGLER' : 'REGISTER_INSPECTOR';
+      const payload = isSmugglerRole ? { type, smugglerId: state.userId } : { type, inspectorId: state.userId };
+      if (cbCommon.sendJson(state.socket, payload)) {
+          // optimistic update
+          const me = state.players.find((p) => String(p.playerId) === String(state.userId));
+          const name = me?.playerName || state.nickname || state.userId;
+          if (isSmugglerRole) state.candidateSmuggler = { playerId: state.userId, playerName: name, locked: false, approvers: [] };
+          else state.candidateInspector = { playerId: state.userId, playerName: name, locked: false, approvers: [] };
+          renderSelectionState();
+      } else {
+          toast('전송 실패. 통신 상태를 점검하라.');
+      }
+  }
+
+  function handleLockClick(role, e) {
+      e?.stopPropagation();
+      const isSmugglerRole = role === 'SMUGGLER';
+      const target = isSmugglerRole ? state.candidateSmuggler : state.candidateInspector;
+      if (!target.playerId) {
+          toast('후보가 없다.');
+          return;
+      }
+      if (target.locked) {
+          toast('이미 고정된 후보이다.');
+          return;
+      }
+      const myTeamOk = (isSmugglerRole && state.myRole === 'SMUGGLER') || (!isSmugglerRole && state.myRole === 'INSPECTOR');
+      if (!myTeamOk) {
+          toast('해당 팀만 확정할 수 있다.');
+          return;
+      }
+      const type = isSmugglerRole ? 'FIX_SMUGGLER_ID' : 'FIX_INSPECTOR_ID';
+      const approvers = Array.isArray(target.approvers) ? target.approvers : [];
+      const hasApproved = approvers.some((id) => String(id) === String(state.userId));
+      const nextApprovers = hasApproved
+              ? approvers.filter((id) => String(id) !== String(state.userId))
+              : [...approvers, state.userId];
+      if (cbCommon.sendJson(state.socket, { type })) {
+          const updated = { ...target, approvers: nextApprovers };
+          if (isSmugglerRole) state.candidateSmuggler = updated; else state.candidateInspector = updated;
+          renderSelectionState();
+      } else {
+          toast('전송 실패. 통신 상태를 점검하라.');
+      }
+  }
+
+  function setPhase(text) {
+      if (els.phaseText) els.phaseText.textContent = text;
+  }
+
+  function stopRoundTimer() {
+      if (state.roundTimerId) {
+          cancelAnimationFrame(state.roundTimerId);
+          state.roundTimerId = null;
+      }
+      state.roundTimerSource = null;
+      state.serverClockOffset = 0;
+      updateTimerUi(0, 0);
+  }
+
+  function updateTimerUi(durationMs, remainingMs) {
+      const text = els.timerText;
+      const bar = els.timerBar;
+      if (!text || !bar) return;
+      const sec = Math.max(0, Math.ceil(remainingMs / 1000));
+      text.textContent = `${sec}초`;
+      const ratio = durationMs > 0 ? Math.max(0, remainingMs / durationMs) : 0;
+      bar.style.width = `${ratio * 100}%`;
+      bar.classList.remove('urgent', 'warning');
+      text.classList.remove('urgent-text', 'warning-text');
+      if (sec <= 5) {
+          bar.classList.add('urgent'); text.classList.add('urgent-text');
+      } else if (sec <= 10) {
+          bar.classList.add('warning'); text.classList.add('warning-text');
+      }
+  }
+
+  function startRoundTimerWithServerClock(eventAtMillis, durationMs, serverNowMillis, endAtMillis) {
+      stopRoundTimer();
+      const clientNow = Date.now();
+      const serverNow = serverNowMillis ?? clientNow;
+      state.serverClockOffset = serverNow - clientNow;
+      const serverTimeNow = clientNow + state.serverClockOffset;
+      const eventAt = eventAtMillis ?? serverTimeNow;
+      const duration = durationMs ?? (endAtMillis ? Math.max(0, endAtMillis - eventAt) : DEFAULT_ROUND_DURATION_MS);
+      const endAt = endAtMillis ?? (eventAt + duration);
+      state.roundTimerSource = { eventAtMillis: eventAt, durationMs: duration, endAtMillis: endAt };
+      runRoundTimerLoop();
+  }
+
+  function runRoundTimerLoop() {
+      if (!state.roundTimerSource) {
+          return;
+      }
+      const nowClient = Date.now();
+      const useAbsoluteEnd = state.roundTimerSource.endAtMillis != null;
+      const serverCurrentTime = useAbsoluteEnd ? nowClient : nowClient + state.serverClockOffset;
+      const remaining = Math.max(0, state.roundTimerSource.endAtMillis - serverCurrentTime);
+      const durationForUi = state.roundTimerSource.durationMs ?? Math.max(1, state.roundTimerSource.endAtMillis - state.roundTimerSource.eventAtMillis);
+      updateTimerUi(durationForUi, remaining);
+      if (remaining <= 0) {
+          stopRoundTimer();
+          if (state.requiresSelection && state.candidateSmuggler.locked && state.candidateInspector.locked && !state.roundActive) {
+              maybeAutoStartRoundFromLocks();
+          }
+          return;
+      }
+      state.roundTimerId = requestAnimationFrame(runRoundTimerLoop);
+  }
+
+  function updateSelectionView(smugglerName, inspectorName, lockStates = {}) {
+      if (smugglerName) {
+          state.candidateSmuggler.playerName = smugglerName;
+      }
+      if (inspectorName) {
+          state.candidateInspector.playerName = inspectorName;
+      }
+      if (lockStates.smugglerLocked != null) state.candidateSmuggler.locked = lockStates.smugglerLocked;
+      if (lockStates.inspectorLocked != null) state.candidateInspector.locked = lockStates.inspectorLocked;
+      renderSelectionState();
+  }
+
+  function updateActionView(smugglerName, inspectorName) {
+      if (els.activeSmugglerName) els.activeSmugglerName.textContent = smugglerName || 'Smuggler';
+      if (els.activeInspectorName) els.activeInspectorName.textContent = inspectorName || 'Inspector';
+  }
+
+  function showActionControls() {
+      const isSmuggler = state.userId != null && state.smugglerId != null && String(state.userId) === String(state.smugglerId);
+      const isInspector = state.userId != null && state.inspectorId != null && String(state.userId) === String(state.inspectorId);
+      els.smugglerControls.classList.toggle('hidden-view', !isSmuggler);
+      els.inspectorControls.classList.toggle('hidden-view', !isInspector);
+      els.spectatorMsg.classList.toggle('hidden-view', isSmuggler || isInspector);
+      const roundFormInput = document.querySelector('#action-ui form input');
+      const roundFormBtn = document.querySelector('#action-ui form button');
+      if (roundFormInput && roundFormBtn) {
+          const allow = isSmuggler || isInspector;
+          roundFormInput.disabled = !allow;
+          roundFormBtn.disabled = !allow;
+          roundFormInput.placeholder = allow ? '상대를 떠봐라...' : '도청 불가 (참여자만 가능)';
+      }
+  }
+
+  function applyStartGame(payload) {
+      state.players = (payload?.allPlayers || []).map((p) => ({
+          playerId: p.playerId,
+          playerName: p.playerName,
+          teamRole: p.teamRole,
+          amount: p.amount
+      }));
+      state.round = payload?.currentRound || 1;
+      state.requiresSelection = state.players.length >= 4;
+      state.smugglerId = payload?.smugglerId || null;
+      state.inspectorId = payload?.inspectorId || null;
+      if (els.roundNumber) els.roundNumber.textContent = state.round;
+      if (els.zoneName && payload?.lobbyName) {
+          els.zoneName.textContent = payload.lobbyName;
+      }
+      updateSelectionInstruction();
+      renderRosters();
+      updateMyInfo();
+      state.candidateSmuggler = { playerId: null, playerName: null, locked: false, approvers: [] };
+      state.candidateInspector = { playerId: null, playerName: null, locked: false, approvers: [] };
+      renderSelectionState();
+      if (!state.requiresSelection && state.smugglerId && state.inspectorId) {
+          startRoundFromPayload({
+              currentRound: state.round,
+              smugglerId: state.smugglerId,
+              inspectorId: state.inspectorId,
+              durationMillis: DEFAULT_ROUND_DURATION_MS
+          });
+      } else {
+          els.selectionUI.classList.remove('hidden-view');
+          els.actionUI.classList.add('hidden-view');
+          setPhase('선발 단계');
+          updateSelectionView('?', '?');
+
+          const duration = 30000;
+          startRoundTimerWithServerClock(Date.now(), duration, Date.now(), Date.now() + duration);
+      }
+  }
+
+  function startRoundFromPayload(payload) {
+      closeTransferModal();
+      const roundStartLogic = () => {
+          state.round = payload?.currentRound || state.round || 1;
+          if (els.roundNumber) els.roundNumber.textContent = state.round;
+          state.smugglerId = payload?.smugglerId ?? state.smugglerId;
+          state.inspectorId = payload?.inspectorId ?? state.inspectorId;
+          state.roundActive = true;
+          state.smugglerActionDone = false;
+          state.inspectorActionDone = false;
+          // 다인전에서는 라운드 시작과 함께 후보 락/표시를 초기화하여 다음 선발을 준비
+          if (state.players.length >= 4) {
+              state.candidateSmuggler = { playerId: null, playerName: null, locked: false, approvers: [] };
+              state.candidateInspector = { playerId: null, playerName: null, locked: false, approvers: [] };
+              state.requiresSelection = true;
+              renderSelectionState();
+          }
+          const smuggler = state.players.find((p) => String(p.playerId) === String(state.smugglerId));
+          const inspector = state.players.find((p) => String(p.playerId) === String(state.inspectorId));
+          updateSelectionView(smuggler?.playerName, inspector?.playerName);
+          updateActionView(smuggler?.playerName, inspector?.playerName);
+          els.selectionUI.classList.add('hidden-view');
+          els.actionUI.classList.remove('hidden-view');
+          setPhase('행동 단계');
+          showActionControls();
+          startRoundTimerWithServerClock(
+              payload?.eventAtMillis ?? Date.now(),
+              payload?.durationMillis ?? DEFAULT_ROUND_DURATION_MS,
+              payload?.serverNowMillis ?? Date.now(),
+              payload?.endAtMillis
+          );
+          els.roundChat.innerHTML = '<div class="text-center text-ink/40 text-xl">-- 암호화 채널 생성됨 (기록되지 않음) --</div>';
+      };
+
+      const smuggler = state.players.find((p) => String(p.playerId) === String(payload.smugglerId));
+      const inspector = state.players.find((p) => String(p.playerId) === String(payload.inspectorId));
+      state.candidateSmuggler = { playerId: smuggler?.playerId || null, playerName: smuggler?.playerName || smuggler?.playerId || null, locked: true, approvers: [] };
+      state.candidateInspector = { playerId: inspector?.playerId || null, playerName: inspector?.playerName || inspector?.playerId || null, locked: true, approvers: [] };
+      renderSelectionState();
+      state.requiresSelection = false;
+      stopRoundTimer();
+
+      const serverNow = payload?.serverNowMillis ?? Date.now();
+      const eventAt = payload?.eventAtMillis ?? serverNow;
+      const alreadyRunning = serverNow >= eventAt + 1000; // 재접속 시 이미 진행 중이면 모달 생략
+
+      // Show Selection Complete Modal, then proceed
+      const smugglerMessage = `<div class="text-xl mb-2 text-ink">짐을 정리해라. 곧 관문을 통과한다.</div>`;
+      const inspectorMessage = `<div class="text-xl mb-2 text-ink">경계를 강화하라. 검문이 곧 시작된다.</div>`;
+      const roleMessage = state.myRole === 'SMUGGLER' ? smugglerMessage : (state.myRole === 'INSPECTOR' ? inspectorMessage : '');
+
+      const proceed = () => {
+          state.roundStarting = false;
+          roundStartLogic();
+      };
+
+      if (alreadyRunning) {
+          closeGameModal();
+          proceed();
+          return;
+      }
+
+      showGameModal(
+          "요원 선발 완료",
+          `<div class="font-hand text-3xl mb-4">이번 거래의 판이 짜였다.</div>
+           <div class="text-2xl mb-2">밀수꾼: <span class="text-ink-red font-bold">${smuggler?.playerName || '?'}</span></div>
+           <div class="text-2xl mb-2">검사관: <span class="text-ink-red font-bold">${inspector?.playerName || '?'}</span></div>
+           ${roleMessage}`,
+          '행동 개시까지...',
+          proceed
+      );
+  }
+
+  function finishRound(payload) {
+      closeTransferModal();
+      state.roundActive = false;
+      state.smugglerActionDone = false;
+      state.inspectorActionDone = false;
+      stopRoundTimer();
+      if (els.roundChat) els.roundChat.innerHTML = '<div class="text-center text-ink/40 text-xl">-- 라운드 종료 --</div>';
+      setPhase('라운드 종료');
+
+      const nextRoundLogic = () => {
+          state.awaitingRoundResult = false;
+          const requiresSelection = state.players.length >= 4;
+          state.requiresSelection = requiresSelection;
+
+          if (!requiresSelection) {
+              // 1:1은 선발 단계를 건너뛰고 서버가 보낸 START 메시지를 즉시 처리
+              if (!startPendingRoundIfExists()) {
+                  // 대기 중이던 START 메시지가 없다면 서버에서 곧 내려올 것을 기다린다.
+                  toast('다음 라운드 자동 준비 중...');
+              }
+              return;
+          }
+
+          // 다인전: 선발 단계로 되돌리고 이전 START 대기는 폐기
+          state.pendingRoundStartPayload = null;
+          // 서버에서 내려줄 선발 타이머를 우선 적용, 없다면 임시 30초 타이머로 진행
+          if (state.pendingSelectionTimerPayload) {
+              applySelectionTimer(state.pendingSelectionTimerPayload);
+              state.pendingSelectionTimerPayload = null;
+          } else {
+              els.selectionUI.classList.remove('hidden-view');
+              els.actionUI.classList.add('hidden-view');
+              setPhase('선발 단계');
+              state.round = (state.round || 1) + 1;
+              if (els.roundNumber) els.roundNumber.textContent = state.round;
+              updateSelectionView('?', '?');
+              state.smugglerId = null;
+              state.inspectorId = null;
+              state.candidateSmuggler = { playerId: null, playerName: null, locked: false, approvers: [] };
+              state.candidateInspector = { playerId: null, playerName: null, locked: false, approvers: [] };
+              renderSelectionState();
+              const duration = 30000;
+              startRoundTimerWithServerClock(Date.now(), duration, Date.now(), Date.now() + duration);
+              // 혹시 대기 중이던 START 메시지가 있다면 바로 처리하여 교착을 방지
+              startPendingRoundIfExists();
+          }
+      };
+
+      // Show Round Result Modal
+      const sAmt = (payload?.smugglerAmount || 0).toLocaleString();
+      const iAmt = (payload?.inspectorAmount || 0).toLocaleString();
+      const outcome = payload?.outcomeType || 'UNKNOWN';
+      const outcomeMap = {
+          PASS: { label: '통과', desc: '검문 없이 밀수 금액 전부 획득' },
+          INSPECTION_EMPTY: { label: '검문 실패', desc: '검문 금액이 실제보다 커 보상금과 밀수 금액을 모두 획득' },
+          INSPECTION_UNDER: { label: '검문 실패', desc: '검문 금액이 실제보다 커 보상금과 밀수 금액을 모두 획득' },
+          INSPECTION_HIT: { label: '검문 성공', desc: '검문 금액만큼 압수되고 나머지는 밀수꾼이 획득' }
+      };
+      const outcomeText = outcomeMap[outcome]?.label || outcome;
+      const outcomeDesc = outcomeMap[outcome]?.desc || '';
+
+      const smugglerPlayer = state.players.find((p) => String(p.playerId) === String(payload?.smugglerId));
+      const inspectorPlayer = state.players.find((p) => String(p.playerId) === String(payload?.inspectorId));
+      const prevSmuggler = smugglerPlayer?.amount ?? null;
+      const prevInspector = inspectorPlayer?.amount ?? null;
+      const nextSmuggler = payload?.smugglerAmount ?? prevSmuggler ?? 0;
+      const nextInspector = payload?.inspectorAmount ?? prevInspector ?? 0;
+      const deltaSmuggler = prevSmuggler != null ? nextSmuggler - prevSmuggler : null;
+      const deltaInspector = prevInspector != null ? nextInspector - prevInspector : null;
+
+      if (smugglerPlayer) smugglerPlayer.amount = nextSmuggler;
+      if (inspectorPlayer) inspectorPlayer.amount = nextInspector;
+      renderRosters();
+      updateMyInfo();
+
+      const formatDelta = (v) => {
+          if (v == null) return '-';
+          const sign = v > 0 ? '+' : '';
+          return `${sign}$${Math.abs(v).toLocaleString()}`;
+      };
+
+      const sDelta = formatDelta(deltaSmuggler);
+      const iDelta = formatDelta(deltaInspector);
+
+      state.awaitingRoundResult = true;
+      // 라운드 종료 모달을 표시하기 전에 다음 라운드 자동 시작을 막기 위해 roundStarting/roundActive 플래그를 리셋
+      state.roundActive = false;
+      state.roundStarting = false;
+      showGameModal(
+          "정산 내역",
+          `<div class="font-hand text-3xl mb-4">검문 종료. 은닉과 적발의 결과를 정산한다.</div>
+           <div class="text-xl mb-4">검문 종료. 장부를 확인하고 다음 지시를 대기하라.</div>
+           <div class="text-2xl mb-2">결과: <span class="font-bold text-ink-red">${outcomeText}</span></div>
+           ${outcomeDesc ? `<div class="text-lg mb-3 text-ink/80">${outcomeDesc}</div>` : ''}
+           <div class="text-xl mb-2">밀수꾼 손익: ${sDelta}</div>
+           <div class="text-xl mb-2">검사관 손익: ${iDelta}</div>`,
+          '다음 작전 지시까지...',
+          nextRoundLogic
+      );
+  }
+
+  function sendTeamChat(message) {
+      if (!message) return;
+      if (state.chatBlocked) {
+          markChatBlocked(state.lastChatTarget);
+          return;
+      }
+      const ok = cbCommon.sendJson(state.socket, { type: 'SEND_TEAM_CHAT', playerName: state.nickname, message });
+      if (!ok) {
+          toast('채널이 끊겼다.');
+      }
+  }
+
+  function sendRoundChat(message) {
+      if (state.chatBlocked) {
+          markChatBlocked(state.lastChatTarget);
+          return;
+      }
+      if (!state.roundActive) {
+          toast('아직 작전 시간이 아니다.');
+          return;
+      }
+      const participant = state.userId && (String(state.userId) === String(state.smugglerId) || String(state.userId) === String(state.inspectorId));
+      if (!participant) {
+          toast('보안 채널이다. 관계자 외 접근 금지.');
+          return;
+      }
+      const ok = cbCommon.sendJson(state.socket, {
+          type: 'SEND_ROUND_CHAT',
+          playerName: state.nickname,
+          message,
+          currentRound: state.round
+      });
+      if (!ok) toast('전송 실패. 통신 상태를 점검하라.');
+  }
+
+  function commitAction(type) {
+      if (!state.roundActive) {
+          toast('아직 작전 시간이 아니다.');
+          return;
+      }
+      const isSmuggler = state.userId && String(state.userId) === String(state.smugglerId);
+      const isInspector = state.userId && String(state.userId) === String(state.inspectorId);
+      if (type === 'SMUGGLE') {
+          if (!isSmuggler) return toast('네놈은 밀수꾼이 아니다.');
+          const amount = Number(els.smuggleAmount.value || 0);
+          if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_SMUGGLE_AMOUNT', amount })) toast('전송 실패. 통신 상태를 점검하라.');
+          else state.smugglerActionDone = true;
+      } else if (type === 'INSPECTION') {
+          if (!isInspector) return toast('네놈은 검사관이 아니다.');
+          const amount = Number(els.inspectionAmount.value || 0);
+          if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_INSPECTION', amount })) toast('전송 실패. 통신 상태를 확인하라.');
+          else state.inspectorActionDone = true;
+      } else if (type === 'PASS') {
+          if (!isInspector) return toast('검사관만 통과시킬 수 있다.');
+          if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_PASS' })) toast('전송 실패. 통신 상태를 점검하라.');
+          else state.inspectorActionDone = true;
+      }
+  }
+
+  function sendChat(e, containerId) {
+      e.preventDefault();
+      const input = e.target.querySelector('input');
+      const msg = input.value.trim();
+      if (!msg) return;
+      state.lastChatTarget = containerId;
+      if (state.chatBlocked) {
+          markChatBlocked(containerId);
+          input.value = '';
+          return;
+      }
+      if (containerId === 'round-chat') {
+          sendRoundChat(msg);
+      } else {
+          const targetTeam = containerId === 's-team-chat' ? 'SMUGGLER' : 'INSPECTOR';
+          if (state.myRole !== targetTeam) {
+              toast('보안 등급 부족. 해당 채널 접근 불가.');
+          } else {
+              sendTeamChat(msg);
+          }
+      }
+      input.value = '';
+  }
+
+  function resetTransferStatus() {
+      if (!els.transferStatus) return;
+      els.transferStatus.classList.add('hidden-view');
+      els.transferStatus.textContent = '';
+      els.transferStatus.style.color = '#7f1d1d';
+  }
+
+  function showTransferStatus(message, color = '#7f1d1d') {
+      if (!els.transferStatus) return;
+      els.transferStatus.textContent = message;
+      els.transferStatus.style.color = color;
+      els.transferStatus.classList.remove('hidden-view');
+  }
+
+  function confirmTransfer(e) {
+      e.preventDefault();
+      if (state.transferPending) {
+          toast('송금 처리 중이다. 잠시만 기다려라.');
+          return;
+      }
+      const amount = Number(els.transferAmount.value || 0);
+      const targetId = els.transferTargetId.value;
+      if (!targetId) {
+          showTransferStatus('수취인을 선택하라.', '#b91c1c');
+          return;
+      }
+      if (!amount || amount <= 0) {
+          showTransferStatus('금액을 정확히 입력하라.', '#b91c1c');
+          return;
+      }
+      resetTransferStatus();
+      state.transferDraft = { targetId: Number(targetId), amount: amount };
+      if (cbCommon.sendJson(state.socket, { type: 'TRANSFER_MONEY', targetPlayerId: Number(targetId), amount: amount })) {
+          state.transferPending = true;
+          showTransferStatus('송금 중...');
+      } else {
+          showTransferStatus('송금을 처리할 수 없습니다. 연결을 확인하세요.', '#b91c1c');
+      }
+  }
+
+  function openTransferModal(targetId, targetName) {
+      if (state.transferPending) {
+          toast('송금 처리 중이다. 잠시만 기다려라.');
+          return;
+      }
+      if (!targetId) {
+          toast('대상을 선택할 수 없다.');
+          return;
+      }
+      els.transferTargetId.value = targetId;
+      els.transferTargetName.textContent = targetName || targetId;
+      els.transferAmount.value = '';
+      resetTransferStatus();
+      state.transferDraft = null;
+      els.transferModal.classList.remove('hidden-view');
+  }
+
+  function closeTransferModal() {
+      els.transferModal.classList.add('hidden-view');
+  }
+
+  function handleMessage(msg) {
+      if (!msg || !msg.type) return;
+      if (msg.type === 'START_GAME') {
+          cbCommon.clearGamePayload();
+          cbCommon.saveGamePayload(msg.payload);
+          applyStartGame(msg.payload);
+      } else if (msg.type === 'EXCEPTION_MESSAGE') {
+          state.transferPending = false;
+          const err = cbCommon.resolveExceptionMessage(msg.payload, { fallback: '송금을 처리할 수 없습니다.' });
+          if (msg.payload?.code === 'CHAT_USER_BLOCKED') {
+              markChatBlocked(state.lastChatTarget);
+              return;
+          }
+          if (!els.transferModal.classList.contains('hidden-view')) {
+              showTransferStatus(err, '#b91c1c');
+          } else {
+              toast(err);
+          }
+      } else if (msg.type === 'TRANSFER') {
+          const p = msg.payload || {};
+          const senderId = p.senderId ?? p.fromPlayerId ?? null;
+          const targetId = p.targetId ?? p.toPlayerId ?? null;
+          const senderBalance = Number(p.senderBalance ?? NaN);
+          const targetBalance = Number(p.targetBalance ?? NaN);
+          const amount = Number(p.amount ?? 0);
+          const sender = senderId != null ? state.players.find((pl) => String(pl.playerId) === String(senderId)) : null;
+          const target = targetId != null ? state.players.find((pl) => String(pl.playerId) === String(targetId)) : null;
+
+          if (sender && !Number.isNaN(senderBalance)) sender.amount = senderBalance;
+          if (target && !Number.isNaN(targetBalance)) target.amount = targetBalance;
+
+          updateMyInfo();
+          renderRosters();
+          toast(`자금 이체 완료: $${amount.toLocaleString()}`);
+          state.transferPending = false;
+          state.transferDraft = null;
+          closeTransferModal();
+      } else if (msg.type === 'TRANSFER_FAILED') {
+          state.transferPending = false;
+          const reason = msg.payload?.reason || 'UNKNOWN';
+          const message = (() => {
+              switch (reason) {
+                  case 'ALREADY_PARTICIPATED': return '자금 이동은 라운드당 1회로 제한된다.';
+                  case 'INSUFFICIENT_BALANCE': return '돈이 모자라.';
+                  case 'INVALID_UNIT': return '자금은 $100 단위로만 분할 가능하다.';
+                  case 'DIFFERENT_TEAM': return '보안 경고. 내부인에게만 전송할 수 있다.';
+                  default: return '통신 장애로 자금 전송에 실패했다. 다시 시도하라.';
+              }
+          })();
+          if (!els.transferModal.classList.contains('hidden-view')) {
+              showTransferStatus(message, '#b91c1c');
+          } else {
+              toast(message);
+          }
+      } else if (msg.type === 'REGISTERED_SMUGGLER_ID') {
+          const pid = msg.payload?.playerId ?? msg.payload;
+          const player = state.players.find((p) => String(p.playerId) === String(pid));
+          state.candidateSmuggler = { playerId: pid, playerName: player?.playerName || pid, locked: false, approvers: [] };
+          renderSelectionState();
+      } else if (msg.type === 'REGISTERED_INSPECTOR_ID') {
+          const pid = msg.payload?.playerId ?? msg.payload;
+          const player = state.players.find((p) => String(p.playerId) === String(pid));
+          state.candidateInspector = { playerId: pid, playerName: player?.playerName || pid, locked: false, approvers: [] };
+          renderSelectionState();
+      } else if (msg.type === 'FIXED_SMUGGLER_ID') {
+          const pid = msg.payload?.playerId ?? msg.payload;
+          const player = state.players.find((p) => String(p.playerId) === String(pid));
+          state.candidateSmuggler = { playerId: pid, playerName: player?.playerName || pid, locked: true, approvers: state.candidateSmuggler.approvers || [] };
+          state.smugglerId = pid;
+          renderSelectionState();
+          maybeAutoStartRoundFromLocks();
+      } else if (msg.type === 'FIXED_SMUGGLER_ID_FOR_INSPECTOR') {
+          // 상대 팀이 밀수꾼을 확정했음을 알리지만 신원은 가린다.
+          state.candidateSmuggler = { playerId: null, playerName: null, locked: true, approvers: [] };
+          renderSelectionState();
+      } else if (msg.type === 'FIXED_INSPECTOR_ID') {
+          const pid = msg.payload?.playerId ?? msg.payload;
+          const player = state.players.find((p) => String(p.playerId) === String(pid));
+          state.candidateInspector = { playerId: pid, playerName: player?.playerName || pid, locked: true, approvers: state.candidateInspector.approvers || [] };
+          state.inspectorId = pid;
+          renderSelectionState();
+          maybeAutoStartRoundFromLocks();
+      } else if (msg.type === 'FIXED_INSPECTOR_ID_FOR_SMUGGLER') {
+          // 상대 팀이 검사관을 확정했음을 알리지만 신원은 가린다.
+          state.candidateInspector = { playerId: null, playerName: null, locked: true, approvers: [] };
+          renderSelectionState();
+      } else if (msg.type === 'SMUGGLER_APPROVAL_STATE') {
+          const p = msg.payload || {};
+          const pid = p.candidateId ?? null;
+          const approvers = Array.isArray(p.approverIds) ? p.approverIds : [];
+          const player = pid != null ? state.players.find((pl) => String(pl.playerId) === String(pid)) : null;
+          state.candidateSmuggler = {
+              playerId: pid,
+              playerName: pid != null ? (player?.playerName || pid) : null,
+              locked: !!p.fixed,
+              approvers
+          };
+          renderSelectionState();
+      } else if (msg.type === 'INSPECTOR_APPROVAL_STATE') {
+          const p = msg.payload || {};
+          const pid = p.candidateId ?? null;
+          const approvers = Array.isArray(p.approverIds) ? p.approverIds : [];
+          const player = pid != null ? state.players.find((pl) => String(pl.playerId) === String(pid)) : null;
+          state.candidateInspector = {
+              playerId: pid,
+              playerName: pid != null ? (player?.playerName || pid) : null,
+              locked: !!p.fixed,
+              approvers
+          };
+          renderSelectionState();
+      } else if (msg.type === 'ROUND_SELECTION_TIMER') {
+          const p = msg.payload || {};
+          if (state.awaitingRoundResult) {
+              state.pendingSelectionTimerPayload = p;
+              return;
+          }
+          applySelectionTimer(p);
+      } else if (msg.type === 'START_NEW_ROUND' || msg.type === 'START_NOW_ROUND') {
+          const startPayload = msg.payload || {};
+          if (state.awaitingRoundResult) {
+              queuePendingRoundStart(startPayload);
+              return;
+          }
+          state.requiresSelection = false; // 강제 상태 정리
+          stopRoundTimer(); // 선택 타이머 중단
+          state.pendingRoundStartPayload = null;
+          closeGameModal();
+          startRoundFromPayload(startPayload);
+      } else if (msg.type === 'DECIDED_SMUGGLER_AMOUNT_FOR_SMUGGLER_TEAM' || msg.type === 'DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM') {
+          state.smugglerActionDone = true;
+          appendChat(els.roundChat, { message: '밀수꾼, 금액을 결정했다.', isSystem: true });
+      } else if (msg.type === 'DECIDED_PASS') {
+          state.inspectorActionDone = true;
+          appendChat(els.roundChat, { message: '검사관, 통과를 선택했다.', isSystem: true }); // Changed for consistent messaging
+      } else if (msg.type === 'DECIDED_INSPECTION' || msg.type === 'DECIDED_INSPECTOR_BEHAVIOR_FOR_SMUGGLER_TEAM') {
+          state.inspectorActionDone = true;
+          appendChat(els.roundChat, { message: '검사관, 검문 방식을 결정했다.', isSystem: true });
+      } else if (msg.type === 'FINISHED_ROUND') {
+          finishRound(msg.payload);
+      } else if (msg.type === 'FINISHED_GAME') {
+          const p = msg.payload || {};
+          finalizeGame(p.gameWinnerType, p.smugglerTotalBalance, p.inspectorTotalBalance);
+      } else if (msg.type === 'TEAM_CHAT_MESSAGE' || msg.type === 'SMUGGLER_TEAM_CHAT_MESSAGE' || msg.type === 'INSPECTOR_TEAM_CHAT_MESSAGE') {
+          const target = msg.type === 'INSPECTOR_TEAM_CHAT_MESSAGE' ? els.iChat : (msg.type === 'SMUGGLER_TEAM_CHAT_MESSAGE' ? els.sChat : (state.myRole === 'SMUGGLER' ? els.sChat : els.iChat));
+          const m = msg.payload;
+          appendChat(target, { writerName: m.writerName, writerId: m.writerId, message: m.message, messageId: m.messageId });
+      } else if (msg.type === 'ROUND_CHAT_MESSAGE') {
+          const m = msg.payload;
+          appendChat(els.roundChat, { writerName: m.writerName, writerId: m.writerId, message: m.message, messageId: m.messageId });
+      } else if (msg.type === 'CHAT_MESSAGE_MASKED') {
+          const p = msg.payload || {};
+          if (p.chatEvent === 'ROUND_CHAT') maskChat(els.roundChat, p.messageId);
+          else if (p.chatEvent === 'SMUGGLER_TEAM_CHAT') maskChat(els.sChat, p.messageId);
+          else if (p.chatEvent === 'INSPECTOR_TEAM_CHAT') maskChat(els.iChat, p.messageId);
+      }
+  }
+
+  function connectSocket() {
+      if (!state.userId) return;
+      if (state.socket) state.socket.close();
+      state.socket = cbCommon.createSocket(state.userId, {
+          onOpen: () => toast('작전 상황실 연결 완료.'),
+          onMessage: handleMessage,
+          onClose: () => toast('상황실 연결 끊김.'),
+          onError: () => toast('통신 장애 발생.')
+      });
+  }
+
+  async function init() {
+      const session = cbCommon.requireSession();
+      if (!session) return;
+      state.userId = Number(session.userId);
+      state.nickname = session.nickname || `Player ${state.userId}`;
+
+      await cbCommon.login(state.userId, { silent: true });
+
+      document.querySelectorAll('.amount-arrow').forEach((btn) => {
+          const delta = Number(btn.dataset.delta || 0);
+          const targetId = btn.dataset.target;
+          btn.addEventListener('click', () => bumpAmount(document.getElementById(targetId), delta));
+      });
+
+      const cachedGame = cbCommon.loadGamePayload();
+      if (cachedGame) {
+          applyStartGame(cachedGame);
+      }
+
+      connectSocket();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
