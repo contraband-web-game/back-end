@@ -53,7 +53,7 @@ public class LobbyCreationHandler {
         players.put(hostId, hostSession);
 
         LobbyClientSessionRegistry sessionRegistry = new LobbyClientSessionRegistry(players);
-        LobbyRuntimeState lobbyState = new LobbyRuntimeState(roomId, hostId, entityId, lobby, players);
+        LobbyRuntimeState lobbyState = new LobbyRuntimeState(roomId, hostId, entityId, lobby);
         HostContext hostContext = new HostContext(
                 hostId,
                 hostSession,

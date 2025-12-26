@@ -2,12 +2,10 @@ package com.game.contraband.infrastructure.actor.game.engine.lobby;
 
 import com.game.contraband.domain.game.engine.lobby.Lobby;
 import com.game.contraband.domain.game.player.PlayerProfile;
-import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.apache.pekko.actor.typed.ActorRef;
 
 public class LobbyRuntimeState {
 
@@ -15,20 +13,12 @@ public class LobbyRuntimeState {
     private final Long hostId;
     private final String entityId;
     private final Lobby lobby;
-    private final LobbyClientSessionRegistry clientSessions;
 
-    public LobbyRuntimeState(
-            Long roomId,
-            Long hostId,
-            String entityId,
-            Lobby lobby,
-            java.util.Map<Long, ActorRef<ClientSessionCommand>> clientSessions
-    ) {
+    public LobbyRuntimeState(Long roomId, Long hostId, String entityId, Lobby lobby) {
         this.roomId = Objects.requireNonNull(roomId, "roomId");
         this.hostId = Objects.requireNonNull(hostId, "hostId");
         this.entityId = Objects.requireNonNull(entityId, "entityId");
         this.lobby = Objects.requireNonNull(lobby, "lobby");
-        this.clientSessions = new LobbyClientSessionRegistry(clientSessions);
     }
 
     public Long roomId() {
@@ -45,10 +35,6 @@ public class LobbyRuntimeState {
 
     public Lobby lobby() {
         return lobby;
-    }
-
-    public LobbyClientSessionRegistry clientSessions() {
-        return clientSessions;
     }
 
     public boolean isHost(Long playerId) {
@@ -79,25 +65,5 @@ public class LobbyRuntimeState {
 
     public void removePlayer(Long playerId) {
         lobby.removePlayer(playerId);
-    }
-
-    public ActorRef<ClientSessionCommand> clientSession(Long playerId) {
-        return clientSessions.get(playerId);
-    }
-
-    public ActorRef<ClientSessionCommand> addClientSession(Long playerId, ActorRef<ClientSessionCommand> session) {
-        return clientSessions.add(playerId, session);
-    }
-
-    public ActorRef<ClientSessionCommand> removeClientSession(Long playerId) {
-        return clientSessions.remove(playerId);
-    }
-
-    public int clientSessionCount() {
-        return clientSessions.size();
-    }
-
-    public Iterable<ActorRef<ClientSessionCommand>> clientSessionValues() {
-        return clientSessions.values();
     }
 }
