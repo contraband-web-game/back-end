@@ -50,6 +50,7 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
                                   .onMessage(RegisterRoom.class, this::onRegisterRoom)
                                   .onMessage(SyncRoomRemoved.class, this::onSyncRoomRemoved)
                                   .onMessage(ResolveEntityId.class, this::onResolveEntityId)
+                                  .onMessage(RoomRemovalNotification.class, this::onRoomRemovalNotification)
                                   .build();
     }
 
@@ -142,6 +143,20 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
         return this;
     }
 
+    private Behavior<GameRoomCoordinatorCommand> onRoomRemovalNotification(RoomRemovalNotification command) {
+        String entityId = roomToEntity.remove(command.roomId());
+
+        if (entityId != null && entityRoomCounts.containsKey(entityId)) {
+            entityRoomCounts.compute(entityId, (k, v) -> v == null || v <= 1 ? 0 : v - 1);
+            if (entityRoomCounts.get(entityId) == 0) {
+                gameLifecycleEventPublisher.publishEntityRemoved(entityId);
+            }
+            gameLifecycleEventPublisher.publishRoomRemoved(entityId, command.roomId());
+        }
+
+        return this;
+    }
+
     public interface GameRoomCoordinatorCommand extends CborSerializable { }
 
     public record AllocateEntity(ActorRef<StatusReply<TargetEntity>> replyTo) implements GameRoomCoordinatorCommand { }
@@ -152,6 +167,7 @@ public class GameRoomCoordinatorEntity extends AbstractBehavior<GameRoomCoordina
 
     public record SyncRoomRemoved(long roomId) implements GameRoomCoordinatorCommand { }
 
-    public record ResolveEntityId(long roomId, ActorRef<StatusReply<String>> replyTo) implements
-            GameRoomCoordinatorCommand { }
+    public record ResolveEntityId(long roomId, ActorRef<StatusReply<String>> replyTo) implements GameRoomCoordinatorCommand { }
+
+    public record RoomRemovalNotification(long roomId) implements GameRoomCoordinatorCommand { }
 }
