@@ -16,6 +16,7 @@ import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.Terminated;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -67,6 +68,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(RequestSendTeamChat.class, this::onRequestSendTeamChat)
                                   .onMessage(RequestSendRoundChat.class, this::onRequestSendRoundChat)
                                   .onMessage(RequestSendChat.class, this::onRequestSendChat)
+                                  .onSignal(Terminated.class, this::onTerminated)
                                   .build();
     }
 
@@ -188,6 +190,16 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         }
         if (gameChatRef.teamRole.isInspector()) {
             gameChatRef.chat.tell(new ChatInspectorTeam(command.playerId(), command.playerName(), command.message()));
+        }
+        return this;
+    }
+
+    private Behavior<ChatCommand> onTerminated(Terminated signal) {
+        if (lobbyChatHolder.isTerminated(signal.getRef())) {
+            lobbyChatHolder.clear();
+        }
+        if (contrabandGameChatHolder.isTerminated(signal.getRef())) {
+            contrabandGameChatHolder.clear();
         }
         return this;
     }
