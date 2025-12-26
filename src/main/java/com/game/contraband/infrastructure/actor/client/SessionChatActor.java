@@ -6,8 +6,13 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ChatCo
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.SendMessage;
+import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
+import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
+import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatSmugglerTeam;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
+import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
@@ -59,6 +64,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(ClearContrabandGameChat.class, this::onClearContrabandGameChat)
                                   .onMessage(SyncLobbyChat.class, this::onSyncLobbyChat)
                                   .onMessage(ClearLobbyChat.class, this::onClearLobbyChat)
+                                  .onMessage(RequestSendTeamChat.class, this::onRequestSendTeamChat)
+                                  .onMessage(RequestSendRoundChat.class, this::onRequestSendRoundChat)
+                                  .onMessage(RequestSendChat.class, this::onRequestSendChat)
                                   .build();
     }
 
@@ -119,6 +127,68 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private Behavior<ChatCommand> onClearLobbyChat(ClearLobbyChat command) {
         lobbyChatHolder.clear();
+        return this;
+    }
+
+    private Behavior<ChatCommand> onRequestSendTeamChat(RequestSendTeamChat command) {
+        if (chatBlacklistRepository.isBlocked(command.playerId())) {
+            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다.");
+            return this;
+        }
+        ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
+        if (gameChatRef == null) {
+            return this;
+        }
+        if (gameChatRef.teamRole.isSmuggler()) {
+            gameChatRef.chat.tell(new ChatSmugglerTeam(command.playerId(), command.playerName(), command.message()));
+            return this;
+        }
+        if (gameChatRef.teamRole.isInspector()) {
+            gameChatRef.chat.tell(new ChatInspectorTeam(command.playerId(), command.playerName(), command.message()));
+        }
+        return this;
+    }
+
+    private Behavior<ChatCommand> onRequestSendRoundChat(RequestSendRoundChat command) {
+        if (chatBlacklistRepository.isBlocked(command.playerId())) {
+            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다.");
+            return this;
+        }
+        ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
+
+        if (gameChatRef != null) {
+            gameChatRef.chat.tell(new ChatInRound(command.playerId(), command.playerName(), command.message(), command.currentRound()));
+        }
+
+        return this;
+    }
+
+    private Behavior<ChatCommand> onRequestSendChat(RequestSendChat command) {
+        if (chatBlacklistRepository.isBlocked(command.playerId())) {
+            sender.sendExceptionMessage(
+                    ExceptionCode.CHAT_USER_BLOCKED,
+                    "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
+            );
+            return this;
+        }
+        ActorRef<LobbyChatCommand> lobbyChat = lobbyChatHolder.get();
+        if (lobbyChat != null) {
+            lobbyChat.tell(new SendMessage(command.playerId(), command.playerName(), command.message()));
+            return this;
+        }
+
+        ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
+        if (gameChatRef == null) {
+            return this;
+        }
+
+        if (gameChatRef.teamRole.isSmuggler()) {
+            gameChatRef.chat.tell(new ChatSmugglerTeam(command.playerId(), command.playerName(), command.message()));
+            return this;
+        }
+        if (gameChatRef.teamRole.isInspector()) {
+            gameChatRef.chat.tell(new ChatInspectorTeam(command.playerId(), command.playerName(), command.message()));
+        }
         return this;
     }
 
@@ -195,4 +265,10 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     public record SyncLobbyChat(ActorRef<LobbyChatCommand> lobbyChat) implements ChatCommand { }
 
     public record ClearLobbyChat() implements ChatCommand { }
+
+    public record RequestSendTeamChat(Long playerId, String playerName, String message) implements ChatCommand { }
+
+    public record RequestSendRoundChat(Long playerId, String playerName, String message, int currentRound) implements ChatCommand { }
+
+    public record RequestSendChat(Long playerId, String playerName, String message) implements ChatCommand { }
 }
