@@ -42,7 +42,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
     public static Behavior<ContrabandGameCommand> create(
             Long roomId,
             String entityId,
-            ContrabandGame contrabandGamee,
+            ContrabandGame contrabandGame,
             ActorRef<LobbyCommand> parent,
             Map<Long, ActorRef<ClientSessionCommand>> clientSessions,
             ChatMessageEventPublisher chatMessageEventPublisher,
@@ -52,7 +52,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
         return Behaviors.setup(
                 context -> {
                     ClientSessionRegistry clientSessionRegistry = ClientSessionRegistry.create(
-                            contrabandGamee,
+                            contrabandGame,
                             clientSessions,
                             context,
                             roomId,
@@ -71,7 +71,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
 
                     clientSessionRegistry.syncGameChatForAll(gameChat);
 
-                    RoundGameContext roundGameContext = new RoundGameContext(contrabandGamee);
+                    RoundGameContext roundGameContext = new RoundGameContext(contrabandGame);
                     RoundClientMessenger roundClientMessenger = new RoundClientMessenger(
                             clientSessionRegistry,
                             parent,
@@ -82,10 +82,10 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
                     );
                     RoundChatCoordinator roundChatCoordinator = new RoundChatCoordinator(gameChat, clientSessionRegistry);
                     SelectionParticipants participants = new SelectionParticipants(
-                            contrabandGamee.smugglerPlayers(),
-                            contrabandGamee.inspectorPlayers(),
-                            contrabandGamee.smugglerTeamSize(),
-                            contrabandGamee.inspectorTeamSize()
+                            contrabandGame.smugglerPlayers(),
+                            contrabandGame.inspectorPlayers(),
+                            contrabandGame.smugglerTeamSize(),
+                            contrabandGame.inspectorTeamSize()
                     );
                     ActorRef<ContrabandGameCommand> roundActor = context.spawn(
                             ContrabandRoundActor.create(
