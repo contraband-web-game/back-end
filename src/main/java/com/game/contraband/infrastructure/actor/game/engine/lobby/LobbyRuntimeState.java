@@ -1,9 +1,12 @@
 package com.game.contraband.infrastructure.actor.game.engine.lobby;
 
 import com.game.contraband.domain.game.engine.lobby.Lobby;
+import com.game.contraband.domain.game.player.PlayerProfile;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
-import java.util.Map;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.pekko.actor.typed.ActorRef;
 
 public class LobbyRuntimeState {
@@ -19,7 +22,7 @@ public class LobbyRuntimeState {
             Long hostId,
             String entityId,
             Lobby lobby,
-            Map<Long, ActorRef<ClientSessionCommand>> clientSessions
+            java.util.Map<Long, ActorRef<ClientSessionCommand>> clientSessions
     ) {
         this.roomId = Objects.requireNonNull(roomId, "roomId");
         this.hostId = Objects.requireNonNull(hostId, "hostId");
@@ -46,6 +49,24 @@ public class LobbyRuntimeState {
 
     public LobbyClientSessionRegistry clientSessions() {
         return clientSessions;
+    }
+
+    public List<LobbyParticipant> lobbyParticipants() {
+        Stream<PlayerProfile> smugglerPlayers = lobby.getSmugglerDraft().stream();
+        Stream<PlayerProfile> inspectorPlayers = lobby.getInspectorDraft().stream();
+
+        return Stream.concat(smugglerPlayers, inspectorPlayers)
+                     .map(profile -> new LobbyParticipant(
+                             profile.getPlayerId(),
+                             profile.getName(),
+                             profile.getTeamRole(),
+                             lobby.getReadyStates().getOrDefault(profile.getPlayerId(), false)
+                     ))
+                     .toList();
+    }
+
+    public PlayerProfile findPlayerProfile(Long playerId) {
+        return lobby.findPlayerProfile(playerId);
     }
 
     public ActorRef<ClientSessionCommand> clientSession(Long playerId) {
