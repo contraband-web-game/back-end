@@ -6,6 +6,7 @@ import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
+import com.game.contraband.infrastructure.actor.manage.GameManagerEntity;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity.GameRoomCoordinatorCommand;
 import com.game.contraband.infrastructure.event.MonitorEventBroadcaster;
@@ -20,6 +21,7 @@ import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
+import org.apache.pekko.cluster.sharding.typed.javadsl.Entity;
 import org.apache.pekko.cluster.typed.Cluster;
 import org.apache.pekko.cluster.typed.ClusterSingleton;
 import org.apache.pekko.cluster.typed.JoinSeedNodes;
@@ -52,6 +54,7 @@ public class ActorConfig {
         ActorSystem<GuardianCommand> system = ActorSystem.create(
                 Behaviors.setup(context -> {
                     ClusterSingleton clusterSingleton = ClusterSingleton.get(context.getSystem());
+                    ClusterSharding sharding = ClusterSharding.get(context.getSystem());
 
                     ActorRef<RoomDirectoryCommand> roomDirectory = clusterSingleton.init(
                             SingletonActor.of(
@@ -59,7 +62,7 @@ public class ActorConfig {
                                     "room-directory"
                             )
                     );
-                    ActorRef<GameRoomCoordinatorCommand> gameRoomsCoordinator = clusterSingleton.init(
+                    ActorRef<GameRoomCoordinatorCommand> gameRoomCoordinator = clusterSingleton.init(
                             SingletonActor.of(
                                     GameRoomCoordinatorEntity.create(
                                             DEFAULT_MAX_ROOMS_PER_ENTITY,
@@ -68,10 +71,26 @@ public class ActorConfig {
                                     "game-rooms-coordinator"
                             )
                     );
+                    sharding.init(
+                            Entity.of(
+                                    GameManagerEntity.ENTITY_TYPE_KEY,
+                                    entityContext -> GameManagerEntity.create(
+                                            entityContext.getEntityId(),
+                                            Long.parseLong(
+                                                    entityContext.getEntityId()
+                                                                 .replace("game-rooms-", "")
+                                            ),
+                                            gameRoomCoordinator,
+                                            roomDirectory,
+                                            gameLifecycleEventPublisher,
+                                            chatBlacklistRepository
+                                    )
+                            )
+                    );
 
                     return GuardianActor.create(
                             roomDirectory,
-                            gameRoomsCoordinator,
+                            gameRoomCoordinator,
                             monitorEventBroadcaster,
                             chatBlacklistRepository
                     );
