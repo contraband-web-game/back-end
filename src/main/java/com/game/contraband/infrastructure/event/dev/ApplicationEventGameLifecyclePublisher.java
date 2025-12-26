@@ -1,4 +1,4 @@
-package com.game.contraband.infrastructure.event;
+package com.game.contraband.infrastructure.event.dev;
 
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import lombok.RequiredArgsConstructor;
