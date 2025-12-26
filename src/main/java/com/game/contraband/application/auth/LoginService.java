@@ -6,8 +6,10 @@ import com.game.contraband.domain.user.User;
 import com.game.contraband.domain.user.vo.RegistrationId;
 import com.game.contraband.domain.user.vo.Social;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+@Profile("!dev")
 @Service
 @RequiredArgsConstructor
 public class LoginService {
