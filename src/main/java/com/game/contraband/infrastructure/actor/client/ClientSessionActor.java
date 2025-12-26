@@ -74,7 +74,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(ChatCommand.class, this::forwardToChat)
                                   .onMessage(UpdateActiveGame.class, this::onUpdateActiveGame)
                                   .onMessage(ClearActiveGame.class, this::onClearActiveGame)
-                                  .onMessage(ReSyncConnection.class, this::onReSyncConnection)
+                                  .onMessage(ReSyncClientSession.class, this::onReSyncClientSession)
                                   .onSignal(PostStop.class, this::onPostStop)
                                   .build();
     }
@@ -104,7 +104,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
         return this;
     }
 
-    private Behavior<ClientSessionCommand> onReSyncConnection(ReSyncConnection command) {
+    private Behavior<ClientSessionCommand> onReSyncClientSession(ReSyncClientSession command) {
         inbound.tell(new SessionInboundActor.ReSyncConnection(command.playerId()));
         presence.tell(new SessionPresenceActor.ResubscribeRoomDirectory());
         return this;
@@ -132,7 +132,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
 
     public record UpdateActiveGame(Long roomId, String entityId) implements ClientSessionCommand { }
 
-    public record ReSyncConnection(Long playerId) implements ClientSessionCommand { }
+    public record ReSyncClientSession(Long playerId) implements ClientSessionCommand { }
 
     public record ClearActiveGame() implements ClientSessionCommand { }
 
