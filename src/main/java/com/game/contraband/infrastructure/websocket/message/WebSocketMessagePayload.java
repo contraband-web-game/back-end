@@ -71,4 +71,14 @@ public interface WebSocketMessagePayload {
     record CreateLobbyPayload(int maxPlayerCount, String lobbyName, TeamRole teamRole) implements WebSocketMessagePayload { }
 
     record JoinedLobbyPayload(Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements WebSocketMessagePayload { }
+
+    record OtherPlayerJoinedLobbyPayload(Long joinerId, String joinerName, TeamRole teamRole, int currentPlayerCount) implements WebSocketMessagePayload { }
+
+    record ToggledReadyPayload(Long playerId, boolean toggleReadyState) implements WebSocketMessagePayload { }
+
+    record ToggledTeamPayload(Long playerId, String playerName, TeamRole teamRole) implements WebSocketMessagePayload { }
+
+    record OtherPlayerLeftLobbyPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record OtherPlayerKickedPayload(Long playerId) implements WebSocketMessagePayload { }
 }

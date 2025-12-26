@@ -74,6 +74,16 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(PropagateTransfer.class, this::onPropagateTransfer)
                                   .onMessage(PropagateCreateLobby.class, this::onPropagateCreateLobby)
                                   .onMessage(PropagateCreatedLobby.class, this::onPropagateCreatedLobby)
+                                  .onMessage(PropagateOtherPlayerJoinedLobby.class, this::onPropagateOtherPlayerJoinedLobby)
+                                  .onMessage(PropagateJoinedLobby.class, this::onPropagateJoinedLobby)
+                                  .onMessage(PropagateToggleReady.class, this::onPropagateToggleReady)
+                                  .onMessage(PropagateToggleTeam.class, this::onPropagateToggleTeam)
+                                  .onMessage(PropagateLeftLobby.class, this::onPropagateLeftLobby)
+                                  .onMessage(PropagateOtherPlayerLeftLobby.class, this::onPropagateOtherPlayerLeftLobby)
+                                  .onMessage(PropagateKicked.class, this::onPropagateKicked)
+                                  .onMessage(PropagateOtherPlayerKicked.class, this::onPropagateOtherPlayerKicked)
+                                  .onMessage(PropagateHostDeletedLobby.class, this::onPropagateHostDeletedLobby)
+                                  .onMessage(PropagateLobbyDeleted.class, this::onPropagateLobbyDeleted)
                                   .build();
     }
 
@@ -293,6 +303,68 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateOtherPlayerJoinedLobby(PropagateOtherPlayerJoinedLobby command) {
+        sender.sendOtherPlayerJoinedLobby(
+                command.joinerId(),
+                command.joinerName(),
+                command.teamRole(),
+                command.currentPlayerCount()
+        );
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateJoinedLobby(PropagateJoinedLobby command) {
+        sender.sendJoinedLobby(
+                command.roomId(),
+                command.hostId(),
+                command.maxPlayerCount(),
+                command.currentPlayerCount(),
+                command.lobbyName(),
+                command.lobbyParticipants()
+        );
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateToggleReady(PropagateToggleReady command) {
+        sender.sendToggledReady(command.playerId(), command.toggleReadyState());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateToggleTeam(PropagateToggleTeam command) {
+        sender.sendToggledTeam(command.playerId(), command.playerName(), command.teamRole());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateLeftLobby(PropagateLeftLobby command) {
+        sender.sendLeftLobby();
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateOtherPlayerLeftLobby(PropagateOtherPlayerLeftLobby command) {
+        sender.sendOtherPlayerLeftLobby(command.playerId());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateKicked(PropagateKicked command) {
+        sender.sendKickedLobby();
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateOtherPlayerKicked(PropagateOtherPlayerKicked command) {
+        sender.sendOtherPlayerKicked(command.playerId());
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateHostDeletedLobby(PropagateHostDeletedLobby command) {
+        sender.sendHostDeletedLobby();
+        return this;
+    }
+
+    private Behavior<OutboundCommand> onPropagateLobbyDeleted(PropagateLobbyDeleted command) {
+        sender.sendLobbyDeleted();
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -340,4 +412,24 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record PropagateCreateLobby(ActorRef<LobbyCommand> lobby, int maxPlayerCount, String lobbyName, TeamRole teamRole) implements OutboundCommand { }
 
     public record PropagateCreatedLobby(ActorRef<LobbyCommand> lobby, Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements OutboundCommand { }
+
+    public record PropagateOtherPlayerJoinedLobby(Long joinerId, String joinerName, TeamRole teamRole, int currentPlayerCount) implements OutboundCommand { }
+
+    public record PropagateJoinedLobby(ActorRef<LobbyCommand> lobby, Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements OutboundCommand { }
+
+    public record PropagateToggleReady(Long playerId, boolean toggleReadyState) implements OutboundCommand { }
+
+    public record PropagateToggleTeam(Long playerId, String playerName, TeamRole teamRole) implements OutboundCommand { }
+
+    public record PropagateLeftLobby() implements OutboundCommand { }
+
+    public record PropagateOtherPlayerLeftLobby(Long playerId) implements OutboundCommand { }
+
+    public record PropagateKicked() implements OutboundCommand { }
+
+    public record PropagateOtherPlayerKicked(Long playerId) implements OutboundCommand { }
+
+    public record PropagateHostDeletedLobby() implements OutboundCommand { }
+
+    public record PropagateLobbyDeleted() implements OutboundCommand { }
 }

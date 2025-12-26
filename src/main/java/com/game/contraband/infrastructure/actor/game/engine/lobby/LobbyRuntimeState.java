@@ -51,6 +51,14 @@ public class LobbyRuntimeState {
         return clientSessions;
     }
 
+    public boolean isHost(Long playerId) {
+        return hostId.equals(playerId);
+    }
+
+    public boolean isNotHost(Long playerId) {
+        return !this.isHost(playerId);
+    }
+
     public List<LobbyParticipant> lobbyParticipants() {
         Stream<PlayerProfile> smugglerPlayers = lobby.getSmugglerDraft().stream();
         Stream<PlayerProfile> inspectorPlayers = lobby.getInspectorDraft().stream();
@@ -67,6 +75,10 @@ public class LobbyRuntimeState {
 
     public PlayerProfile findPlayerProfile(Long playerId) {
         return lobby.findPlayerProfile(playerId);
+    }
+
+    public void removePlayer(Long playerId) {
+        lobby.removePlayer(playerId);
     }
 
     public ActorRef<ClientSessionCommand> clientSession(Long playerId) {

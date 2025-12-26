@@ -11,4 +11,6 @@ public class GameManagerEntity {
     public record SyncDeleteLobby(Long roomId) implements GameManagerCommand { }
 
     public record SyncEndGame(Long roomId) implements GameManagerCommand { }
+
+    public record SyncRoomStarted(Long roomId, String lobbyName, int maxPlayerCount, int currentPlayerCount) implements GameManagerCommand { }
 }

@@ -20,6 +20,22 @@ public record WebSocketOutboundMessage(WebSocketOutboundMessageType type, WebSoc
             WebSocketOutboundMessageType.DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM,
             WebSocketEmptyPayload.INSTANCE
     );
+    public static WebSocketOutboundMessage LEFT_LOBBY_MESSAGE = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.LEFT_LOBBY,
+            WebSocketEmptyPayload.INSTANCE
+    );
+    public static WebSocketOutboundMessage KICKED_LOBBY_MESSAGE = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.KICKED_LOBBY,
+            WebSocketEmptyPayload.INSTANCE
+    );
+    public static WebSocketOutboundMessage HOST_DELETED_LOBBY = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.HOST_DELETED_LOBBY,
+            WebSocketEmptyPayload.INSTANCE
+    );
+    public static WebSocketOutboundMessage DELETED_LOBBY = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.LOBBY_DELETED,
+            WebSocketEmptyPayload.INSTANCE
+    );
 
     public static WebSocketOutboundMessage withoutPayload(WebSocketOutboundMessageType type) {
         return new WebSocketOutboundMessage(type, WebSocketEmptyPayload.INSTANCE);

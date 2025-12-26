@@ -3,6 +3,7 @@ package com.game.contraband.infrastructure.actor.client;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.InboundCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.ReSyncPlayer;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -31,6 +32,8 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     public Receive<InboundCommand> createReceive() {
         return newReceiveBuilder().onMessage(ReSyncConnection.class, this::onReSyncConnection)
                                   .onMessage(UpdateContrabandGame.class, this::onUpdateContrabandGame)
+                                  .onMessage(UpdateLobby.class, this::onUpdateLobby)
+                                  .onMessage(ClearLobby.class, this::onClearLobby)
                                   .build();
     }
 
@@ -49,7 +52,15 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
             contrabandGame.tell(new SyncReconnectedPlayer(command.playerId()));
             return this;
         }
+        if (lobby != null) {
+            lobby.tell(new ReSyncPlayer(command.playerId(), gateway));
+            return this;
+        }
+        return this;
+    }
 
+    private Behavior<InboundCommand> onClearLobby(ClearLobby command) {
+        this.lobby = null;
         return this;
     }
 
@@ -58,4 +69,6 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     public record UpdateLobby(ActorRef<LobbyCommand> lobby) implements InboundCommand { }
 
     public record ReSyncConnection(Long playerId) implements InboundCommand { }
+
+    public record ClearLobby() implements InboundCommand { }
 }
