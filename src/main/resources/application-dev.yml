@@ -1,0 +1,16 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration
+
+token:
+  access-key: thisIsA32ByteAccessTokenKeyForHS
+  refresh-key: thisIsA32ByteRefreshTokenKeyForH
+  encryption-key: thisIsA32ByteEncryptionKeyForAES
+  issuer: localissuer
+  access-expired-seconds: 3600
+  refresh-expired-seconds: 259200
+  access-expired-millis-seconds: 3600000
+  refresh-expired-millis-seconds: 259200000
