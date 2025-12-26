@@ -1,5 +1,6 @@
 package com.game.contraband.infrastructure.actor.client;
 
+import com.game.contraband.application.game.dto.ActiveGameView;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.global.actor.CborSerializable;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
@@ -12,6 +13,7 @@ import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.pattern.StatusReply;
 
 public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
 
@@ -76,6 +78,7 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(ClearActiveGame.class, this::onClearActiveGame)
                                   .onMessage(ReSyncClientSession.class, this::onReSyncClientSession)
                                   .onMessage(FetchRoomDirectoryPage.class, this::onFetchRoomDirectoryPage)
+                                  .onMessage(QueryActiveGame.class, this::onQueryActiveGame)
                                   .onSignal(PostStop.class, this::onPostStop)
                                   .build();
     }
@@ -121,6 +124,19 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
         return this;
     }
 
+    private Behavior<ClientSessionCommand> onQueryActiveGame(QueryActiveGame command) {
+        command.replyTo()
+               .tell(StatusReply.success(toActiveGameView(activeGame)));
+        return this;
+    }
+
+    private ActiveGameView toActiveGameView(ActiveGame activeGame) {
+        if (activeGame == null) {
+            return null;
+        }
+        return new ActiveGameView(activeGame.roomId(), activeGame.entityId());
+    }
+
     private Behavior<ClientSessionCommand> onPostStop(PostStop signal) {
         presence.tell(new SessionPresenceActor.UnregisterSessionCommand());
         return this;
@@ -143,6 +159,8 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     public record ClearActiveGame() implements ClientSessionCommand { }
 
     public record FetchRoomDirectoryPage(int page, int size) implements ClientSessionCommand { }
+
+    public record QueryActiveGame(ActorRef<StatusReply<ActiveGameView>> replyTo) implements ClientSessionCommand { }
 
     private record ActiveGame(Long roomId, String entityId) { }
 }
