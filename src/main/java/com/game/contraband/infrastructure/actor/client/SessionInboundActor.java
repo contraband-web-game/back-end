@@ -2,6 +2,8 @@ package com.game.contraband.infrastructure.actor.client;
 
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.InboundCommand;
+import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
+import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
@@ -21,16 +23,30 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     }
 
     private final ActorRef<ClientSessionCommand> gateway;
+    private ActorRef<ContrabandGameCommand> smugglingGame;
 
     @Override
     public Receive<InboundCommand> createReceive() {
         return newReceiveBuilder().onMessage(ReSyncConnection.class, this::onReSyncConnection)
+                                  .onMessage(UpdateContrabandGame.class, this::onUpdateContrabandGame)
                                   .build();
     }
 
-    private Behavior<InboundCommand> onReSyncConnection(ReSyncConnection command) {
+    private Behavior<InboundCommand> onUpdateContrabandGame(UpdateContrabandGame command) {
+        this.smugglingGame = command.smugglingGame();
         return this;
     }
+
+    private Behavior<InboundCommand> onReSyncConnection(ReSyncConnection command) {
+        if (smugglingGame != null) {
+            smugglingGame.tell(new SyncReconnectedPlayer(command.playerId()));
+            return this;
+        }
+
+        return this;
+    }
+
+    public record UpdateContrabandGame(ActorRef<ContrabandGameCommand> smugglingGame) implements InboundCommand { }
 
     public record ReSyncConnection(Long playerId) implements InboundCommand { }
 }

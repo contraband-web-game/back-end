@@ -226,6 +226,15 @@ public class Round {
         return inspectionState.isProvided();
     }
 
+    public boolean isPass() {
+        return inspectionState.getDecision().isPass();
+    }
+
+    public boolean isInspection() {
+        return inspectionState.getDecision()
+                              .isInspection();
+    }
+
     public boolean canDeclareSmuggleAmount() {
         return status.isNew() || status.isInspectionDecisionDeclared();
     }

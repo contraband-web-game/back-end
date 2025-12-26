@@ -12,6 +12,14 @@ public record WebSocketOutboundMessage(WebSocketOutboundMessageType type, WebSoc
             WebSocketOutboundMessageType.WS_RECONNECT,
             WebSocketEmptyPayload.INSTANCE
     );
+    public static WebSocketOutboundMessage DECIDED_INSPECTOR_BEHAVIOR_FOR_SMUGGLER_TEAM = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.DECIDED_INSPECTOR_BEHAVIOR_FOR_SMUGGLER_TEAM,
+            WebSocketEmptyPayload.INSTANCE
+    );
+    public static WebSocketOutboundMessage DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM = new WebSocketOutboundMessage(
+            WebSocketOutboundMessageType.DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM,
+            WebSocketEmptyPayload.INSTANCE
+    );
 
     public static WebSocketOutboundMessage withoutPayload(WebSocketOutboundMessageType type) {
         return new WebSocketOutboundMessage(type, WebSocketEmptyPayload.INSTANCE);

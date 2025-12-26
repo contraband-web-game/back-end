@@ -1,11 +1,14 @@
 package com.game.contraband.infrastructure.actor.client;
 
+import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
+import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import java.util.List;
+import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -38,6 +41,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     private final Long playerId;
     private final ClientWebSocketMessageSender sender;
     private final ChatBlacklistRepository chatBlacklistRepository;
+    private final ContrabandGameChatHolder contrabandGameChatHolder = new ContrabandGameChatHolder();
 
     @Override
     public Receive<ChatCommand> createReceive() {
@@ -49,6 +53,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(PropagateSmugglerTeamChat.class, this::onPropagateSmugglerTeamChat)
                                   .onMessage(PropagateInspectorTeamChat.class, this::onPropagateInspectorTeamChat)
                                   .onMessage(PropagateRoundChat.class, this::onPropagateRoundChat)
+                                  .onMessage(SyncContrabandGameChat.class, this::onSyncContrabandGameChat)
+                                  .onMessage(ClearContrabandGameChat.class, this::onClearContrabandGameChat)
                                   .build();
     }
 
@@ -92,6 +98,40 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         return this;
     }
 
+    private Behavior<ChatCommand> onSyncContrabandGameChat(SyncContrabandGameChat command) {
+        contrabandGameChatHolder.set(command.chat(), command.teamRole(), getContext());
+        return this;
+    }
+
+    private Behavior<ChatCommand> onClearContrabandGameChat(ClearContrabandGameChat command) {
+        contrabandGameChatHolder.clear();
+        return this;
+    }
+
+    private static class ContrabandGameChatHolder {
+
+        private GameChatRef ref;
+
+        void set(ActorRef<ContrabandGameChatCommand> ref, TeamRole teamRole, ActorContext<ChatCommand> context) {
+            this.ref = new GameChatRef(ref, teamRole);
+            context.watch(ref);
+        }
+
+        void clear() {
+            this.ref = null;
+        }
+
+        GameChatRef get() {
+            return ref;
+        }
+
+        boolean isTerminated(ActorRef<?> terminated) {
+            return ref != null && ref.chat.equals(terminated);
+        }
+
+        private record GameChatRef(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) { }
+    }
+
     public record PropagateWelcomeMessage(String playerName) implements ChatCommand { }
 
     public record PropagateNewMessage(ChatMessage chatMessage) implements ChatCommand { }
@@ -111,4 +151,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     public record PropagateInspectorTeamChat(ChatMessage chatMessage) implements ChatCommand { }
 
     public record PropagateRoundChat(ChatMessage chatMessage) implements ChatCommand { }
+
+    public record SyncContrabandGameChat(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
+
+    public record ClearContrabandGameChat() implements ChatCommand { }
 }

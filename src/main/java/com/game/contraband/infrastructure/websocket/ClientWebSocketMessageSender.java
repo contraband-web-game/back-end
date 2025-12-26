@@ -1,20 +1,42 @@
 package com.game.contraband.infrastructure.websocket;
 
+import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.round.RoundOutcomeType;
+import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
+import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatKickedPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatLeftPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessageMaskedPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessagePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatWelcomePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedInspectionPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedPassPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedSmugglerAmountForSmugglerTeamPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ExceptionMessagePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FinishedGamePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FinishedRoundPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedInspectorIdPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedSmugglerIdPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.InspectorApprovalStatePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredInspectorIdPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryEntryPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryUpdatedPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SelectionTimerPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SmugglerApprovalStatePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartGamePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartNewRoundPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.TransferFailedPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.TransferPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.WebSocketEmptyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessage;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessageType;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import reactor.core.publisher.Sinks.Many;
 
@@ -151,6 +173,229 @@ public class ClientWebSocketMessageSender {
         );
         emit(new WebSocketOutboundMessage(WebSocketOutboundMessageType.ROUND_CHAT_MESSAGE, payload));
     }
+
+    public void sendStartGame(Long playerId, List<GameStartPlayer> allPlayers) {
+        StartGamePayload payload = new StartGamePayload(playerId, allPlayers);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.START_GAME,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendSelectionTimer(int round, long eventAtMillis, long durationMillis, long serverNowMillis, long endAtMillis) {
+        SelectionTimerPayload payload = new SelectionTimerPayload(round, eventAtMillis, durationMillis, serverNowMillis, endAtMillis);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.ROUND_SELECTION_TIMER,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendRegisteredSmugglerId(Long playerId) {
+        RegisteredSmugglerIdPayload payload = new RegisteredSmugglerIdPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.REGISTERED_SMUGGLER_ID,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFixedSmugglerId(Long playerId) {
+        FixedSmugglerIdPayload payload = new FixedSmugglerIdPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FIXED_SMUGGLER_ID,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFixedSmugglerIdForInspector() {
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FIXED_SMUGGLER_ID_FOR_INSPECTOR,
+                WebSocketEmptyPayload.INSTANCE
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendRegisteredInspectorId(Long playerId) {
+        RegisteredInspectorIdPayload payload = new RegisteredInspectorIdPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.REGISTERED_INSPECTOR_ID,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFixedInspectorId(Long playerId) {
+        FixedInspectorIdPayload payload = new FixedInspectorIdPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FIXED_INSPECTOR_ID,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFixedInspectorIdForSmuggler() {
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FIXED_INSPECTOR_ID_FOR_SMUGGLER,
+                WebSocketEmptyPayload.INSTANCE
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendSmugglerApprovalState(Long candidateId, Set<Long> approverIds, boolean fixed) {
+        SmugglerApprovalStatePayload payload = new SmugglerApprovalStatePayload(
+                candidateId,
+                approverIds.stream()
+                           .toList(),
+                fixed
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.SMUGGLER_APPROVAL_STATE,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendInspectorApprovalState(Long candidateId, Set<Long> approverIds, boolean fixed) {
+        InspectorApprovalStatePayload payload = new InspectorApprovalStatePayload(
+                candidateId,
+                approverIds.stream().toList(),
+                fixed
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.INSPECTOR_APPROVAL_STATE,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendStartNewRound(
+            int currentRound,
+            Long smugglerId,
+            Long inspectorId,
+            long eventAtMillis,
+            long durationMillis,
+            long serverNowMillis,
+            long endAtMillis
+    ) {
+        StartNewRoundPayload payload = new StartNewRoundPayload(currentRound, smugglerId, inspectorId, eventAtMillis, durationMillis, serverNowMillis, endAtMillis);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.START_NEW_ROUND,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFinishedRound(
+            Long smugglerId,
+            int smugglerAmount,
+            Long inspectorId,
+            int inspectorAmount,
+            RoundOutcomeType outcomeType
+    ) {
+        FinishedRoundPayload payload = new FinishedRoundPayload(
+                smugglerId,
+                smugglerAmount,
+                inspectorId,
+                inspectorAmount,
+                outcomeType
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FINISHED_ROUND,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendFinishedGame(GameWinnerType gameWinnerType, int smugglerTotalBalance, int inspectorTotalBalance) {
+        FinishedGamePayload payload = new FinishedGamePayload(
+                gameWinnerType,
+                smugglerTotalBalance,
+                inspectorTotalBalance
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.FINISHED_GAME,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendTransferFailed(TransferFailureReason reason, String message) {
+        TransferFailedPayload payload = new TransferFailedPayload(reason, message);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.TRANSFER_FAILED,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendDecideInspectorBehaviorForSmugglerTeam() {
+        emit(WebSocketOutboundMessage.DECIDED_INSPECTOR_BEHAVIOR_FOR_SMUGGLER_TEAM);
+    }
+
+    public void sendDecidedPass(Long inspectorId) {
+        DecidedPassPayload payload = new DecidedPassPayload(inspectorId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.DECIDED_PASS,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendDecidedInspection(Long inspectorId, int amount) {
+        DecidedInspectionPayload payload = new DecidedInspectionPayload(inspectorId, amount);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.DECIDED_INSPECTION,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendDecideSmugglerAmountForSmugglerTeam(Long smugglerId, int amount) {
+        DecidedSmugglerAmountForSmugglerTeamPayload payload = new DecidedSmugglerAmountForSmugglerTeamPayload(
+                smugglerId,
+                amount
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.DECIDED_SMUGGLER_AMOUNT_FOR_SMUGGLER_TEAM,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendDecideSmugglerAmountForInspectorTeam() {
+        emit(WebSocketOutboundMessage.DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM);
+    }
+
+    public void sendTransfer(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) {
+        TransferPayload payload = new TransferPayload(senderId, targetId, senderBalance, targetBalance, amount);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.TRANSFER,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
 
     public void sendWebSocketPing() {
         emit(WebSocketOutboundMessage.PING_MESSAGE);
