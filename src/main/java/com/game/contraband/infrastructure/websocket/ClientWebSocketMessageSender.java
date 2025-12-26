@@ -1,6 +1,7 @@
 package com.game.contraband.infrastructure.websocket;
 
 import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
@@ -12,6 +13,7 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessageMaskedPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessagePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatWelcomePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.CreateLobbyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedInspectionPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedPassPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedSmugglerAmountForSmugglerTeamPayload;
@@ -396,6 +398,15 @@ public class ClientWebSocketMessageSender {
         emit(webSocketOutboundMessage);
     }
 
+    public void sendCreateLobby(int maxPlayerCount, String lobbyName, TeamRole teamRole) {
+        CreateLobbyPayload payload = new CreateLobbyPayload(maxPlayerCount, lobbyName, teamRole);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.CREATE_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
 
     public void sendWebSocketPing() {
         emit(WebSocketOutboundMessage.PING_MESSAGE);

@@ -2,6 +2,7 @@ package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
@@ -65,4 +66,6 @@ public interface WebSocketMessagePayload {
     record DecidedSmugglerAmountForSmugglerTeamPayload(Long smugglerId, int amount) implements WebSocketMessagePayload { }
 
     record TransferPayload(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements WebSocketMessagePayload { }
+
+    record CreateLobbyPayload(int maxPlayerCount, String lobbyName, TeamRole teamRole) implements WebSocketMessagePayload { }
 }

@@ -9,6 +9,7 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.Client
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.OutboundCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.UpdateActiveGame;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
@@ -70,6 +71,7 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(PropagateDecidedInspection.class, this::onPropagateDecidedInspection)
                                   .onMessage(PropagateDecidedSmuggleAmount.class, this::onPropagateDecidedSmuggleAmount)
                                   .onMessage(PropagateTransfer.class, this::onPropagateTransfer)
+                                  .onMessage(PropagateCreateLobby.class, this::onPropagateCreateLobby)
                                   .build();
     }
 
@@ -272,6 +274,11 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateCreateLobby(PropagateCreateLobby command) {
+        sender.sendCreateLobby(command.maxPlayerCount(), command.lobbyName(), command.teamRole());
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -315,4 +322,6 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record PropagateDecidedSmuggleAmount(Long smugglerId, int amount) implements OutboundCommand { }
 
     public record PropagateTransfer(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements OutboundCommand { }
+
+    public record PropagateCreateLobby(ActorRef<LobbyCommand> lobby, int maxPlayerCount, String lobbyName, TeamRole teamRole) implements OutboundCommand { }
 }
