@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Server Monitoring Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Pretendard:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0f172a;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .entity-node.active {
+            background-color: rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.4);
+        }
+
+        .game-item.selected {
+            background-color: rgba(6, 182, 212, 0.15);
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .chat-bubble:hover .ban-button {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="text-slate-200 overflow-hidden">
+<div class="flex h-screen w-full">
+    <!-- 사이드바: Entity & Game 계층 구조 -->
+    <aside class="w-80 border-r border-slate-800 bg-[#1e293b]/30 flex flex-col shrink-0">
+        <div class="p-6 border-b border-slate-800">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-cyan-500/20 rounded-xl">
+                    <i data-lucide="activity" class="text-cyan-400 w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-white">Monitoring</h1>
+                    <div id="connection-indicator" class="text-[11px] text-slate-500 font-mono flex items-center gap-1 mt-1">
+                        <span data-indicator-dot class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span data-indicator-text>연결 상태 확인 중...</span>
+                    </div>
+                </div>
+            </div>
+
+            <button data-open-blacklist class="w-full flex items-center justify-center gap-2 mb-4 px-4 py-2.5 text-sm font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 transition-all shadow-lg">
+                <i data-lucide="ban" class="w-4 h-4"></i> 블랙리스트 보기
+            </button>
+
+            <div class="relative group">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors"></i>
+                <input
+                        type="text"
+                        id="search-input"
+                        placeholder="방 제목 또는 ID 검색..."
+                        class="w-full bg-[#0f172a] border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-600"
+                >
+            </div>
+        </div>
+
+        <!-- 계층 리스트 컨테이너 -->
+        <div id="hierarchy-container" class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+            <!-- JS에서 렌더링 -->
+        </div>
+
+        <!-- 하단 요약 정보 -->
+        <div class="p-4 bg-slate-900/50 border-t border-slate-800">
+            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                <i data-lucide="terminal" class="w-3 h-3"></i> Server Statistics
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">Nodes: <span id="stat-nodes" class="text-cyan-400 font-bold">0</span></div>
+                <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">Games: <span id="stat-games" class="text-emerald-400 font-bold">0</span></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 메인 콘텐츠: 상세 모니터링 -->
+    <main class="flex-1 flex flex-col min-w-0 bg-[#0f172a]">
+        <div id="selection-content" class="hidden h-full flex flex-col">
+            <!-- 상단 헤더 및 지표 -->
+            <div class="p-8 bg-gradient-to-b from-[#1e293b]/50 to-transparent border-b border-slate-800/50">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-500 mb-3 font-mono uppercase tracking-widest bg-slate-800 w-fit px-2.5 py-1 rounded-md border border-slate-700">
+                            <i data-lucide="server" class="w-3 h-3"></i> <span id="detail-entity-id"></span>
+                            <i data-lucide="chevron-right" class="w-3 h-3 opacity-30"></i>
+                            <i data-lucide="box" class="w-3 h-3 text-cyan-500"></i> ContrabandGameActor
+                        </div>
+                        <h2 id="detail-title" class="text-3xl font-black text-white tracking-tight"></h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button data-open-blacklist class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 transition-all shadow-lg">
+                            <i data-lucide="ban" class="w-4 h-4"></i> 블랙리스트 보기
+                        </button>
+                        <div id="detail-time" class="text-[11px] text-slate-500 font-mono italic opacity-60"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 max-w-4xl">
+                    <div class="bg-[#1e293b]/40 p-6 rounded-3xl border border-slate-800/50 backdrop-blur-sm shadow-xl flex items-center gap-4">
+                        <div class="p-3 bg-cyan-500/10 rounded-2xl text-cyan-400"><i data-lucide="activity"></i></div>
+                        <div>
+                            <div class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">현재 상태</div>
+                            <div id="detail-status" class="text-2xl font-black tracking-tight"></div>
+                        </div>
+                    </div>
+                    <div class="bg-[#1e293b]/40 p-6 rounded-3xl border border-slate-800/50 backdrop-blur-sm shadow-xl flex items-center gap-4">
+                        <div class="p-3 bg-blue-500/10 rounded-2xl text-blue-400"><i data-lucide="users"></i></div>
+                        <div>
+                            <div class="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">참가 인원</div>
+                            <div id="detail-players" class="text-2xl font-black tracking-tight text-blue-400"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 실시간 채팅 스트림 -->
+            <div class="flex-1 flex flex-col p-8 pt-4 min-h-0">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="message-square" class="text-cyan-400 w-5 h-5"></i>
+                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Real-time Chat Stream</h3>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">Live Monitor</span>
+                    </div>
+                </div>
+
+                <div class="flex-1 bg-[#1e293b]/20 rounded-[2.5rem] border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar bg-slate-950/30">
+                        <!-- 채팅 메시지 렌더링 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 선택 전 대기 화면 -->
+        <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-slate-600 p-8 text-center bg-slate-950/10">
+            <div class="p-10 bg-slate-800/20 rounded-full mb-8 border border-slate-800/50 shadow-inner">
+                <i data-lucide="alert-circle" class="w-16 h-16 opacity-10"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-400 tracking-tight">선택된 액터가 없습니다</h3>
+            <p class="text-sm mt-3 max-w-xs mx-auto text-slate-500 leading-relaxed">
+                왼쪽 사이드바에서 현재 활성화된 엔터티 내부의 <b>Game</b> 항목을 클릭하여 실시간 상태를 확인하세요.
+            </p>
+        </div>
+    </main>
+</div>
+
+<div id="modal-root" class="hidden"></div>
+
+<script>
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/monitor-ws');
+
+    const state = {
+        entities: {}, // entityId -> { id, rooms: Map<roomId, roomData> }
+        selectedEntityId: null,
+        selectedRoomId: null,
+        filter: '',
+        blacklist: new Set(),
+        blacklistRaw: [],
+        connection: 'connecting',
+        modal: null
+    };
+
+    const statsNodesEl = document.getElementById('stat-nodes');
+    const statsGamesEl = document.getElementById('stat-games');
+    const hierarchyContainer = document.getElementById('hierarchy-container');
+    const emptyStateEl = document.getElementById('empty-state');
+    const selectionContentEl = document.getElementById('selection-content');
+    const chatContainerEl = document.getElementById('chat-container');
+    const connectionIndicatorEl = document.getElementById('connection-indicator');
+
+    ws.onopen = () => {
+        state.connection = 'open';
+        updateConnectionIndicator();
+    };
+    ws.onclose = () => {
+        state.connection = 'closed';
+        updateConnectionIndicator();
+    };
+    ws.onerror = () => {
+        state.connection = 'error';
+        updateConnectionIndicator();
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'LIFECYCLE_EVENT') {
+                handleLifecycle(msg.payload);
+            } else if (msg.type === 'CHAT_EVENT') {
+                handleChat(msg.payload);
+            } else if (msg.type === 'ROOM_DIRECTORY_SNAPSHOT') {
+                handleRoomDirectorySnapshot(msg.payload);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        renderSidebar();
+        renderMain();
+        renderModal();
+    };
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        state.filter = e.target.value;
+        renderSidebar();
+    });
+
+    fetchBlacklist();
+    renderSidebar();
+    renderMain();
+    renderModal();
+    lucide.createIcons();
+
+    document.querySelectorAll('[data-open-blacklist]').forEach(btn => {
+        btn.addEventListener('click', openBlacklistModal);
+    });
+
+    function updateConnectionIndicator() {
+        if (!connectionIndicatorEl) return;
+        const indicatorDot = connectionIndicatorEl.querySelector('[data-indicator-dot]');
+        const indicatorText = connectionIndicatorEl.querySelector('[data-indicator-text]');
+        if (!indicatorDot || !indicatorText) return;
+
+        if (state.connection === 'open') {
+            indicatorDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            indicatorText.textContent = '실시간 연결됨';
+            connectionIndicatorEl.classList.remove('text-rose-400');
+        } else if (state.connection === 'closed') {
+            indicatorDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+            indicatorText.textContent = '연결 종료됨';
+            connectionIndicatorEl.classList.add('text-rose-400');
+        } else if (state.connection === 'error') {
+            indicatorDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+            indicatorText.textContent = '연결 오류';
+            connectionIndicatorEl.classList.remove('text-rose-400');
+        } else {
+            indicatorDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+            indicatorText.textContent = '연결 상태 확인 중...';
+            connectionIndicatorEl.classList.remove('text-rose-400');
+        }
+    }
+
+    function ensureEntity(entityId) {
+        if (!state.entities[entityId]) {
+            state.entities[entityId] = { id: entityId, rooms: new Map() };
+        }
+        return state.entities[entityId];
+    }
+
+    function ensureRoom(entityId, roomId) {
+        const entity = ensureEntity(entityId);
+        if (!entity.rooms.has(roomId)) {
+            entity.rooms.set(roomId, {
+                roomId,
+                status: 'WAIT',
+                chats: [],
+                createdAt: new Date().toISOString(),
+                playerCount: null,
+                maxPlayerCount: null,
+                title: `Room ${roomId}`
+            });
+        }
+        return entity.rooms.get(roomId);
+    }
+
+    function handleLifecycle(payload) {
+        const { entityId, roomId, lifecycleType } = payload;
+        const entity = ensureEntity(entityId);
+
+        if (roomId != null) {
+            if (lifecycleType === 'ROOM_CREATED') {
+                const room = ensureRoom(entityId, roomId);
+                room.status = 'WAIT';
+                room.createdAt = new Date().toISOString();
+            } else if (lifecycleType === 'GAME_STARTED') {
+                const room = ensureRoom(entityId, roomId);
+                room.status = 'RUNNING';
+            } else if (lifecycleType === 'GAME_ENDED') {
+                const room = ensureRoom(entityId, roomId);
+                room.status = 'ENDED';
+            } else if (lifecycleType === 'ROOM_REMOVED') {
+                entity.rooms.delete(roomId);
+                if (state.selectedRoomId === roomId && state.selectedEntityId === entityId) {
+                    state.selectedRoomId = null;
+                    state.selectedEntityId = null;
+                }
+            }
+        } else if (lifecycleType === 'ENTITY_CREATED') {
+            ensureEntity(entityId);
+        } else if (lifecycleType === 'ENTITY_REMOVED') {
+            delete state.entities[entityId];
+            if (state.selectedEntityId === entityId) {
+                state.selectedEntityId = null;
+                state.selectedRoomId = null;
+            }
+        }
+    }
+
+    function handleChat(payload) {
+        const { entityId, roomId, round, chatEvent, chatMessage } = payload;
+        const room = ensureRoom(entityId, roomId);
+        const entry = {
+            id: chatMessage?.id ?? Date.now(),
+            sender: chatMessage?.writerName ?? `플레이어 ${chatMessage?.writerId ?? ''}`,
+            senderId: chatMessage?.writerId ?? '',
+            message: chatMessage?.message ?? '',
+            timestamp: chatMessage?.createdAt ?? new Date().toISOString(),
+            chatEvent,
+            round
+        };
+        room.chats.push(entry);
+        if (room.chats.length > 200) {
+            room.chats.shift();
+        }
+
+        if (!state.selectedRoomId) {
+            state.selectedRoomId = roomId;
+            state.selectedEntityId = entityId;
+        }
+
+        if (state.selectedRoomId === roomId && state.selectedEntityId === entityId) {
+            renderChat(room.chats);
+        }
+    }
+
+    function handleRoomDirectorySnapshot(payload) {
+        const rooms = payload?.rooms || [];
+        const nextEntities = {};
+
+        rooms.forEach(summary => {
+            if (!summary || !summary.entityId) return;
+            const entityId = summary.entityId;
+            const roomId = summary.roomId;
+            const existingEntity = nextEntities[entityId] || { id: entityId, rooms: new Map() };
+            const previousRoom = state.entities[entityId]?.rooms.get(roomId);
+
+            existingEntity.rooms.set(roomId, {
+                roomId,
+                title: summary.lobbyName || `Room ${roomId}`,
+                status: summary.gameStarted ? 'RUNNING' : 'WAIT',
+                playerCount: summary.currentPlayerCount,
+                maxPlayerCount: summary.maxPlayerCount,
+                createdAt: previousRoom?.createdAt || null,
+                chats: previousRoom?.chats || []
+            });
+            nextEntities[entityId] = existingEntity;
+        });
+
+        state.entities = nextEntities;
+
+        if (!state.entities[state.selectedEntityId]?.rooms.has(state.selectedRoomId)) {
+            state.selectedEntityId = null;
+            state.selectedRoomId = null;
+        }
+    }
+
+    async function fetchBlacklist() {
+        try {
+            const res = await fetch('/api/chat/moderation/blacklist');
+            if (res.ok) {
+                const list = await res.json();
+                state.blacklistRaw = Array.isArray(list) ? list : [];
+                state.blacklist = new Set(state.blacklistRaw);
+            }
+        } catch (e) {
+            console.warn('블랙리스트 조회 실패', e);
+        }
+    }
+
+    async function blockUser(userId, nickname) {
+        if (!userId) return;
+        showConfirmModal(
+                `${escapeHtml(nickname)} (${userId}) 사용자를 차단하시겠습니까?`,
+                async () => {
+                    try {
+                        const res = await fetch(`/api/chat/moderation/blacklist/${userId}`, { method: 'POST' });
+                        if (res.ok) {
+                            state.blacklist.add(Number(userId));
+                            state.blacklistRaw = Array.from(state.blacklist);
+                            if (state.selectedEntityId && state.selectedRoomId) {
+                                const room = state.entities[state.selectedEntityId]?.rooms.get(state.selectedRoomId);
+                                if (room) {
+                                    renderChat(room.chats);
+                                }
+                            }
+                            renderModal();
+                            showInfoModal(`${escapeHtml(nickname)} 님이 블랙리스트에 등록되었습니다.`);
+                        } else {
+                            showInfoModal(`사용자 차단 실패: ${res.status}`, true);
+                        }
+                    } catch (e) {
+                        showInfoModal(`사용자 차단 오류: ${e}`, true);
+                    }
+                }
+        );
+    }
+
+    function selectRoom(entityId, roomId) {
+        state.selectedEntityId = entityId;
+        state.selectedRoomId = roomId;
+        renderSidebar();
+        renderMain();
+    }
+
+    function renderSidebar() {
+        hierarchyContainer.innerHTML = '';
+        let totalGames = 0;
+
+        Object.values(state.entities).forEach(entity => {
+            const entityDiv = document.createElement('div');
+            entityDiv.className = 'space-y-2';
+
+            const entityHeader = `
+                <div class="flex items-center gap-2 px-3 py-2 text-[11px] font-black text-slate-400 uppercase tracking-widest bg-slate-800/40 rounded-xl border border-slate-700/50">
+                    <i data-lucide="server" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    ${entity.id}
+                    <span class="ml-auto text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>
+                </div>
+            `;
+            entityDiv.innerHTML = entityHeader;
+
+            const gameListDiv = document.createElement('div');
+            gameListDiv.className = 'pl-2 space-y-1.5';
+
+            const filteredRooms = Array.from(entity.rooms.values()).filter(room =>
+                room.title.toLowerCase().includes(state.filter.toLowerCase()) ||
+                room.roomId.toString().toLowerCase().includes(state.filter.toLowerCase())
+            );
+
+            filteredRooms.forEach(room => {
+                totalGames++;
+                const isSelected = state.selectedRoomId === room.roomId && state.selectedEntityId === entity.id;
+                const gameBtn = document.createElement('button');
+                gameBtn.onclick = () => selectRoom(entity.id, room.roomId);
+                gameBtn.className = `game-item w-full text-left p-4 rounded-2xl transition-all border group relative ${
+                    isSelected
+                        ? 'game-item selected text-cyan-400'
+                        : 'bg-transparent border-transparent hover:bg-slate-800/50 text-slate-400 hover:text-slate-200'
+                }`;
+
+                gameBtn.innerHTML = `
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[10px] font-mono opacity-50">#${room.roomId}</span>
+                        <div class="w-1.5 h-1.5 rounded-full ${room.status === 'RUNNING' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : room.status === 'ENDED' ? 'bg-slate-400' : 'bg-amber-500'}"></div>
+                    </div>
+                    <div class="font-bold text-xs truncate pr-4">${room.title}</div>
+                    <div class="flex items-center gap-3 mt-3 text-[10px] opacity-60">
+                        <span class="flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${room.playerCount ?? '-'}명${room.maxPlayerCount ? ' / ' + room.maxPlayerCount + '명' : ''}</span>
+                        <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
+                        <span>${room.status}</span>
+                    </div>
+                `;
+                gameListDiv.appendChild(gameBtn);
+            });
+
+            if (filteredRooms.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'text-[11px] text-slate-600 px-4 py-3 border border-dashed border-slate-700 rounded-xl';
+                empty.textContent = state.filter ? '검색 결과가 없습니다.' : '등록된 방이 없습니다.';
+                gameListDiv.appendChild(empty);
+            }
+
+            entityDiv.appendChild(gameListDiv);
+            hierarchyContainer.appendChild(entityDiv);
+        });
+
+        statsNodesEl.innerText = Object.keys(state.entities).length;
+        statsGamesEl.innerText = totalGames;
+        lucide.createIcons();
+    }
+
+    function renderMain() {
+        if (!state.selectedRoomId || !state.selectedEntityId) {
+            emptyStateEl.classList.remove('hidden');
+            selectionContentEl.classList.add('hidden');
+            return;
+        }
+
+        const entity = state.entities[state.selectedEntityId];
+        if (!entity) {
+            emptyStateEl.classList.remove('hidden');
+            selectionContentEl.classList.add('hidden');
+            return;
+        }
+
+        const room = entity.rooms.get(state.selectedRoomId);
+        if (!room) {
+            emptyStateEl.classList.remove('hidden');
+            selectionContentEl.classList.add('hidden');
+            return;
+        }
+
+        emptyStateEl.classList.add('hidden');
+        selectionContentEl.classList.remove('hidden');
+
+        document.getElementById('detail-entity-id').innerText = state.selectedEntityId;
+        document.getElementById('detail-title').innerText = room.title;
+        document.getElementById('detail-status').innerText = room.status;
+        document.getElementById('detail-status').className = `text-2xl font-black tracking-tight ${room.status === 'RUNNING' ? 'text-emerald-400' : room.status === 'ENDED' ? 'text-slate-400' : 'text-amber-400'}`;
+        const maxText = room.maxPlayerCount != null ? ` / ${room.maxPlayerCount}명` : '';
+        document.getElementById('detail-players').innerText = room.playerCount != null ? `${room.playerCount}명${maxText}` : '정보 없음';
+        document.getElementById('detail-time').innerText = room.createdAt ? `Monitoring since ${new Date(room.createdAt).toLocaleTimeString()}` : '';
+
+        renderChat(room.chats);
+        lucide.createIcons();
+    }
+
+    function openBlacklistModal() {
+        const listItems = state.blacklistRaw.length
+                ? state.blacklistRaw.map(id => `<li class="flex items-center justify-between px-3 py-2 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <span class="text-sm font-mono text-slate-200">UID: ${escapeHtml(id)}</span>
+                        </li>`).join('')
+                : '<div class="text-sm text-slate-500 text-center py-6">등록된 블랙리스트가 없습니다.</div>';
+
+        state.modal = {
+            type: 'blacklist',
+            title: '블랙리스트',
+            content: `<ul class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">${listItems}</ul>`,
+            confirmText: '닫기',
+            onConfirm: closeModal
+        };
+        renderModal();
+    }
+
+    function showConfirmModal(message, onConfirm) {
+        state.modal = {
+            type: 'confirm',
+            title: '확인',
+            content: `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(message)}</p>`,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm
+        };
+        renderModal();
+    }
+
+    function showInfoModal(message, isError = false) {
+        state.modal = {
+            type: 'info',
+            title: isError ? '오류' : '알림',
+            content: `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(message)}</p>`,
+            confirmText: '닫기',
+            onConfirm: closeModal,
+            isError
+        };
+        renderModal();
+    }
+
+    function closeModal() {
+        state.modal = null;
+        renderModal();
+    }
+
+    function renderModal() {
+        const root = document.getElementById('modal-root');
+        if (!root) return;
+
+        if (!state.modal) {
+            root.innerHTML = '';
+            root.classList.add('hidden');
+            return;
+        }
+
+        const { title, content, confirmText, cancelText, onConfirm, isError } = state.modal;
+        root.classList.remove('hidden');
+        root.innerHTML = `
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+                <div class="bg-[#0f172a] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-2xl ${isError ? 'bg-rose-500/10 text-rose-400' : 'bg-cyan-500/10 text-cyan-400'}">
+                            <i data-lucide="${isError ? 'alert-octagon' : 'info'}" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm uppercase tracking-widest text-slate-500 font-black">${title}</div>
+                        </div>
+                    </div>
+                    <div class="text-slate-200">${content}</div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        ${cancelText ? `<button id="modal-cancel" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all">` + escapeHtml(cancelText) + `</button>` : ''}
+                        <button id="modal-confirm" class="px-4 py-2 rounded-xl ${isError ? 'bg-rose-500 hover:bg-rose-600' : 'bg-cyan-500 hover:bg-cyan-600'} text-white transition-all shadow-lg">${escapeHtml(confirmText || '확인')}</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('modal-confirm')?.addEventListener('click', () => {
+            const callback = state.modal?.onConfirm;
+            closeModal();
+            if (callback) callback();
+        });
+        document.getElementById('modal-cancel')?.addEventListener('click', closeModal);
+        lucide.createIcons();
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderChat(chats) {
+        const isAtBottom = chatContainerEl.scrollHeight - chatContainerEl.scrollTop <= chatContainerEl.clientHeight + 100;
+
+        if (!chats || chats.length === 0) {
+            chatContainerEl.innerHTML = '<div class="h-full flex items-center justify-center text-slate-600 italic text-sm">현재 전송된 메시지가 없습니다.</div>';
+            return;
+        }
+
+        chatContainerEl.innerHTML = chats.map((chat, idx) => {
+            const safeSender = escapeHtml(chat.sender ?? 'Unknown');
+            const safeSenderId = escapeHtml(chat.senderId ?? '-');
+            const safeMessage = escapeHtml(chat.message ?? '');
+            const timeText = chat.timestamp ? new Date(chat.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : '';
+            const isBlocked = chat.senderId != null && state.blacklist.has(Number(chat.senderId));
+
+            return `
+                <div class="group flex items-start gap-4 p-5 rounded-[1.5rem] hover:bg-white/[0.03] transition-all border ${isBlocked ? 'border-rose-800/70 bg-rose-950/10' : 'border-transparent hover:border-slate-800'} chat-bubble relative">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center shrink-0 font-black text-slate-400 border border-slate-600 shadow-xl uppercase">
+                        ${String(chat.sender || '?').charAt(0)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="font-bold text-cyan-400 text-sm">${safeSender}</span>
+                            <span class="text-[10px] text-slate-500 font-mono italic opacity-70">UID: ${safeSenderId}</span>
+                            ${isBlocked ? '<span class="text-[10px] text-rose-400 bg-rose-500/10 border border-rose-500/40 rounded-full px-2 py-0.5 font-bold uppercase tracking-wide">차단됨</span>' : ''}
+                            <span class="text-[10px] text-slate-600 ml-auto font-mono tabular-nums">
+                                ${timeText}
+                            </span>
+                        </div>
+                        <div class="text-slate-300 text-sm leading-relaxed bg-[#0f172a]/80 p-4 rounded-2xl border ${isBlocked ? 'border-rose-800/60' : 'border-slate-800'} group-hover:border-slate-700 transition-all shadow-inner">
+                            ${safeMessage}
+                        </div>
+                    </div>
+                    <div class="ban-button opacity-0 transform translate-x-2 transition-all duration-200">
+                        <button
+                                data-ban-index="${idx}"
+                                class="p-3.5 text-rose-500 hover:bg-rose-500/10 rounded-2xl border border-transparent hover:border-rose-500/30 transition-all shadow-lg"
+                                title="사용자 차단"
+                        >
+                            <i data-lucide="ban" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        chatContainerEl.querySelectorAll('[data-ban-index]').forEach(btn => {
+            btn.onclick = () => {
+                const idx = Number(btn.dataset.banIndex);
+                const chat = chats[idx];
+                if (chat) {
+                    blockUser(chat.senderId, chat.sender || 'Unknown');
+                }
+            };
+        });
+
+        if (isAtBottom) {
+            chatContainerEl.scrollTop = chatContainerEl.scrollHeight;
+        }
+        lucide.createIcons();
+    }
+</script>
+</body>
+</html>

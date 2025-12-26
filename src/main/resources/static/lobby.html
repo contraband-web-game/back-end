@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTRABAND: Waiting Room</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&family=Gloria+Hallelujah&family=East+Sea+Dokdo&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/cb-common.js"></script>
+  <script src="js/rules-modal.js"></script>
+
+  <!-- Config & Styles (Common) -->
+  <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    display: ['Creepster', 'East Sea Dokdo', 'cursive'],
+                    hand: ['Amatic SC', 'East Sea Dokdo', 'cursive'],
+                    body: ['Gloria Hallelujah', 'Nanum Pen Script', 'cursive'],
+                },
+                colors: {
+                    paper: { DEFAULT: '#d5bdaf', dark: '#b08968' },
+                    ink: { DEFAULT: '#2f1b1b', red: '#7f1d1d' }
+                },
+                boxShadow: { 'sketch': '2px 2px 0px 0px rgba(0,0,0,0.8)' },
+            }
+        }
+    }
+  </script>
+  <style>
+    body {
+        background-color: #1a1515;
+        color: #2f1b1b;
+        background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+    }
+    .sketch-box {
+        background-color: #d5bdaf;
+        border: 2px solid #000;
+        position: relative;
+        border-radius: 2px 255px 3px 25px / 255px 5px 225px 5px;
+        box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+        transition: all 0.2s ease-in-out;
+        background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    }
+    .sketch-btn {
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-weight: 700;
+        font-size: 1.5rem;
+        background: #2f1b1b;
+        color: #d5bdaf;
+        border: none;
+        clip-path: polygon(0% 5%, 5% 0%, 95% 0%, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0% 95%, 2% 50%, 0% 5%);
+        transition: transform 0.1s;
+        cursor: pointer;
+    }
+    .sketch-btn:hover { transform: scale(1.05) rotate(1deg); color: #fff; }
+    .sketch-btn.red:hover { background: #7f1d1d; }
+    .sketch-btn.green:hover { background: #064e3b; }
+    .sketch-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #555;
+        color: #888;
+    }
+
+    .hand-input {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid #2f1b1b;
+        font-family: 'Nanum Pen Script', cursive;
+        font-size: 1.5rem;
+        color: #2f1b1b;
+        outline: none;
+        width: 100%;
+    }
+
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+        pointer-events: none;
+        z-index: 50;
+    }
+
+    /* Slot Styles */
+    .player-slot {
+        border: 2px dashed #2f1b1b;
+        background: rgba(0,0,0,0.05);
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+        color: #2f1b1b;
+        opacity: 0.7;
+        border-radius: 4px;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .player-slot.occupied {
+        border: 2px solid #2f1b1b;
+        background: #d5bdaf; /* Paper */
+        opacity: 1;
+        box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        transform: rotate(-1deg);
+    }
+    .player-slot.me {
+        border-color: #7f1d1d;
+        color: #7f1d1d;
+        font-weight: bold;
+        background: #e3d5ca;
+    }
+    .player-slot.empty {
+        background: rgba(26, 21, 21, 0.12);
+        color: #8a6f5a;
+        border-style: dashed;
+        border-color: #7f1d1d;
+        font-weight: bold;
+        opacity: 0.85;
+        filter: grayscale(0.15);
+    }
+
+    /* Ready Stamp Effect */
+    .ready-stamp {
+        display: none;
+        font-family: 'Creepster', cursive;
+        color: #7f1d1d;
+        border: 3px solid #7f1d1d;
+        padding: 2px 8px;
+        border-radius: 4px;
+        transform: rotate(-10deg);
+        opacity: 0.8;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+    }
+    .player-slot.is-ready .ready-stamp {
+        display: block;
+    }
+
+    /* Scrollbar */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #d5bdaf #2f1b1b;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #2f1b1b; }
+    ::-webkit-scrollbar-thumb { background: #d5bdaf; border: 1px solid #000; }
+
+    .hidden-view { display: none !important; }
+    .chat-nickname { font-weight: bold; color: #2f1b1b; }
+    .chat-nickname.me { color: #7f1d1d; }
+
+    /* Toast Notification Styles */
+    #toast-container {
+        position: fixed;
+        top: 20px; /* Changed from bottom to top */
+        right: 20px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast-message {
+        background-color: #2f1b1b;
+        color: #d5bdaf;
+        padding: 12px 20px;
+        border: 2px solid #000;
+        border-radius: 2px 15px 3px 10px;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+        font-weight: bold;
+        box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(-20px); /* Animate from top */
+        transition: all 0.5s ease-out;
+        pointer-events: auto;
+    }
+
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .chat-scroll {
+        max-height: 160px;
+        overflow-y: auto;
+    }
+    .chat-blocked {
+        color: #6b7280;
+        text-decoration: line-through;
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
+
+<div class="vignette"></div>
+<div class="fixed inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ce6fec56?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center pointer-events-none grayscale contrast-150"></div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Leave Confirmation Modal -->
+<div id="leave-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden-view">
+  <div class="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity" onclick="closeLeaveModal()"></div>
+  <div class="sketch-box p-8 w-full max-w-sm relative z-10 rotate-1 bg-[#e3d5ca] text-center">
+    <h2 class="font-display text-4xl text-ink-red mb-4 border-b border-ink/30 pb-2">작전 이탈 경고</h2>
+    <p class="font-hand text-2xl text-ink mb-6">"정말로 작전을 포기하고 도주하겠나?"</p>
+
+    <div class="flex justify-between gap-4">
+      <button onclick="closeLeaveModal()" class="sketch-btn px-6 py-2 text-xl text-white bg-ink/80 hover:bg-ink">취소</button>
+      <button id="confirm-leave-btn" class="sketch-btn px-6 py-2 text-xl text-white bg-ink-red font-bold hover:bg-red-700">도주</button>
+    </div>
+  </div>
+</div>
+
+<!-- Top Bar -->
+<header class="bg-[#2a2422] border-b-4 border-[#1a1515] p-3 shadow-lg relative z-20" style="background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center space-x-4">
+      <button id="leave-btn" class="text-[#d5bdaf] hover:text-red-500 transition-colors">
+        <i data-lucide="arrow-left" class="w-8 h-8"></i>
+      </button>
+      <div>
+        <h1 id="room-title" class="font-display text-4xl text-[#d5bdaf] tracking-widest leading-none mt-1">Operation Zone</h1>
+        <span id="room-id" class="font-mono text-xs text-[#d5bdaf]/50 tracking-widest">SESSION: ???</span>
+      </div>
+    </div>
+
+    <div class="sketch-box px-4 py-1 rotate-1 origin-right bg-[#e3d5ca]">
+      <div class="flex items-center gap-2">
+        <i data-lucide="clock" class="w-5 h-5 text-ink"></i>
+        <span class="font-hand text-2xl font-bold text-ink">WAITING...</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <!-- Host: Max Players Control -->
+      <div id="owner-settings" class="sketch-box px-3 py-1 -rotate-1 bg-[#e3d5ca] flex items-center gap-2 hidden-view">
+        <i data-lucide="users" class="w-5 h-5 text-ink"></i>
+        <button id="mp-decrease" class="text-ink hover:text-ink-red font-bold text-3xl px-1 leading-none hover:scale-125 transition-transform">-</button>
+        <span id="mp-display-owner" class="font-hand text-3xl font-bold text-ink w-10 text-center leading-none">4</span>
+        <button id="mp-increase" class="text-ink hover:text-ink-red font-bold text-3xl px-1 leading-none hover:scale-125 transition-transform">+</button>
+        <span class="font-body text-xs text-ink/60 self-end mb-1">MAX</span>
+      </div>
+
+      <!-- Guest: Max Players Display -->
+      <div id="guest-settings" class="sketch-box px-3 py-1 -rotate-1 bg-[#e3d5ca] flex items-center gap-2 hidden-view">
+        <i data-lucide="users" class="w-5 h-5 text-ink"></i>
+        <span id="mp-display-guest" class="font-hand text-3xl font-bold text-ink w-10 text-center leading-none">4</span>
+        <span class="font-body text-xs text-ink/60 self-end mb-1">MAX</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 grid grid-rows-[1fr_200px] gap-4 relative z-10 overflow-y-auto">
+
+  <!-- Teams Area -->
+  <div class="grid grid-cols-2 gap-8 h-full overflow-visible">
+
+    <!-- Team Smuggler -->
+    <div class="flex flex-col gap-4">
+      <div class="text-center border-b-2 border-ink/50 pb-2">
+        <h2 class="font-display text-4xl text-paper text-shadow flex items-center justify-center gap-2" style="text-shadow: 2px 2px 0 #000;">
+          <i data-lucide="briefcase" class="w-8 h-8"></i> Smuggler (밀수꾼)
+        </h2>
+        <p class="font-body text-paper/70 text-sm">"거짓을 운반하라"</p>
+      </div>
+
+      <div id="team-s-list" class="flex-1 space-y-3 overflow-y-auto pr-2">
+        <!-- Slots will be injected here -->
+      </div>
+
+      <button id="join-smuggler-btn" class="sketch-btn px-4 py-2 text-xl w-full hover:bg-ink/90">밀수꾼 팀 합류</button>
+    </div>
+
+    <!-- Team Inspector -->
+    <div class="flex flex-col gap-4">
+      <div class="text-center border-b-2 border-ink/50 pb-2">
+        <h2 class="font-display text-4xl text-ink-red text-shadow flex items-center justify-center gap-2" style="text-shadow: 2px 2px 0 #000;">
+          <i data-lucide="search" class="w-8 h-8"></i> Inspector (검사관)
+        </h2>
+        <p class="font-body text-paper/70 text-sm">"거짓을 밝혀내라"</p>
+      </div>
+
+      <div id="team-i-list" class="flex-1 space-y-3 overflow-y-auto pr-2">
+        <!-- Slots will be injected here -->
+      </div>
+
+      <button id="join-inspector-btn" class="sketch-btn px-4 py-2 text-xl w-full hover:bg-ink-red/90">검사관 팀 합류</button>
+    </div>
+  </div>
+
+  <!-- Bottom Area: Chat & Actions -->
+  <div class="grid grid-cols-[1fr_200px] gap-4">
+
+    <!-- Chat Box -->
+    <div class="sketch-box p-3 flex flex-col h-full bg-[#f0e6d2]">
+      <div id="chat-messages" class="flex-1 chat-scroll space-y-1 mb-2 font-body text-lg border-b border-ink/20 pb-2">
+        <div class="text-ink/60 text-sm text-center">-- 보안 채널 연결됨 --</div>
+        <!-- Operator messages will appear here -->
+      </div>
+      <form id="chat-form" class="flex gap-2">
+        <input type="text" id="chat-input" class="hand-input" placeholder="암호 통신..." autocomplete="off">
+        <button type="submit" class="text-ink hover:text-ink-red transition-transform hover:scale-110">
+          <i data-lucide="send" class="w-6 h-6"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-3 justify-center">
+      <!-- Everyone has Ready Button -->
+      <button id="ready-btn" class="sketch-btn green h-full text-3xl shadow-lg border-2 border-black bg-[#2f1b1b] text-[#d5bdaf]">
+        작전 준비
+      </button>
+
+      <!-- Host only: Start Button -->
+      <button id="start-btn" class="sketch-btn red h-full text-3xl shadow-lg border-2 border-black bg-ink-red text-white hidden-view" disabled>
+        작전 개시!
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+  lucide.createIcons();
+
+  const state = {
+      socket: null,
+      userId: null,
+      nickname: null,
+      lobby: null,
+      hostId: null,
+      roleMessageShown: false,
+      roleMessageElement: null,
+      chatBlocked: false
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const requestedRoomId = urlParams.get('room');
+  const MIN_MAX_PLAYER = 2;
+  const MAX_MAX_PLAYER = 6;
+  const STEP_MAX_PLAYER = 2;
+
+  function showToast(message) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+          toast.classList.remove('show');
+          toast.style.opacity = '0';
+          setTimeout(() => {
+              if (container.contains(toast)) container.removeChild(toast);
+          }, 500);
+      }, 3000);
+  }
+
+  function addSystemMessage(text) {
+      const chatMsgs = document.getElementById('chat-messages');
+      const line = document.createElement('div');
+      line.className = 'operator-message text-ink';
+      line.textContent = `Operator: ${text}`;
+      chatMsgs.appendChild(line);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+      return line;
+  }
+
+  function notifyChatBlocked() {
+      if (state.chatBlocked) return;
+      state.chatBlocked = true;
+      const chatMsgs = document.getElementById('chat-messages');
+      const line = document.createElement('div');
+      line.textContent = '너의 통신 경로는 차단되었다.';
+      line.style.color = '#8b5f60'; /* muted gray-red */
+      line.style.fontWeight = 'bold';
+      chatMsgs.appendChild(line);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+
+  function getRoleMessage(role) {
+      if (role === 'SMUGGLER') return '밀수꾼 팀에 합류했다. 물건을 숨길 준비를 해라.';
+      if (role === 'INSPECTOR') return '검사관 팀에 합류했다. 놈들의 거짓말을 꿰뚫어 봐라.';
+      return '신원을 확인했다. 소속 팀을 선택하라.';
+  }
+
+  // 서버 예외 메시지를 UI에서 덮어쓰고 싶을 때 사용
+  function mapExceptionMessage(payload) {
+      const fallback = '통신 장애 발생. 재시도하라.';
+      const code = payload?.code;
+      if (code === 'LOBBY_TEAM_BALANCE_REQUIRED') {
+          return '양 팀 인원이 같아야 작전을 시작할 수 있다. 팀을 조정해라.';
+      }
+      if (code === 'LOBBY_READY_STATE_TEAM_CHANGE_FORBIDDEN') {
+          return '이미 팀이 확정된 상태에서는 변경할 수 없다. 아니면, 첩자인가?';
+      }
+      return cbCommon.resolveExceptionMessage(payload, { fallback });
+  }
+
+  function setRoleMessage(role) {
+      const message = getRoleMessage(role);
+      const chatMsgs = document.getElementById('chat-messages');
+      if (state.roleMessageElement && chatMsgs.contains(state.roleMessageElement)) {
+          state.roleMessageElement.textContent = `Operator: ${message}`;
+      } else {
+          state.roleMessageElement = addSystemMessage(message);
+      }
+      state.roleMessageShown = true;
+  }
+
+  function appendChat({ writerName = '', message = '', messageId = null, isSelf = false }) {
+      const chatMsgs = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      if (messageId != null) {
+          div.dataset.messageId = String(messageId);
+      }
+      const nameSpan = document.createElement('span');
+      nameSpan.className = `chat-nickname${isSelf ? ' me' : ''}`;
+      nameSpan.textContent = writerName || (isSelf ? '나' : '익명');
+      const msgSpan = document.createElement('span');
+      msgSpan.textContent = `: ${message}`;
+      div.appendChild(nameSpan);
+      div.appendChild(msgSpan);
+      chatMsgs.appendChild(div);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+
+  function maskChat(messageId) {
+      if (!messageId) return;
+      const chatMsgs = document.getElementById('chat-messages');
+      const target = chatMsgs.querySelector(`[data-message-id="${messageId}"]`);
+      if (target) {
+          target.textContent = '[통신 경로 차단됨]';
+          target.classList.add('chat-blocked');
+      }
+  }
+
+  function isHost() {
+      if (!state.hostId || !state.userId) return false;
+      return String(state.hostId) === String(state.userId);
+  }
+
+  function myPlayer() {
+      if (!state.lobby || !state.lobby.players) return null;
+      return state.lobby.players.find((p) => String(p.playerId) === String(state.userId)) || null;
+  }
+
+  function allPlayersReady() {
+      if (!state.lobby || !state.lobby.players) return false;
+      return state.lobby.players.length > 0 && state.lobby.players.every((p) => p.ready === true);
+  }
+
+  function dedupePlayers() {
+      if (!state.lobby || !Array.isArray(state.lobby.players)) return;
+      const seen = new Set();
+      state.lobby.players = state.lobby.players.filter((p) => {
+          const key = String(p.playerId);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+      });
+  }
+
+  function upsertPlayer(player) {
+      if (!state.lobby) return;
+      if (!state.lobby.players) state.lobby.players = [];
+      const idx = state.lobby.players.findIndex((p) => String(p.playerId) === String(player.playerId));
+      if (idx >= 0) {
+          state.lobby.players[idx] = { ...state.lobby.players[idx], ...player };
+      } else {
+          state.lobby.players.push(player);
+      }
+      dedupePlayers();
+  }
+
+  function buildPlayerSlot(player, isMe) {
+      const readyStamp = player.ready ? '<span class="ready-stamp">READY</span>' : '';
+      const canKick = isHost() && String(player.playerId) !== String(state.hostId);
+      const kickButton = canKick ? `<button class="sketch-btn px-3 py-1 text-sm" data-kick="${player.playerId}">강퇴</button>` : '';
+      return `
+          <div class="player-slot occupied ${player.ready ? 'is-ready' : ''} ${isMe ? 'me' : ''}">
+              <div class="flex items-center">
+                  <i data-lucide="user" class="mr-2 w-5 h-5"></i>
+                  <span>${player.playerName || player.playerId}${isMe ? ' (나)' : ''}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                  ${readyStamp}
+                  ${kickButton}
+              </div>
+          </div>
+      `;
+  }
+
+  function renderLobbyState() {
+      const teamSList = document.getElementById('team-s-list');
+      const teamIList = document.getElementById('team-i-list');
+      const titleEl = document.getElementById('room-title');
+      const roomIdEl = document.getElementById('room-id');
+      const readyBtn = document.getElementById('ready-btn');
+      const startBtn = document.getElementById('start-btn');
+      const ownerSettings = document.getElementById('owner-settings');
+      const guestSettings = document.getElementById('guest-settings');
+      const mpOwner = document.getElementById('mp-display-owner');
+      const mpGuest = document.getElementById('mp-display-guest');
+
+      if (!state.lobby) {
+          if (teamSList) teamSList.innerHTML = '<div class="player-slot justify-center">대기 중...</div>';
+          if (teamIList) teamIList.innerHTML = '<div class="player-slot justify-center">대기 중...</div>';
+          if (titleEl) titleEl.textContent = '통신 대기 중';
+          if (roomIdEl) roomIdEl.textContent = `SESSION: ${requestedRoomId || '...'}`;
+          if (startBtn) startBtn.classList.add('hidden-view');
+          if (ownerSettings) ownerSettings.classList.add('hidden-view');
+          if (guestSettings) guestSettings.classList.add('hidden-view');
+          return;
+      }
+
+      if (titleEl) {
+          const label = state.lobby.lobbyName ? `구역 ${state.lobby.lobbyName}` : `구역 ${state.lobby.roomId || requestedRoomId || 'UNKNOWN'}`;
+          titleEl.textContent = label;
+      }
+      if (roomIdEl) {
+          roomIdEl.textContent = `SESSION: ${state.lobby.roomId || requestedRoomId || '...'}`;
+      }
+
+      if (mpOwner) mpOwner.textContent = state.lobby.maxPlayerCount || 4;
+      if (mpGuest) mpGuest.textContent = state.lobby.maxPlayerCount || 4;
+
+      dedupePlayers();
+      if (isHost()) {
+          if (ownerSettings) ownerSettings.classList.remove('hidden-view');
+          if (guestSettings) guestSettings.classList.add('hidden-view');
+      } else {
+          if (ownerSettings) ownerSettings.classList.add('hidden-view');
+          if (guestSettings) guestSettings.classList.remove('hidden-view');
+      }
+
+      const smugglers = (state.lobby.players || []).filter((p) => p.teamRole === 'SMUGGLER');
+      const inspectors = (state.lobby.players || []).filter((p) => p.teamRole === 'INSPECTOR');
+
+      const maxSlots = Math.max(
+              Math.ceil((state.lobby.maxPlayerCount || 4) / 2),
+              smugglers.length,
+              inspectors.length
+      );
+      const emptySlot = `<div class="player-slot empty justify-center">빈 자리 (Empty)</div>`;
+
+      let sHtml = '';
+      let iHtml = '';
+      smugglers.forEach((p) => sHtml += buildPlayerSlot(p, String(p.playerId) === String(state.userId)));
+      inspectors.forEach((p) => iHtml += buildPlayerSlot(p, String(p.playerId) === String(state.userId)));
+
+      for (let k = smugglers.length; k < maxSlots; k++) sHtml += emptySlot;
+      for (let k = inspectors.length; k < maxSlots; k++) iHtml += emptySlot;
+
+      if (teamSList) teamSList.innerHTML = sHtml || emptySlot;
+      if (teamIList) teamIList.innerHTML = iHtml || emptySlot;
+
+      lucide.createIcons();
+      attachKickHandlers();
+
+      const me = myPlayer();
+      if (readyBtn) {
+          const isReady = me?.ready === true;
+          readyBtn.innerText = isReady ? '작전 대기 중 (작전 취소)' : '작전 준비';
+          readyBtn.style.backgroundColor = isReady ? '#064e3b' : '#2f1b1b';
+          if (isReady) readyBtn.classList.add('green'); else readyBtn.classList.remove('green');
+      }
+
+      if (startBtn) {
+          if (isHost()) {
+              startBtn.classList.remove('hidden-view');
+              startBtn.disabled = !allPlayersReady();
+              startBtn.innerText = allPlayersReady() ? '작전 개시!' : '대기 중...';
+              startBtn.style.opacity = allPlayersReady() ? '1' : '0.5';
+          } else {
+              startBtn.classList.add('hidden-view');
+          }
+      }
+  }
+
+  function attachKickHandlers() {
+      if (!isHost()) return;
+      document.querySelectorAll('button[data-kick]').forEach((btn) => {
+          btn.onclick = () => {
+              const targetId = btn.dataset.kick;
+              if (!targetId || String(targetId) === String(state.hostId)) return;
+              cbCommon.sendJson(state.socket, {
+                  type: 'KICK_PLAYER',
+                  targetPlayerId: Number(targetId)
+              });
+          };
+      });
+  }
+
+  function applyLobbyPayload(payload) {
+      if (!payload) return;
+      state.hostId = payload.hostId ?? state.hostId;
+      state.lobby = {
+          roomId: payload.roomId ? String(payload.roomId) : (payload.roomIdString || requestedRoomId),
+          lobbyName: payload.lobbyName,
+          maxPlayerCount: payload.maxPlayerCount,
+          currentPlayerCount: payload.currentPlayerCount,
+          players: []
+      };
+      const incomingPlayers = (payload.lobbyParticipants || payload.players || []).map((p) => ({
+          playerId: p.playerId,
+          playerName: p.playerName,
+          teamRole: p.teamRole,
+          ready: !!p.ready
+      }));
+      incomingPlayers.forEach(upsertPlayer);
+      dedupePlayers();
+      if (state.lobby.roomId) {
+          cbCommon.saveRoomContext(state.lobby.roomId, payload.entityId || '');
+      }
+      renderLobbyState();
+      setRoleMessage(myPlayer()?.teamRole);
+  }
+
+  function handleMessage(msg) {
+      if (!msg || !msg.type) return;
+      if (msg.type === 'JOINED_LOBBY') {
+          applyLobbyPayload(msg.payload);
+      } else if (msg.type === 'OTHER_PLAYER_JOINED_LOBBY') {
+          const p = msg.payload;
+          if (state.lobby) {
+              upsertPlayer({
+                  playerId: p.joinerId,
+                  playerName: p.joinerName,
+                  teamRole: p.teamRole,
+                  ready: false
+              });
+              renderLobbyState();
+              //addSystemMessage(`${p.joinerName}, 작전 구역에 도착했다.`);
+          }
+      } else if (msg.type === 'OTHER_PLAYER_LEFT_LOBBY' || msg.type === 'OTHER_PLAYER_KICKED') {
+          if (state.lobby) {
+              const targetId = msg.payload?.playerId;
+              state.lobby.players = state.lobby.players.filter((p) => String(p.playerId) !== String(targetId));
+              renderLobbyState();
+          }
+      } else if (msg.type === 'TOGGLED_TEAM') {
+          const p = msg.payload;
+          if (state.lobby) {
+              state.lobby.players = state.lobby.players.map((pl) =>
+                  String(pl.playerId) === String(p.playerId) ? { ...pl, playerName: p.playerName, teamRole: p.teamRole } : pl
+              );
+              renderLobbyState();
+              if (String(p.playerId) === String(state.userId)) {
+                  setRoleMessage(p.teamRole);
+              }
+          }
+      } else if (msg.type === 'TOGGLED_READY') {
+          const p = msg.payload;
+          if (state.lobby) {
+              state.lobby.players = state.lobby.players.map((pl) =>
+                  String(pl.playerId) === String(p.playerId) ? { ...pl, ready: p.toggleReadyState } : pl
+              );
+              renderLobbyState();
+          }
+      } else if (msg.type === 'CHAT_WELCOME') {
+          const playerName = msg.payload?.playerName || '새 요원';
+          addSystemMessage(`${playerName}, 작전 구역에 도착했다.`);
+      } else if (msg.type === 'LOBBY_CHAT_MESSAGE' || msg.type === 'CHAT_MESSAGE') {
+          const m = msg.payload;
+          const isSelf = state.userId != null && String(m.writerId) === String(state.userId);
+          appendChat({ writerName: m.writerName, message: m.message, messageId: m.messageId, isSelf });
+      } else if (msg.type === 'CHAT_MESSAGE_MASKED') {
+          maskChat(msg.payload?.messageId);
+      } else if (msg.type === 'EXCEPTION_MESSAGE') {
+          const errMessage = mapExceptionMessage(msg.payload);
+          if (msg.payload?.code === 'CHAT_USER_BLOCKED') {
+              notifyChatBlocked();
+              return;
+          }
+          showToast(errMessage);
+      } else if (msg.type === 'START_GAME') {
+          cbCommon.saveGamePayload(msg.payload);
+          showToast('작전이 시작된다. 행운을 빈다.');
+          setTimeout(() => window.location.href = '/game.html', 200);
+      } else if (msg.type === 'LEFT_LOBBY'
+              || msg.type === 'KICKED_LOBBY'
+              || msg.type === 'LOBBY_DELETED'
+              || msg.type === 'HOST_DELETED_LOBBY') {
+          if (msg.type === 'KICKED_LOBBY') {
+              localStorage.setItem('kickReason', '방장이 당신을 강퇴했습니다.');
+          }
+          showToast('작전 지역을 이탈했다.');
+          setTimeout(() => window.location.href = '/lobby-list.html', 500);
+      }
+  }
+
+  function connectSocket() {
+      if (!state.userId) return;
+      if (state.socket) state.socket.close();
+      state.socket = cbCommon.createSocket(state.userId, {
+          onOpen: () => {},
+          onMessage: handleMessage,
+          onClose: () => showToast('채널 접속이 종료되었다. 재접속하라.'),
+          onError: () => showToast('통신 장애 발생.')
+      });
+  }
+
+  function sendToggleReady() {
+      if (!cbCommon.sendJson(state.socket, { type: 'TOGGLE_READY' })) {
+          showToast('채널이 끊겼다.');
+      }
+  }
+
+  function sendToggleTeam(targetRole) {
+      const me = myPlayer();
+      if (me && me.teamRole === targetRole) {
+          showToast('이미 해당 팀이다.');
+          return;
+      }
+      if (!cbCommon.sendJson(state.socket, { type: 'TOGGLE_TEAM' })) {
+          showToast('채널이 끊겼다.');
+      }
+  }
+
+  function sendStartGame() {
+      if (!isHost()) {
+          showToast('작전 개시 권한이 없다.');
+          return;
+      }
+      if (!cbCommon.sendJson(state.socket, { type: 'START_GAME', totalRounds: 5 })) {
+          showToast('채널이 끊겼다.');
+      } else {
+          //addSystemMessage('본부에 작전 개시를 요청했다.');
+      }
+  }
+
+  function sendChat(message) {
+      if (!message) return;
+      if (state.chatBlocked) return;
+      if (!cbCommon.sendJson(state.socket, { type: 'SEND_CHAT', playerName: state.nickname, message })) {
+          showToast('채널이 끊겼다.');
+      } else {
+          // appendChat(message, null, true);
+      }
+  }
+
+  function changeMaxPlayers(delta) {
+      if (!isHost()) {
+          showToast('권한이 없다.');
+          return;
+      }
+      const current = Number(state.lobby?.maxPlayerCount || 4);
+      let next = current + delta;
+      next = Math.max(MIN_MAX_PLAYER, Math.min(MAX_MAX_PLAYER, next));
+      if (next === current) return;
+      state.lobby.maxPlayerCount = next;
+      renderLobbyState();
+      if (!cbCommon.sendJson(state.socket, { type: 'CHANGE_MAX_PLAYER_COUNT', maxPlayerCount: next })) {
+          showToast('채널이 끊겼다.');
+      }
+  }
+
+  function leaveLobby() {
+      const payload = isHost() ? { type: 'DELETE_LOBBY' } : { type: 'LEAVE_LOBBY' };
+      if (!cbCommon.sendJson(state.socket, payload)) {
+          showToast('채널이 끊겼다.');
+      }
+  }
+
+  // --- Modal Logic ---
+  const leaveBtn = document.getElementById('leave-btn');
+  const leaveModal = document.getElementById('leave-modal');
+  const confirmLeaveBtn = document.getElementById('confirm-leave-btn');
+
+  function openLeaveModal() {
+      leaveModal.classList.remove('hidden-view');
+  }
+
+  function closeLeaveModal() {
+      leaveModal.classList.add('hidden-view');
+  }
+
+  leaveBtn.addEventListener('click', openLeaveModal);
+  confirmLeaveBtn.addEventListener('click', () => {
+      leaveLobby();
+      closeLeaveModal();
+  });
+
+  async function init() {
+      const session = cbCommon.requireSession();
+      if (!session) return;
+      state.userId = Number(session.userId);
+      state.nickname = session.nickname || `Player ${state.userId}`;
+
+      const roomContext = cbCommon.loadRoomContext();
+      if (requestedRoomId && !roomContext.roomId) {
+          cbCommon.saveRoomContext(requestedRoomId, '');
+      }
+
+      document.getElementById('room-title').textContent = `구역 ${requestedRoomId || 'UNKNOWN'}`;
+      document.getElementById('room-id').textContent = `SESSION: ${requestedRoomId || roomContext.roomId || '...'}`;
+
+      const loginResult = await cbCommon.login(state.userId, { silent: true });
+      if (!loginResult.success) {
+          showToast(loginResult.message || '신원 확인 실패.');
+      }
+
+      const cachedPayload = cbCommon.loadLobbyPayload();
+      if (cachedPayload) {
+          applyLobbyPayload(cachedPayload);
+          cbCommon.clearLobbyPayload();
+      } else {
+          renderLobbyState();
+          setRoleMessage();
+      }
+
+      connectSocket();
+
+      document.getElementById('join-smuggler-btn').addEventListener('click', () => sendToggleTeam('SMUGGLER'));
+      document.getElementById('join-inspector-btn').addEventListener('click', () => sendToggleTeam('INSPECTOR'));
+
+      const readyBtn = document.getElementById('ready-btn');
+      readyBtn.addEventListener('click', sendToggleReady);
+
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', sendStartGame);
+
+      const mpDecrease = document.getElementById('mp-decrease');
+      const mpIncrease = document.getElementById('mp-increase');
+      if (mpDecrease) {
+          mpDecrease.addEventListener('click', () => changeMaxPlayers(-STEP_MAX_PLAYER));
+      }
+      if (mpIncrease) {
+          mpIncrease.addEventListener('click', () => changeMaxPlayers(STEP_MAX_PLAYER));
+      }
+
+      document.getElementById('chat-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const input = document.getElementById('chat-input');
+          const msg = input.value.trim();
+          sendChat(msg);
+          input.value = '';
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

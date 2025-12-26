@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTRABAND: Lobby List</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&family=Gloria+Hallelujah&family=East+Sea+Dokdo&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/cb-common.js"></script>
+  <script src="js/rules-modal.js"></script>
+
+  <!-- Config & Styles -->
+  <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    display: ['Creepster', 'East Sea Dokdo', 'cursive'],
+                    hand: ['Amatic SC', 'East Sea Dokdo', 'cursive'],
+                    body: ['Gloria Hallelujah', 'Nanum Pen Script', 'cursive'],
+                },
+                colors: {
+                    paper: { DEFAULT: '#d5bdaf' },
+                    ink: { DEFAULT: '#2f1b1b', red: '#7f1d1d' }
+                },
+                boxShadow: { 'sketch': '2px 2px 0px 0px rgba(0,0,0,0.8)' },
+            }
+        }
+    }
+  </script>
+  <style>
+    body {
+        background-color: #1a1515;
+        color: #2f1b1b;
+        background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+    }
+    .sketch-box {
+        background-color: #d5bdaf;
+        border: 2px solid #000;
+        position: relative;
+        border-radius: 2px 255px 3px 25px / 255px 5px 225px 5px;
+        box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+        transition: all 0.2s ease-in-out;
+        background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    }
+    .sketch-box:hover {
+        transform: scale(1.01) rotate(-1deg);
+        box-shadow: 7px 7px 0 rgba(127, 29, 29, 0.6);
+    }
+    .sketch-btn {
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-weight: 700;
+        font-size: 1.5rem;
+        background: #2f1b1b;
+        color: #d5bdaf;
+        border: none;
+        clip-path: polygon(0% 5%, 5% 0%, 95% 0%, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0% 95%, 2% 50%, 0% 5%);
+        transition: transform 0.1s;
+        cursor: pointer;
+    }
+    .sketch-btn:hover {
+        transform: scale(1.05) rotate(2deg);
+        background: #7f1d1d;
+        color: #fff;
+    }
+    .sketch-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #4a4a4a;
+    }
+    .hand-input {
+        background: transparent;
+        border-bottom: 3px solid #2f1b1b;
+        font-family: 'Gloria Hallelujah', cursive;
+        color: #2f1b1b;
+        outline: none;
+        background-image: linear-gradient(rgba(47, 27, 27, 0.1) 1px, transparent 1px);
+        background-size: 100% 2em;
+        line-height: 2em;
+    }
+    .hand-input:lang(ko) { font-family: 'Nanum Pen Script', cursive; }
+    .hand-input::placeholder {
+        color: #786565;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+    }
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+        pointer-events: none;
+        z-index: 50;
+    }
+    .text-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.8); }
+    .font-hand { font-size: 1.5rem; }
+    .hidden-view { display: none !important; }
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #d5bdaf #2f1b1b;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #2f1b1b; }
+    ::-webkit-scrollbar-thumb { background: #d5bdaf; border: 1px solid #000; }
+
+    /* Toast Notification Styles */
+    #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast-message {
+        background-color: #2f1b1b;
+        color: #d5bdaf;
+        padding: 12px 20px;
+        border: 2px solid #000;
+        border-radius: 2px 15px 3px 10px;
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-size: 1.5rem;
+        font-weight: bold;
+        box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.5s ease-out;
+        pointer-events: auto;
+    }
+
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden overflow-y-auto">
+
+<div class="vignette"></div>
+<div class="fixed inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ce6fec56?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center pointer-events-none grayscale contrast-150"></div>
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Create Room Modal -->
+<div id="create-room-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden-view">
+  <div class="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity"></div>
+  <div class="sketch-box p-8 w-full max-w-md relative z-10 rotate-1">
+    <div class="absolute -top-4 -right-4 text-4xl text-ink-red font-display rotate-12">!</div>
+    <h2 class="font-display text-5xl text-ink text-center mb-8 border-b-2 border-dashed border-ink/30 pb-2">작전 설계</h2>
+
+    <form id="create-room-form" class="space-y-8">
+      <div>
+        <label class="block text-2xl font-hand font-bold text-ink mb-2">작전 구역 (Operation Zone)</label>
+        <div class="relative">
+          <input type="text" id="room-name-input" class="w-full py-2 hand-input text-xl focus:border-ink-red transition-colors pl-1" placeholder="작전 구역의 이름을 대라." required>
+          <i data-lucide="map" class="absolute right-2 bottom-3 w-5 h-5 text-ink opacity-60"></i>
+        </div>
+      </div>
+
+      <!-- Custom Player Count Stepper -->
+      <div>
+        <label class="block text-2xl font-hand font-bold text-ink mb-2">모집 인원 (Recruits)</label>
+        <div class="flex items-center justify-between bg-black/5 p-2 rounded border border-ink/20">
+          <button type="button" id="decrease-players-btn" class="sketch-btn px-4 py-1 text-2xl w-12 h-12 flex items-center justify-center">-</button>
+          <div class="flex flex-col items-center">
+            <span id="max-players-display" class="font-display text-5xl text-ink leading-none">4</span>
+<!--            <span class="font-body text-xs text-ink/60">Survivors</span>-->
+          </div>
+          <input type="hidden" id="max-players-input" value="4">
+          <button type="button" id="increase-players-btn" class="sketch-btn px-4 py-1 text-2xl w-12 h-12 flex items-center justify-center">+</button>
+        </div>
+        <div class="text-center mt-2">
+          <span class="font-hand text-ink/60 text-lg">최소 2명 ~ 최대 6명 (2명 단위)</span>
+        </div>
+      </div>
+
+      <div class="flex justify-between gap-4 mt-8 pt-4">
+        <button type="button" id="cancel-room-btn" class="sketch-btn px-6 py-2 text-xl text-white bg-ink/90 hover:bg-ink-red hover:text-white">작전 취소</button>
+        <button type="submit" class="sketch-btn px-6 py-2 text-xl text-white font-bold bg-ink-red hover:scale-105 border-b-2 border-black">작전 개시</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-[#2a2422] border-b-4 border-[#1a1515] p-3 shadow-lg relative z-20" style="background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <div class="w-12 h-12 bg-paper rounded-full border-4 border-black flex items-center justify-center shadow-md">
+        <i data-lucide="globe" class="w-8 h-8 text-ink"></i>
+      </div>
+      <div>
+        <h1 class="font-display text-4xl text-[#d5bdaf] tracking-widest text-shadow">Underground Network</h1>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-6">
+      <!-- User Info -->
+      <div class="sketch-box px-4 py-1 flex items-center gap-4 rotate-1 scale-90 origin-right">
+        <div class="flex flex-col items-end">
+          <span id="user-display" class="font-hand font-bold text-2xl text-ink leading-none">Unknown</span>
+          <span id="user-id-sub" class="font-body text-xs text-ink/60">ID: ...</span>
+        </div>
+      </div>
+      <button id="logout-btn" class="text-[#d5bdaf] hover:text-red-500 transition-colors transform hover:scale-110">
+        <i data-lucide="door-open" class="w-8 h-8"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-y-auto relative z-10">
+  <!-- Left: Room List -->
+  <div class="lg:col-span-2 space-y-6">
+    <div class="flex justify-between items-end pb-2 border-b-2 border-dashed border-paper/30">
+      <h2 class="text-4xl font-hand font-bold text-paper text-shadow">Active Operations</h2>
+      <button id="create-room-btn" class="sketch-btn px-6 py-2 text-2xl hover:scale-105">
+        + New Operation
+      </button>
+    </div>
+    <div id="room-list" class="grid grid-cols-1 gap-5">
+      <!-- JS injected -->
+    </div>
+    <div id="room-pagination"></div>
+  </div>
+
+  <!-- Right: Survival Rules -->
+  <div class="space-y-6">
+    <div class="sketch-box p-6 -rotate-1">
+      <div class="absolute -top-3 left-1/2 w-4 h-4 rounded-full bg-red-700 border border-black shadow"></div>
+      <h3 class="text-3xl font-hand font-bold text-ink mb-4 flex items-center gap-2 border-b-2 border-ink pb-1">
+        <i data-lucide="skull" class="w-6 h-6"></i> 생존 수칙
+      </h3>
+      <ul class="space-y-3 font-hand text-2xl text-ink/90 list-disc list-inside leading-relaxed">
+        <li>암시장 주파수 동기화. 즉시 작전 대기하라.</li>
+        <li>밀수꾼과 검사관, 서로를 끊임없이 <span class="text-ink-red">의심</span>하고, 숨죽여 경계하라.</li>
+        <li>진실을 철저히 은폐하라. 섣부른 행동은 용납되지 않는다.</li>
+        <li>상대를 완벽히 <span class="text-ink-red">기만</span>하여 승리하라. 실패하면 남는 것은 <span class="text-ink-red">파멸</span>뿐이다.</li>
+        <li>수단과 방법을 가리지 말고 <span class="text-ink-red">부(富)</span>를 쟁취하라.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script>
+  function showToast(message) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const kicked = localStorage.getItem('kickReason');
+      if (kicked) {
+          renderToast(container, kicked);
+          localStorage.removeItem('kickReason');
+      }
+
+      renderToast(container, message);
+  }
+
+  function renderToast(container, message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+          toast.classList.remove('show');
+          toast.style.opacity = '0';
+          setTimeout(() => {
+              if (container.contains(toast)) container.removeChild(toast);
+          }, 500);
+      }, 3000);
+  }
+
+  const state = {
+      socket: null,
+      rooms: [],
+      totalCount: 0,
+      page: 0,
+      pageSize: 10,
+      userId: null,
+      nickname: null,
+      joinPending: null
+  };
+
+  function renderRooms(rooms) {
+      state.rooms = rooms;
+      const list = document.getElementById('room-list');
+      if (!list) return;
+
+      if (!rooms || rooms.length === 0) {
+          list.innerHTML = `
+              <div class="sketch-box p-6 text-center text-ink/80 font-hand text-2xl">
+                  아직 보고된 작전 구역이 없다.
+              </div>
+          `;
+          return;
+      }
+
+      list.innerHTML = rooms.map((room) => {
+          const rotate = (Math.random() * 2 - 1).toFixed(1);
+          const roomId = room.roomIdString || room.roomId || room.id || '';
+          const isFull = Number(room.currentPlayerCount || 0) >= Number(room.maxPlayerCount || 0);
+          const isPlaying = room.gameStarted === true;
+          const statusText = isFull ? '만원' : (isPlaying ? '진행 중' : '대기 중');
+          const statusColor = isFull ? 'text-ink-red' : (isPlaying ? 'text-ink/50' : 'text-ink');
+          const btnText = isFull ? '불가' : (isPlaying ? '늦음' : '잠입');
+          const btnDisabled = isFull || isPlaying;
+          const playerText = `${room.currentPlayerCount || 0} / ${room.maxPlayerCount || 0}`;
+
+          return `
+              <div class="sketch-box p-4 flex items-center justify-between group" style="transform: rotate(${rotate}deg);">
+                  <div>
+                      <div class="flex items-center gap-3 mb-1">
+                          <h3 class="font-hand font-bold text-3xl text-ink group-hover:text-ink-red transition-colors">${room.lobbyName || '이름 없는 작전'}</h3>
+                          <span class="font-body text-xs font-bold ${statusColor} border border-black px-1 rounded-sm">${statusText}</span>
+                      </div>
+                      <div class="flex items-center space-x-4 text-sm text-ink/70 font-body">
+                          <span class="flex items-center gap-1"><i data-lucide="user" class="w-4 h-4"></i> ${playerText}</span>
+                          <span class="flex items-center gap-1 text-xs text-ink/50">${roomId}</span>
+                      </div>
+                  </div>
+                  <button class="sketch-btn px-6 py-1 text-2xl" ${btnDisabled ? 'disabled' : ''} data-room="${roomId}" data-entity="${room.entityId || ''}">${btnText}</button>
+              </div>
+          `;
+      }).join('');
+
+      list.querySelectorAll('button[data-room]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+              const roomId = btn.dataset.room;
+              const entityId = btn.dataset.entity;
+              attemptJoin(roomId, entityId);
+          });
+      });
+
+      lucide.createIcons();
+      renderPagination();
+  }
+
+  function renderPagination() {
+      const pagination = document.getElementById('room-pagination');
+      if (!pagination) return;
+    const totalPages = Math.ceil((state.totalCount || 0) / state.pageSize);
+    if (!totalPages || totalPages === 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+
+      const prevDisabled = state.page <= 0;
+      const nextDisabled = state.page >= totalPages - 1;
+      pagination.innerHTML = `
+        <div class="flex items-center justify-center gap-4 mt-4">
+          <button class="sketch-btn px-3 py-1" data-page="prev" ${prevDisabled ? 'disabled' : ''}>이전</button>
+          <span class="font-body text-sm text-ink/70">${state.page + 1} / ${totalPages}</span>
+          <button class="sketch-btn px-3 py-1" data-page="next" ${nextDisabled ? 'disabled' : ''}>다음</button>
+        </div>
+      `;
+
+      pagination.querySelectorAll('button[data-page]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+              const dir = btn.dataset.page;
+              const nextPage = dir === 'prev' ? Math.max(0, state.page - 1) : Math.min(totalPages - 1, state.page + 1);
+              requestRoomDirectory(nextPage, state.pageSize);
+          });
+      });
+  }
+
+  function handleMessage(msg) {
+      if (!msg || !msg.type) return;
+      if (msg.type === 'ROOM_DIRECTORY_UPDATED') {
+          state.totalCount = msg.payload?.totalCount || 0;
+          renderRooms(msg.payload?.rooms || []);
+      } else if (msg.type === 'CREATED_LOBBY' || msg.type === 'JOINED_LOBBY') {
+          const payload = msg.payload || {};
+          cbCommon.saveLobbyPayload(payload);
+          const roomId = payload.roomIdString || payload.roomId || state.joinPending?.roomId || '';
+          cbCommon.saveRoomContext(roomId, payload.entityId || payload.roomId || '');
+          //showToast(msg.type === 'CREATED_LOBBY' ? '작전 구역을 확보했다.' : '로비에 진입했다.');
+        setTimeout(() => {
+            window.location.href = '/lobby.html';
+        }, 150);
+      } else if (msg.type === 'EXCEPTION_MESSAGE') {
+          const err = cbCommon.resolveExceptionMessage(msg.payload);
+          showToast(err);
+      }
+  }
+
+  function connectSocket() {
+      if (!state.userId) return;
+      if (state.socket) state.socket.close();
+      state.socket = cbCommon.createSocket(state.userId, {
+          onOpen: () => showToast('암시장 채널 동기화 완료'),
+          onMessage: handleMessage,
+          onClose: () => showToast('암시장 채널 종료.'),
+          onError: () => showToast('암시장 채널에 문제가 발생했다.')
+      });
+      setTimeout(() => requestRoomDirectory(0, state.pageSize), 200);
+  }
+
+  function requestRoomDirectory(page, size) {
+      state.page = page;
+      state.pageSize = size;
+      if (!state.socket || state.socket.readyState !== WebSocket.OPEN) return;
+      state.socket.send(JSON.stringify({ type: 'QUERY_ROOM_DIRECTORY', page, size }));
+  }
+
+  function attemptJoin(roomId, entityId) {
+      if (!roomId) {
+          showToast('제대로 된 작전이 아니다.');
+          return;
+      }
+      state.joinPending = { roomId, entityId };
+      cbCommon.saveRoomContext(roomId, entityId || '');
+      fetch('/api/lobbies/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              userId: state.userId,
+              playerName: state.nickname,
+              roomId,
+              entityId
+          })
+      }).then(async (res) => {
+          if (res.ok) {
+              //showToast(`구역 ${roomId}에 진입 요청을 전송했다.`);
+              return;
+          }
+          let message = `작전에 참여할 수 없다. (${res.status})`;
+          try {
+              const data = await res.json();
+              if (data?.message) {
+                  message = data.message;
+              }
+          } catch (e) {
+              // ignore parse error
+          }
+          showToast(message);
+      }).catch(() => showToast('작전에 참여할 수 없다.'));
+  }
+
+  async function init() {
+      lucide.createIcons();
+      cbCommon.clearLobbyPayload();
+      const session = cbCommon.requireSession();
+      if (!session) return;
+      state.userId = Number(session.userId);
+      state.nickname = session.nickname || `Player ${state.userId}`;
+
+      const userDisplay = document.getElementById('user-display');
+      const userIdSub = document.getElementById('user-id-sub');
+      if (userDisplay) userDisplay.textContent = state.nickname;
+      if (userIdSub) userIdSub.textContent = `ID: ${state.userId}`;
+
+      renderRooms([]);
+
+      const loginResult = await cbCommon.login(state.userId, { silent: true });
+      if (!loginResult.success) {
+          showToast(loginResult.message || '신원을 다시 인증하라.');
+      }
+
+      connectSocket();
+
+      // Modal + form wiring
+      const createBtn = document.getElementById('create-room-btn');
+      const modal = document.getElementById('create-room-modal');
+      const cancelBtn = document.getElementById('cancel-room-btn');
+      const form = document.getElementById('create-room-form');
+      const decreaseBtn = document.getElementById('decrease-players-btn');
+      const increaseBtn = document.getElementById('increase-players-btn');
+      const playersDisplay = document.getElementById('max-players-display');
+      const playersInput = document.getElementById('max-players-input');
+
+      function updatePlayers(val) {
+          if (playersInput) playersInput.value = val;
+          if (playersDisplay) playersDisplay.textContent = val;
+      }
+
+      if (createBtn) {
+          createBtn.addEventListener('click', () => modal.classList.remove('hidden-view'));
+      }
+      if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+              modal.classList.add('hidden-view');
+              form?.reset();
+              updatePlayers(4);
+          });
+      }
+      if (decreaseBtn) {
+          decreaseBtn.addEventListener('click', () => {
+              let current = parseInt(playersInput.value, 10);
+              if (current > 2) {
+                  current -= 2;
+                  updatePlayers(current);
+              }
+          });
+      }
+      if (increaseBtn) {
+          increaseBtn.addEventListener('click', () => {
+              let current = parseInt(playersInput.value, 10);
+              if (current < 6) {
+                  current += 2;
+                  updatePlayers(current);
+              }
+          });
+      }
+      if (form) {
+          form.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const roomName = document.getElementById('room-name-input').value?.trim();
+              const maxPlayers = Number(document.getElementById('max-players-input').value || 4);
+              if (!roomName) {
+                  showToast('작전 구역 이름을 입력하라.');
+                  return;
+              }
+              try {
+                  const res = await fetch('/api/lobbies', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          userId: state.userId,
+                          hostName: state.nickname,
+                          lobbyName: roomName,
+                          maxPlayerCount: maxPlayers
+                      })
+                  });
+                  if (res.ok) {
+                      //showToast('작전 개시 요청을 전송했다.');
+                  } else {
+                      let message = `작전을 진행할 수 없다. (${res.status})`;
+                      try {
+                          const data = await res.json();
+                          if (data?.message) {
+                              message = data.message;
+                          }
+                      } catch (e) {
+                          // ignore parse errors
+                      }
+                      showToast(message);
+                  }
+              } catch (err) {
+                  showToast('작전을 진행할 수 없다.');
+              }
+              modal.classList.add('hidden-view');
+              form.reset();
+              updatePlayers(4);
+          });
+      }
+
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+              cbCommon.clearSession();
+              if (state.socket) state.socket.close();
+              window.location.href = '/index-new.html';
+          });
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

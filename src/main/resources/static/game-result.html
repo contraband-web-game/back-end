@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTRABAND: Settlement</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&family=Gloria+Hallelujah&family=East+Sea+Dokdo&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/rules-modal.js"></script>
+
+  <!-- Config & Styles -->
+  <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    display: ['Creepster', 'East Sea Dokdo', 'cursive'],
+                    hand: ['Amatic SC', 'East Sea Dokdo', 'cursive'],
+                    body: ['Gloria Hallelujah', 'Nanum Pen Script', 'cursive'],
+                },
+                colors: {
+                    paper: { DEFAULT: '#d5bdaf', dark: '#b08968' },
+                    ink: { DEFAULT: '#2f1b1b', red: '#7f1d1d' }
+                },
+                boxShadow: { 'sketch': '2px 2px 0px 0px rgba(0,0,0,0.8)' },
+                animation: {
+                    'stamp': 'stamp 0.5s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards',
+                    'bounce-slow': 'bounce 2s infinite',
+                },
+                keyframes: {
+                    stamp: {
+                        '0%': { opacity: 0, transform: 'scale(3) rotate(-10deg)' },
+                        '100%': { opacity: 1, transform: 'scale(1) rotate(-2deg)' }
+                    }
+                }
+            }
+        }
+    }
+  </script>
+  <style>
+    body {
+        background-color: #1a1515;
+        color: #2f1b1b;
+        background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+    }
+    .sketch-box {
+        background-color: #d5bdaf;
+        border: 2px solid #000;
+        position: relative;
+        border-radius: 4px;
+        box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+        transition: all 0.2s ease-in-out;
+        background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    }
+    .sketch-btn {
+        font-family: 'Amatic SC', 'East Sea Dokdo', cursive;
+        font-weight: 700;
+        font-size: 1.8rem;
+        background: #d5bdaf; /* Changed to light color for visibility */
+        color: #2f1b1b;
+        border: 2px solid #000;
+        clip-path: polygon(0% 5%, 5% 0%, 95% 0%, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0% 95%, 2% 50%, 0% 5%);
+        transition: transform 0.1s;
+        cursor: pointer;
+        padding: 10px 30px;
+    }
+    .sketch-btn:hover { transform: scale(1.05) rotate(1deg); background: #7f1d1d; color: #fff; }
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #d5bdaf #2f1b1b;
+    }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #2f1b1b; }
+    ::-webkit-scrollbar-thumb { background: #d5bdaf; border: 2px solid #000; }
+
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+        pointer-events: none;
+        z-index: 50;
+    }
+
+    .result-stamp {
+        font-family: 'Creepster', cursive;
+        font-size: 5rem;
+        color: #7f1d1d;
+        border: 5px solid #7f1d1d;
+        padding: 10px 40px;
+        border-radius: 10px;
+        text-transform: uppercase;
+        opacity: 0; /* Hidden initially */
+        transform: rotate(-5deg);
+        display: inline-block;
+        text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+        background: rgba(255,255,255,0.1);
+    }
+
+    .winner-glow {
+        box-shadow: 0 0 40px rgba(220, 38, 38, 0.5); /* Stronger glow */
+        border-color: #7f1d1d;
+        transform: scale(1.05);
+        z-index: 10;
+    }
+
+    .loser-fade {
+        opacity: 0.5;
+        filter: grayscale(1);
+        transform: scale(0.95);
+    }
+
+    .text-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.8); }
+    .hidden-view { display: none !important; }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col items-center justify-center overflow-x-hidden overflow-y-auto">
+
+<div class="vignette"></div>
+<div class="fixed inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ce6fec56?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center pointer-events-none grayscale contrast-150"></div>
+
+<!-- Result Container -->
+<div class="w-full max-w-4xl p-4 relative z-10 flex flex-col items-center">
+
+  <!-- Header -->
+  <div class="text-center mb-4">
+    <h1 class="font-display text-6xl text-[#d5bdaf] tracking-widest text-shadow mb-2">Operation Closed</h1>
+    <!-- 배경 박스 제거 및 텍스트 스타일 수정 -->
+    <p class="font-hand text-4xl text-[#d5bdaf] opacity-80 mt-4 tracking-wide text-shadow">
+      "작전이 종료되었다. 성과를 확인하라."
+    </p>
+  </div>
+
+  <!-- Winner Announcement -->
+  <!-- Reduced text size to 5xl for longer sentences -->
+  <div id="winner-announcement" class="font-display text-5xl text-white text-shadow mb-8 animate-bounce-slow hidden-view tracking-widest text-center">
+    <!-- JS will fill this -->
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="grid grid-cols-2 gap-8 items-center w-full">
+
+    <!-- Smuggler Team Result -->
+    <div id="smuggler-card" class="sketch-box p-8 flex flex-col items-center transition-all duration-1000 rotate-[-1deg]">
+      <div class="w-20 h-20 bg-ink rounded-full flex items-center justify-center text-[#d5bdaf] mb-4 border-2 border-[#d5bdaf]">
+        <i data-lucide="briefcase" class="w-10 h-10"></i>
+      </div>
+      <h2 class="font-hand text-4xl font-bold text-ink mb-2">밀수꾼 팀</h2>
+      <p class="font-body text-ink/70 text-xl mb-4">확보한 자금</p>
+      <div class="font-display text-6xl text-ink mb-6">$<span id="score-smuggler">0</span></div>
+
+      <div id="stamp-smuggler" class="result-stamp hidden-view">WIN</div>
+    </div>
+
+    <!-- Inspector Team Result -->
+    <div id="inspector-card" class="sketch-box p-8 flex flex-col items-center transition-all duration-1000 rotate-[1deg]">
+      <div class="w-20 h-20 bg-ink-red rounded-full flex items-center justify-center text-white mb-4 border-2 border-white">
+        <i data-lucide="search" class="w-10 h-10"></i>
+      </div>
+      <h2 class="font-hand text-4xl font-bold text-ink-red mb-2">검사관 팀</h2>
+      <p class="font-body text-ink/70 text-xl mb-4">압수한 자금</p>
+      <div class="font-display text-6xl text-ink-red mb-6">$<span id="score-inspector">0</span></div>
+
+      <div id="stamp-inspector" class="result-stamp hidden-view">WIN</div>
+    </div>
+  </div>
+
+  <!-- Footer / Return Button -->
+  <div class="text-center mt-12">
+    <button id="return-btn" class="sketch-btn text-3xl shadow-xl hover:scale-110 transition-transform">
+      복귀
+    </button>
+    <p class="mt-4 font-body text-white/50 text-xl">기록이 말소되기까지... <span id="countdown">30</span>s</p>
+  </div>
+
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // --- Result Data Load (sessionStorage로 전달) ---
+  const stored = sessionStorage.getItem('cbGameResult');
+  let resultData = null;
+  if (stored) {
+      try {
+          resultData = JSON.parse(stored);
+      } catch (e) {
+          console.warn('결과 파싱 실패', e);
+      }
+      // 한 번 사용 후 정리
+      sessionStorage.removeItem('cbGameResult');
+  }
+
+  // --- Animation Logic ---
+  document.addEventListener('DOMContentLoaded', () => {
+      const sCard = document.getElementById('smuggler-card');
+      const iCard = document.getElementById('inspector-card');
+      const sScoreEl = document.getElementById('score-smuggler');
+      const iScoreEl = document.getElementById('score-inspector');
+      const sStamp = document.getElementById('stamp-smuggler');
+      const iStamp = document.getElementById('stamp-inspector');
+      const winnerText = document.getElementById('winner-announcement');
+
+      if (!resultData) {
+          winnerText.classList.remove('hidden-view');
+          winnerText.textContent = '결과 정보를 찾을 수 없습니다.';
+          return;
+      }
+
+      // 1. Number Counter Animation
+      animateValue(sScoreEl, 0, resultData.sScore, 1500);
+      animateValue(iScoreEl, 0, resultData.iScore, 1500);
+
+      // 2. Verdict Animation (after numbers settle)
+      setTimeout(() => {
+          winnerText.classList.remove('hidden-view');
+
+          if (resultData.winner === 'SMUGGLER') {
+              sCard.classList.add('winner-glow');
+              iCard.classList.add('loser-fade');
+
+              sStamp.textContent = "VICTORY";
+              sStamp.classList.remove('hidden-view');
+              sStamp.style.animation = "stamp 0.5s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards";
+
+              iStamp.textContent = "DEFEAT";
+              iStamp.style.borderColor = "#555";
+              iStamp.style.color = "#555";
+              iStamp.style.fontSize = "3rem";
+              iStamp.classList.remove('hidden-view');
+
+              winnerText.innerHTML = `"놈들의 눈을 완벽히 속였다."`;
+
+          } else if (resultData.winner === 'INSPECTOR') {
+              iCard.classList.add('winner-glow');
+              sCard.classList.add('loser-fade');
+
+              iStamp.textContent = "VICTORY";
+              iStamp.classList.remove('hidden-view');
+              iStamp.style.animation = "stamp 0.5s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards";
+
+              sStamp.textContent = "DEFEAT";
+              sStamp.style.borderColor = "#555";
+              sStamp.style.color = "#555";
+              sStamp.style.fontSize = "3rem";
+              sStamp.classList.remove('hidden-view');
+
+              winnerText.innerHTML = `"놈들의 거짓을 모두 파헤쳤다."`;
+
+          } else {
+              // Draw
+              sStamp.textContent = "DRAW";
+              iStamp.textContent = "DRAW";
+              sStamp.classList.remove('hidden-view');
+              iStamp.classList.remove('hidden-view');
+              sStamp.style.color = "#333"; sStamp.style.borderColor = "#333";
+              iStamp.style.color = "#333"; iStamp.style.borderColor = "#333";
+
+              // 문구 수정
+              winnerText.innerHTML = `"서로 시간만 낭비했군."`;
+          }
+      }, 1800);
+  });
+
+  function animateValue(obj, start, end, duration) {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+          if (!startTimestamp) startTimestamp = timestamp;
+          const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+          obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+          if (progress < 1) {
+              window.requestAnimationFrame(step);
+          }
+      };
+      window.requestAnimationFrame(step);
+  }
+
+  // --- Navigation ---
+  document.getElementById('return-btn').addEventListener('click', () => {
+      window.location.href = '/lobby-list.html';
+  });
+
+  // Auto redirect countdown
+  let countdown = 30;
+  setInterval(() => {
+      countdown--;
+      document.getElementById('countdown').textContent = countdown;
+      if (countdown <= 0) window.location.href = '/lobby-list.html';
+  }, 1000);
+
+</script>
+</body>
+</html>

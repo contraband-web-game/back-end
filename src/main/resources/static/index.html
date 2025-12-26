@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>밀수: 신원 파악</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Creepster&family=Gloria+Hallelujah&family=East+Sea+Dokdo&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Config & Styles (Common) -->
+  <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    display: ['Creepster', 'East Sea Dokdo', 'cursive'],
+                    hand: ['Amatic SC', 'East Sea Dokdo', 'cursive'],
+                    body: ['Gloria Hallelujah', 'Nanum Pen Script', 'cursive'],
+                },
+                colors: {
+                    paper: { DEFAULT: '#d5bdaf' },
+                    ink: { DEFAULT: '#2f1b1b', red: '#7f1d1d' }
+                },
+                boxShadow: {
+                    'sketch': '2px 2px 0px 0px rgba(0,0,0,0.8)',
+                },
+            }
+        }
+    }
+  </script>
+  <style>
+    body {
+        background-color: #1a1515;
+        color: #2f1b1b;
+        background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+    }
+    .sketch-box {
+        background-color: #d5bdaf;
+        border: 2px solid #000;
+        position: relative;
+        border-radius: 2px 255px 3px 25px / 255px 5px 225px 5px;
+        box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+        transition: all 0.2s ease-in-out;
+        background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    }
+    .sketch-box:hover {
+        transform: scale(1.01) rotate(-1deg);
+        box-shadow: 7px 7px 0 rgba(127, 29, 29, 0.6);
+    }
+    .sketch-btn {
+        font-family: 'Gloria Hallelujah', 'Nanum Pen Script', cursive;
+        font-weight: 700;
+        font-size: 1.25rem;
+        background: #2f1b1b;
+        color: #d5bdaf;
+        border: none;
+        clip-path: polygon(0% 5%, 5% 0%, 95% 0%, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0% 95%, 2% 50%, 0% 5%);
+        transition: transform 0.1s;
+    }
+    .sketch-btn:hover {
+        transform: scale(1.05) rotate(2deg);
+        background: #7f1d1d;
+        color: #fff;
+    }
+    .hand-input {
+        background: transparent;
+        border-bottom: 3px solid #2f1b1b;
+        font-family: 'Gloria Hallelujah', cursive;
+        color: #2f1b1b;
+        outline: none;
+        background-image: linear-gradient(rgba(47, 27, 27, 0.1) 1px, transparent 1px);
+        background-size: 100% 2em;
+        line-height: 2em;
+    }
+    .hand-input::placeholder {
+        color: #786565;
+        font-family: 'Gloria Hallelujah', 'Nanum Pen Script', cursive;
+        font-size: 1.25rem;
+    }
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        box-shadow: 0 0 200px rgba(0,0,0,0.9) inset;
+        pointer-events: none;
+        z-index: 50;
+    }
+    .rough-text { text-shadow: 1px 1px 0 rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col items-center justify-center overflow-hidden">
+
+<div class="vignette"></div>
+<div class="fixed inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ce6fec56?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center pointer-events-none grayscale contrast-150"></div>
+
+<!-- Login Container -->
+<div class="w-full max-w-md p-10 sketch-box rotate-1 relative z-10">
+
+  <div class="text-center mb-8 relative">
+    <div class="absolute -top-12 -left-8 text-6xl text-ink-red opacity-60 rotate-[-15deg] select-none font-display">?</div>
+    <h1 class="text-6xl font-display text-ink rough-text tracking-wider mb-2">밀수 (CONTRABAND)</h1>
+    <p class="text-xl font-hand font-bold text-ink-red -rotate-2">"속이지 못하면 빼앗긴다."</p>
+  </div>
+
+  <form id="login-form" class="space-y-6">
+    <div>
+      <label class="block text-2xl font-hand font-bold text-ink mb-2">신원 확인</label>
+
+      <div class="relative mb-4">
+        <input type="text" id="username-input" class="w-full py-2 hand-input text-xl focus:border-ink-red transition-colors pl-1" placeholder="코드 네임..." required>
+        <i data-lucide="fingerprint" class="absolute right-2 bottom-3 w-5 h-5 text-ink opacity-60"></i>
+      </div>
+
+      <div class="relative">
+        <input type="text" id="nickname-input" class="w-full py-2 hand-input text-xl focus:border-ink-red transition-colors pl-1" placeholder="활동명..." required>
+        <i data-lucide="skull" class="absolute right-2 bottom-3 w-6 h-6 text-ink opacity-70"></i>
+      </div>
+    </div>
+
+    <button type="submit" class="w-full py-4 mt-6 sketch-btn shadow-xl">
+      보안 구역 진입
+    </button>
+  </form>
+
+  <div class="mt-8 text-center border-t-2 border-dashed border-ink/30 pt-4">
+    <p class="text-lg font-hand text-ink/70">해당 작전은 기록되지 않는다.</p>
+  </div>
+</div>
+
+<script src="js/cb-common.js"></script>
+<script src="js/rules-modal.js"></script>
+<script>
+  lucide.createIcons();
+
+  const form = document.getElementById('login-form');
+  const usernameInput = document.getElementById('username-input');
+  const nicknameInput = document.getElementById('nickname-input');
+
+  const statusBox = document.createElement('p');
+  statusBox.id = 'login-status';
+  statusBox.className = 'mt-4 text-center font-hand text-2xl text-ink/80';
+  form.parentElement.appendChild(statusBox);
+
+  const cached = window.cbCommon?.loadSession ? window.cbCommon.loadSession() : null;
+  if (cached?.userId) {
+      usernameInput.value = cached.userId;
+  }
+  if (cached?.nickname) {
+      nicknameInput.value = cached.nickname;
+  }
+
+  form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+          statusBox.textContent = '';
+          const userId = Number(usernameInput.value.trim());
+          const nickname = nicknameInput.value.trim() || (userId ? String(userId) : '');
+
+      if (!userId) {
+          //statusBox.textContent = '아이디를 숫자로 입력해 주세요.';
+          return;
+      }
+      statusBox.textContent = '신원을 확인 중...';
+
+      try {
+          const result = await window.cbCommon.login(userId, { silent: false });
+          window.cbCommon.saveSession(userId, nickname || String(userId));
+          statusBox.textContent = '신원 파악 완료';
+          let nextPage = 'lobby-list.html';
+          try {
+              const resp = await fetch(`/api/game/resume?userId=${userId}`);
+              if (resp.ok) {
+                  const data = await resp.json();
+                  if (data.hasGame) {
+                      window.cbCommon.saveRoomContext(data.roomId, data.entityId);
+                      nextPage = 'resume.html';
+                  }
+              }
+          } catch (e) {
+              // 서버 조회 실패 시에는 안전하게 로비 목록으로 이동
+          }
+          setTimeout(() => window.location.href = nextPage, 200);
+      } catch (err) {
+          //statusBox.textContent = err?.message || '로그인 실패';
+          statusBox.textContent = err?.message || '신원 파악 실패';
+      }
+  });
+</script>
+</body>
+</html>
