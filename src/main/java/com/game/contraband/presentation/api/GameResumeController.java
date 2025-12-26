@@ -1,6 +1,6 @@
 package com.game.contraband.presentation.api;
 
-import com.game.contraband.application.game.GameLobbyService;
+import com.game.contraband.application.game.GameService;
 import java.util.concurrent.CompletionStage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class GameResumeController {
 
-    private final GameLobbyService gameLobbyService;
+    private final GameService gameService;
 
     @GetMapping("/resume")
     public CompletionStage<ResponseEntity<ActiveGameResponse>> resume(@RequestParam Long userId) {
-        return gameLobbyService.findActiveGame(userId)
-                               .thenApply(info -> {
+        return gameService.findActiveGame(userId)
+                          .thenApply(info -> {
                                    boolean hasGame = info != null;
                                    return ResponseEntity.ok(
                                            new ActiveGameResponse(
@@ -29,7 +29,7 @@ public class GameResumeController {
                                            )
                                    );
                                })
-                               .exceptionally(ex -> ResponseEntity.ok(new ActiveGameResponse(false, null, null)));
+                          .exceptionally(ex -> ResponseEntity.ok(new ActiveGameResponse(false, null, null)));
     }
 
     public record ActiveGameResponse(boolean hasGame, Long roomId, String entityId) { }

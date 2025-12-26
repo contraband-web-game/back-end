@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class GameLobbyService {
+public class GameService {
 
     private static final Duration DEFAULT_ASK_TIMEOUT = Duration.ofSeconds(3L);
     private static final Duration DEFAULT_RESUME_TIMEOUT = Duration.ofSeconds(3L);

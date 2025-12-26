@@ -1,6 +1,6 @@
 package com.game.contraband.presentation.api;
 
-import com.game.contraband.application.game.GameLobbyService;
+import com.game.contraband.application.game.GameService;
 import java.util.concurrent.CompletionStage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,17 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class GameLobbyController {
 
-    private final GameLobbyService gameLobbyService;
+    private final GameService gameService;
 
     @PostMapping
     public CompletionStage<ResponseEntity<Void>> createLobby(@RequestBody CreateLobbyRequest request) {
-        return gameLobbyService.createLobby(
+        return gameService.createLobby(
                                        request.userId(),
                                        request.hostName(),
                                        request.maxPlayerCount(),
                                        request.lobbyName()
                                )
-                               .handle(
+                          .handle(
                                        (ignore, ex) -> ex == null
                                                ? ResponseEntity.accepted().build()
                                                : ResponseEntity.status(500).build()
@@ -33,8 +33,8 @@ public class GameLobbyController {
 
     @PostMapping("/join")
     public CompletionStage<ResponseEntity<Void>> joinLobby(@RequestBody JoinLobbyRequest request) {
-        return gameLobbyService.joinLobby(request.userId(), request.playerName(), request.roomId(), request.entityId())
-                               .handle(
+        return gameService.joinLobby(request.userId(), request.playerName(), request.roomId(), request.entityId())
+                          .handle(
                                        (ignore, ex) -> ex == null
                                                ? ResponseEntity.accepted().build()
                                                : ResponseEntity.status(500).build()
