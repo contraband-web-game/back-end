@@ -5,6 +5,7 @@ import com.game.contraband.domain.game.engine.match.GameWinnerType;
 import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import java.util.List;
 
@@ -68,4 +69,6 @@ public interface WebSocketMessagePayload {
     record TransferPayload(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements WebSocketMessagePayload { }
 
     record CreateLobbyPayload(int maxPlayerCount, String lobbyName, TeamRole teamRole) implements WebSocketMessagePayload { }
+
+    record JoinedLobbyPayload(Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements WebSocketMessagePayload { }
 }

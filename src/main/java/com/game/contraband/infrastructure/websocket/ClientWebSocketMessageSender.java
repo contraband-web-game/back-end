@@ -6,6 +6,7 @@ import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatKickedPayload;
@@ -23,6 +24,7 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedInspectorIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.InspectorApprovalStatePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.JoinedLobbyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredInspectorIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryEntryPayload;
@@ -402,6 +404,30 @@ public class ClientWebSocketMessageSender {
         CreateLobbyPayload payload = new CreateLobbyPayload(maxPlayerCount, lobbyName, teamRole);
         WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
                 WebSocketOutboundMessageType.CREATE_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendCreatedLobby(
+            Long roomId,
+            Long hostId,
+            int maxPlayerCount,
+            int currentPlayerCount,
+            String lobbyName,
+            List<LobbyParticipant> lobbyParticipants
+    ) {
+        JoinedLobbyPayload payload = new JoinedLobbyPayload(
+                roomId,
+                hostId,
+                maxPlayerCount,
+                currentPlayerCount,
+                lobbyName,
+                lobbyParticipants
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.CREATED_LOBBY,
                 payload
         );
 

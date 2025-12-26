@@ -2,6 +2,7 @@ package com.game.contraband.infrastructure.actor.client;
 
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.InboundCommand;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -23,7 +24,8 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     }
 
     private final ActorRef<ClientSessionCommand> gateway;
-    private ActorRef<ContrabandGameCommand> smugglingGame;
+    private ActorRef<LobbyCommand> lobby;
+    private ActorRef<ContrabandGameCommand> contrabandGame;
 
     @Override
     public Receive<InboundCommand> createReceive() {
@@ -33,13 +35,18 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     }
 
     private Behavior<InboundCommand> onUpdateContrabandGame(UpdateContrabandGame command) {
-        this.smugglingGame = command.smugglingGame();
+        this.contrabandGame = command.smugglingGame();
+        return this;
+    }
+
+    private Behavior<InboundCommand> onUpdateLobby(UpdateLobby command) {
+        this.lobby = command.lobby();
         return this;
     }
 
     private Behavior<InboundCommand> onReSyncConnection(ReSyncConnection command) {
-        if (smugglingGame != null) {
-            smugglingGame.tell(new SyncReconnectedPlayer(command.playerId()));
+        if (contrabandGame != null) {
+            contrabandGame.tell(new SyncReconnectedPlayer(command.playerId()));
             return this;
         }
 
@@ -47,6 +54,8 @@ public class SessionInboundActor extends AbstractBehavior<InboundCommand> {
     }
 
     public record UpdateContrabandGame(ActorRef<ContrabandGameCommand> smugglingGame) implements InboundCommand { }
+
+    public record UpdateLobby(ActorRef<LobbyCommand> lobby) implements InboundCommand { }
 
     public record ReSyncConnection(Long playerId) implements InboundCommand { }
 }

@@ -10,6 +10,7 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.Outbou
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.UpdateActiveGame;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
@@ -72,6 +73,7 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
                                   .onMessage(PropagateDecidedSmuggleAmount.class, this::onPropagateDecidedSmuggleAmount)
                                   .onMessage(PropagateTransfer.class, this::onPropagateTransfer)
                                   .onMessage(PropagateCreateLobby.class, this::onPropagateCreateLobby)
+                                  .onMessage(PropagateCreatedLobby.class, this::onPropagateCreatedLobby)
                                   .build();
     }
 
@@ -279,6 +281,18 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
+    private Behavior<OutboundCommand> onPropagateCreatedLobby(PropagateCreatedLobby command) {
+        sender.sendCreatedLobby(
+                command.roomId(),
+                command.hostId(),
+                command.maxPlayerCount(),
+                command.currentPlayerCount(),
+                command.lobbyName(),
+                command.lobbyParticipants()
+        );
+        return this;
+    }
+
     public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
@@ -324,4 +338,6 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     public record PropagateTransfer(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements OutboundCommand { }
 
     public record PropagateCreateLobby(ActorRef<LobbyCommand> lobby, int maxPlayerCount, String lobbyName, TeamRole teamRole) implements OutboundCommand { }
+
+    public record PropagateCreatedLobby(ActorRef<LobbyCommand> lobby, Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements OutboundCommand { }
 }
