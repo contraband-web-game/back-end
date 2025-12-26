@@ -33,13 +33,14 @@ public class RoomDirectoryActor extends AbstractBehavior<RoomDirectoryCommand> {
 
     @Override
     public Receive<RoomDirectoryCommand> createReceive() {
-        return newReceiveBuilder().onMessage(SyncRoomRegistered.class, this::onRegisterRoom)
-                                  .onMessage(SyncRoomRemoved.class, this::onRemoveRoom)
+        return newReceiveBuilder().onMessage(SyncRoomRegistered.class, this::onSyncRoomRegistered)
+                                  .onMessage(SyncRoomRemoved.class, this::onSyncRoomRemoved)
+                                  .onMessage(RemoveRoom.class, this::onRemoveRoom)
                                   .onMessage(QueryRooms.class, this::onQueryRooms)
                                   .build();
     }
 
-    private Behavior<RoomDirectoryCommand> onRegisterRoom(SyncRoomRegistered command) {
+    private Behavior<RoomDirectoryCommand> onSyncRoomRegistered(SyncRoomRegistered command) {
         rooms.put(command.roomSummary().roomId(), command.roomSummary());
         topic.tell(
                 Topic.publish(
@@ -53,7 +54,21 @@ public class RoomDirectoryActor extends AbstractBehavior<RoomDirectoryCommand> {
         return this;
     }
 
-    private Behavior<RoomDirectoryCommand> onRemoveRoom(SyncRoomRemoved command) {
+    private Behavior<RoomDirectoryCommand> onSyncRoomRemoved(SyncRoomRemoved command) {
+        RoomDirectorySnapshot removed = rooms.remove(command.roomId());
+
+        if (removed != null) {
+            topic.tell(
+                    Topic.publish(
+                            new RoomDirectoryEvent(RoomEventType.REMOVED, removed, command.roomId())
+                    )
+            );
+        }
+
+        return this;
+    }
+
+    private Behavior<RoomDirectoryCommand> onRemoveRoom(RemoveRoom command) {
         RoomDirectorySnapshot removed = rooms.remove(command.roomId());
 
         if (removed != null) {
@@ -104,4 +119,6 @@ public class RoomDirectoryActor extends AbstractBehavior<RoomDirectoryCommand> {
     public record RoomDirectoryEvent(RoomEventType type, RoomDirectorySnapshot roomSummary, Long roomId) implements CborSerializable { }
 
     public record RoomDirectorySnapshot(Long roomId, String lobbyName, int maxPlayerCount, int currentPlayerCount, String entityId, boolean gameStarted) implements CborSerializable { }
+
+    public record RemoveRoom(Long roomId) implements RoomDirectoryCommand { }
 }

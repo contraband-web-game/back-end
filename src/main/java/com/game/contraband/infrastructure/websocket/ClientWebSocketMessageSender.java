@@ -1,10 +1,12 @@
 package com.game.contraband.infrastructure.websocket;
 
 import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatKickedPayload;
@@ -12,6 +14,7 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessageMaskedPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatMessagePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ChatWelcomePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.CreateLobbyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedInspectionPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedPassPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.DecidedSmugglerAmountForSmugglerTeamPayload;
@@ -21,6 +24,10 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedInspectorIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.FixedSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.InspectorApprovalStatePayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.JoinedLobbyPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.OtherPlayerJoinedLobbyPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.OtherPlayerKickedPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.OtherPlayerLeftLobbyPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredInspectorIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RegisteredSmugglerIdPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.RoomDirectoryEntryPayload;
@@ -29,6 +36,8 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayl
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.SmugglerApprovalStatePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartGamePayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.StartNewRoundPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ToggledReadyPayload;
+import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.ToggledTeamPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.TransferFailedPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.TransferPayload;
 import com.game.contraband.infrastructure.websocket.message.WebSocketMessagePayload.WebSocketEmptyPayload;
@@ -396,6 +405,127 @@ public class ClientWebSocketMessageSender {
         emit(webSocketOutboundMessage);
     }
 
+    public void sendCreateLobby(int maxPlayerCount, String lobbyName, TeamRole teamRole) {
+        CreateLobbyPayload payload = new CreateLobbyPayload(maxPlayerCount, lobbyName, teamRole);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.CREATE_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendCreatedLobby(
+            Long roomId,
+            Long hostId,
+            int maxPlayerCount,
+            int currentPlayerCount,
+            String lobbyName,
+            List<LobbyParticipant> lobbyParticipants
+    ) {
+        JoinedLobbyPayload payload = new JoinedLobbyPayload(
+                roomId,
+                hostId,
+                maxPlayerCount,
+                currentPlayerCount,
+                lobbyName,
+                lobbyParticipants
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.CREATED_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendOtherPlayerJoinedLobby(Long joinerId, String joinerName, TeamRole teamRole, int currentPlayerCount) {
+        OtherPlayerJoinedLobbyPayload payload = new OtherPlayerJoinedLobbyPayload(
+                joinerId,
+                joinerName,
+                teamRole,
+                currentPlayerCount
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.OTHER_PLAYER_JOINED_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendJoinedLobby(Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) {
+        JoinedLobbyPayload payload = new JoinedLobbyPayload(
+                roomId,
+                hostId,
+                maxPlayerCount,
+                currentPlayerCount,
+                lobbyName,
+                lobbyParticipants
+        );
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.JOINED_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendToggledReady(Long playerId, boolean toggleReadyState) {
+        ToggledReadyPayload payload = new ToggledReadyPayload(playerId, toggleReadyState);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.TOGGLED_READY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendToggledTeam(Long playerId, String playerName, TeamRole teamRole) {
+        ToggledTeamPayload payload = new ToggledTeamPayload(playerId, playerName, teamRole);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.TOGGLED_TEAM,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendLeftLobby() {
+        emit(WebSocketOutboundMessage.LEFT_LOBBY_MESSAGE);
+    }
+
+    public void sendOtherPlayerLeftLobby(Long playerId) {
+        OtherPlayerLeftLobbyPayload payload = new OtherPlayerLeftLobbyPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.OTHER_PLAYER_LEFT_LOBBY,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendKickedLobby() {
+        emit(WebSocketOutboundMessage.KICKED_LOBBY_MESSAGE);
+    }
+
+    public void sendOtherPlayerKicked(Long playerId) {
+        OtherPlayerKickedPayload payload = new OtherPlayerKickedPayload(playerId);
+        WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
+                WebSocketOutboundMessageType.OTHER_PLAYER_KICKED,
+                payload
+        );
+
+        emit(webSocketOutboundMessage);
+    }
+
+    public void sendHostDeletedLobby() {
+        emit(WebSocketOutboundMessage.HOST_DELETED_LOBBY);
+    }
+
+    public void sendLobbyDeleted() {
+        emit(WebSocketOutboundMessage.DELETED_LOBBY);
+    }
 
     public void sendWebSocketPing() {
         emit(WebSocketOutboundMessage.PING_MESSAGE);

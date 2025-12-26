@@ -2,8 +2,10 @@ package com.game.contraband.infrastructure.websocket.message;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.game.contraband.domain.game.engine.match.GameWinnerType;
+import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import java.util.List;
 
@@ -65,4 +67,18 @@ public interface WebSocketMessagePayload {
     record DecidedSmugglerAmountForSmugglerTeamPayload(Long smugglerId, int amount) implements WebSocketMessagePayload { }
 
     record TransferPayload(Long senderId, Long targetId, int senderBalance, int targetBalance, int amount) implements WebSocketMessagePayload { }
+
+    record CreateLobbyPayload(int maxPlayerCount, String lobbyName, TeamRole teamRole) implements WebSocketMessagePayload { }
+
+    record JoinedLobbyPayload(Long roomId, Long hostId, int maxPlayerCount, int currentPlayerCount, String lobbyName, List<LobbyParticipant> lobbyParticipants) implements WebSocketMessagePayload { }
+
+    record OtherPlayerJoinedLobbyPayload(Long joinerId, String joinerName, TeamRole teamRole, int currentPlayerCount) implements WebSocketMessagePayload { }
+
+    record ToggledReadyPayload(Long playerId, boolean toggleReadyState) implements WebSocketMessagePayload { }
+
+    record ToggledTeamPayload(Long playerId, String playerName, TeamRole teamRole) implements WebSocketMessagePayload { }
+
+    record OtherPlayerLeftLobbyPayload(Long playerId) implements WebSocketMessagePayload { }
+
+    record OtherPlayerKickedPayload(Long playerId) implements WebSocketMessagePayload { }
 }
