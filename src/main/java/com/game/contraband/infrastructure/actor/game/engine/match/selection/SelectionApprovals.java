@@ -11,14 +11,14 @@ class SelectionApprovals {
     private Long inspectorCandidateId;
     private final Set<Long> inspectorApprovals = new HashSet<>();
 
-    void setSmugglerCandidate(Long candidateId) {
+    void initSmugglerCandidate(Long candidateId) {
         if (!Objects.equals(smugglerCandidateId, candidateId)) {
             smugglerCandidateId = candidateId;
             smugglerApprovals.clear();
         }
     }
 
-    void setInspectorCandidate(Long candidateId) {
+    void initInspectorCandidate(Long candidateId) {
         if (!Objects.equals(inspectorCandidateId, candidateId)) {
             inspectorCandidateId = candidateId;
             inspectorApprovals.clear();
@@ -36,10 +36,13 @@ class SelectionApprovals {
         if (voterId == null || currentCandidateId == null) {
             return;
         }
+
         ensureCurrentSmugglerCandidate(currentCandidateId);
+
         if (Objects.equals(currentCandidateId, voterId)) {
             return;
         }
+
         smugglerApprovals.add(voterId);
     }
 
@@ -158,9 +161,9 @@ class SelectionApprovals {
     }
 
     private void ensureCurrentInspectorCandidate(Long currentCandidateId) {
-        if (!Objects.equals(currentCandidateId, inspectorCandidateId)) {
-            inspectorCandidateId = currentCandidateId;
-            inspectorApprovals.clear();
+            if (!Objects.equals(currentCandidateId, inspectorCandidateId)) {
+                inspectorCandidateId = currentCandidateId;
+                inspectorApprovals.clear();
+        }
     }
-}
 }

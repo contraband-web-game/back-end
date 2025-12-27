@@ -1,5 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.selection;
 
+import com.game.contraband.infrastructure.actor.game.engine.match.selection.dto.SelectionTimerSnapshot;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -18,10 +19,6 @@ public class SelectionState {
 
     public int currentRound() {
         return currentRound;
-    }
-
-    public int nextRound() {
-        return currentRound + 1;
     }
 
     public Long smugglerId() {
@@ -44,20 +41,12 @@ public class SelectionState {
         return this.currentRound != round;
     }
 
-    public boolean isNotSameSmuggler(Long targetId) {
-        return smugglerId == null || !smugglerId.equals(targetId);
-    }
-
-    public boolean isNotSameInspector(Long targetId) {
-        return inspectorId == null || !inspectorId.equals(targetId);
-    }
-
     public void registerSmugglerId(int currentRound, Long candidateId) {
         ensureCurrentRound(currentRound);
         ensureSmugglerNotFixed();
         approvals.ensureCanReplaceSmuggler(candidateId);
         this.smugglerId = candidateId;
-        approvals.setSmugglerCandidate(candidateId);
+        approvals.initSmugglerCandidate(candidateId);
     }
 
     public void registerInspectorId(int currentRound, Long candidateId) {
@@ -65,7 +54,7 @@ public class SelectionState {
         ensureInspectorNotFixed();
         approvals.ensureCanReplaceInspector(candidateId);
         this.inspectorId = candidateId;
-        approvals.setInspectorCandidate(candidateId);
+        approvals.initInspectorCandidate(candidateId);
     }
 
     public void registerSmugglerId(Long candidateId) {
@@ -118,24 +107,16 @@ public class SelectionState {
         return fixedInspectorId;
     }
 
-    public Optional<SelectionTimerState.TimerSnapshot> currentSelectionTimer() {
+    public Optional<SelectionTimerSnapshot> currentSelectionTimer() {
         return timerState.currentSelectionTimer();
     }
 
     public void initSelectionTimeout(Cancellable cancellable, Instant startedAt, Duration duration) {
-        timerState.setSelectionTimeoutCancellable(cancellable, startedAt, duration);
+        timerState.initSelectionTimeoutCancellable(cancellable, startedAt, duration);
     }
 
     public void cancelSelectionTimeout() {
         timerState.cancelSelectionTimeout();
-    }
-
-    public void addSmugglerApproval(Long voterId) {
-        approvals.addSmugglerApproval(voterId, smugglerId);
-    }
-
-    public void addInspectorApproval(Long voterId) {
-        approvals.addInspectorApproval(voterId, inspectorId);
     }
 
     public boolean hasEnoughSmugglerApprovals(int requiredApprovals) {
@@ -144,14 +125,6 @@ public class SelectionState {
 
     public boolean hasEnoughInspectorApprovals(int requiredApprovals) {
         return approvals.hasEnoughInspectorApprovals(inspectorId, requiredApprovals);
-    }
-
-    public boolean hasSmugglerApprovalFrom(Long voterId) {
-        return approvals.hasSmugglerApprovalFrom(voterId);
-    }
-
-    public boolean hasInspectorApprovalFrom(Long voterId) {
-        return approvals.hasInspectorApprovalFrom(voterId);
     }
 
     public boolean toggleSmugglerApproval(Long voterId) {
