@@ -123,7 +123,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 선발_정보를_확정하면_승인_정보를_초기화한다() {
+    void 선발_정보를_확정하면_찬성_정보를_초기화한다() {
         // given
         SelectionState state = new SelectionState();
 
@@ -177,7 +177,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 승인_토글로_밀수꾼_후보를_승인한다() {
+    void 해당_밀수꾼_후보에_대해_라운드_참여를_찬성한다() {
         // given
         SelectionState state = new SelectionState();
         state.registerSmugglerId(1, 10L);
@@ -194,7 +194,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 승인_토글로_검사관_후보를_승인한다() {
+    void 해당_검사관_후보에_대해_라운드_참여를_찬성한다() {
         // given
         SelectionState state = new SelectionState();
 
@@ -212,7 +212,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 승인_토글로_밀수꾼_후보에_대한_승인을_해제한다() {
+    void 해당_밀수꾼_후보에_대해_라운드_참여_찬성을_취소한다() {
         // given
         SelectionState state = new SelectionState();
 
@@ -231,7 +231,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 승인_토글로_검사관_후보에_대한_승인을_해제한다() {
+    void 해당_검사관_후보에_대해_라운드_참여_찬성을_취소한다() {
         // given
         SelectionState state = new SelectionState();
 
@@ -250,7 +250,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 선택_타이머를_초기화하면_스냅샷을_조회할_수_있다() {
+    void 후보_선정_타이머를_초기화하면_스냅샷을_조회할_수_있다() {
         // given
         SelectionState state = new SelectionState();
         SpyCancellable cancellable = new SpyCancellable();
@@ -268,7 +268,7 @@ class SelectionStateTest {
     }
 
     @Test
-    void 선택_타이머를_취소하면_스냅샷이_없어진다() {
+    void 후보_선정_타이머를_취소하면_스냅샷이_없어진다() {
         // given
         SelectionState state = new SelectionState();
         SpyCancellable cancellable = new SpyCancellable();

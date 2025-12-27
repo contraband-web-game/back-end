@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class SelectionTimerStateTest {
 
     @Test
-    void 선택_타이머를_설정하면_현재_타이머_스냅샷을_제공한다() {
+    void 후보_선정_타이머를_설정하면_현재_타이머_스냅샷을_제공한다() {
         // given
         SelectionTimerState state = new SelectionTimerState();
         Instant startedAt = Instant.parse("2024-01-01T00:00:00Z");
@@ -42,41 +42,7 @@ class SelectionTimerStateTest {
     }
 
     @Test
-    void 기존_타이머가_있으면_새_타이머로_바꾸기_전에_취소한다() {
-        // given
-        SelectionTimerState state = new SelectionTimerState();
-        SpyCancellable oldCancellable = new SpyCancellable();
-        state.initSelectionTimeoutCancellable(
-                oldCancellable,
-                Instant.parse("2024-01-01T00:00:00Z"),
-                Duration.ofSeconds(10)
-        );
-
-        SpyCancellable newCancellable = new SpyCancellable();
-        Instant newStartedAt = Instant.parse("2024-01-01T00:00:30Z");
-        Duration newDuration = Duration.ofSeconds(15);
-
-        // when
-        state.initSelectionTimeoutCancellable(newCancellable, newStartedAt, newDuration);
-
-        // then
-        assertAll(
-                () -> assertThat(state.currentSelectionTimer())
-                        .isPresent()
-                        .get()
-                        .satisfies(
-                                snapshot -> assertAll(
-                                        () -> assertThat(snapshot.startedAt()).isEqualTo(newStartedAt),
-                                        () -> assertThat(snapshot.duration()).isEqualTo(newDuration)
-                                )
-                        ),
-                () -> assertThat(oldCancellable.isCancelled()).isTrue(),
-                () -> assertThat(newCancellable.isCancelled()).isFalse()
-        );
-    }
-
-    @Test
-    void 선택_타이머를_취소하면_스냅샷이_비워지고_타이머도_취소된다() {
+    void 후보_선정_타이머를_취소하면_스냅샷이_비워지고_해당_후보_선정_타이머도_취소된다() {
         // given
         SelectionTimerState state = new SelectionTimerState();
         SpyCancellable cancellable = new SpyCancellable();

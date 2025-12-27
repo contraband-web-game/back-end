@@ -69,7 +69,7 @@ class SelectionParticipantsTest {
     }
 
     @Test
-    void 밀수꾼_후보_선정_시_필요한_승인_수를_계산한다() {
+    void 밀수꾼_후보_선정_시_필요한_찬성_수를_계산한다() {
         // given
         SelectionParticipants participants = new SelectionParticipants(
                 List.of(player(1L, TeamRole.SMUGGLER), player(3L, TeamRole.SMUGGLER)),
@@ -86,7 +86,7 @@ class SelectionParticipantsTest {
     }
 
     @Test
-    void 검사관_후보_선정_시_필요한_승인_수를_계산한다() {
+    void 검사관_후보_선정_시_필요한_찬성_수를_계산한다() {
         // given
         SelectionParticipants participants = new SelectionParticipants(
                 List.of(player(1L, TeamRole.SMUGGLER)),
