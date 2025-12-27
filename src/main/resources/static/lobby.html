@@ -349,7 +349,9 @@
       roleMessageShown: false,
       roleMessageElement: null,
       chatBlocked: false,
-      isNavigatingAway: false
+      isNavigatingAway: false,
+      startRequested: false,
+      lastStartAttemptAt: 0
   };
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -357,6 +359,7 @@
   const MIN_MAX_PLAYER = 2;
   const MAX_MAX_PLAYER = 6;
   const STEP_MAX_PLAYER = 2;
+  const START_DEBOUNCE_MS = 800;
 
   function showToast(message) {
       const container = document.getElementById('toast-container');
@@ -464,6 +467,11 @@
           target.textContent = '[통신 경로 차단됨]';
           target.classList.add('chat-blocked');
       }
+  }
+
+  function setStartButtonDisabled(disabled) {
+      const startBtn = document.getElementById('start-btn');
+      if (startBtn) startBtn.disabled = disabled;
   }
 
   function isHost() {
@@ -699,15 +707,19 @@
       } else if (msg.type === 'CHAT_MESSAGE_MASKED') {
           maskChat(msg.payload?.messageId);
       } else if (msg.type === 'EXCEPTION_MESSAGE') {
+          state.startRequested = false;
+          setStartButtonDisabled(false);
           const errMessage = mapExceptionMessage(msg.payload);
           if (msg.payload?.code === 'CHAT_USER_BLOCKED') {
               notifyChatBlocked();
               return;
           }
+          if (state.isNavigatingAway) return;
           showToast(errMessage);
       } else if (msg.type === 'START_GAME') {
           cbCommon.saveGamePayload(msg.payload);
           state.isNavigatingAway = true;
+          state.startRequested = false;
           window.location.href = '/game.html';
       } else if (msg.type === 'LEFT_LOBBY'
               || msg.type === 'KICKED_LOBBY'
@@ -754,6 +766,9 @@
   }
 
   function sendStartGame() {
+      const now = Date.now();
+      if (state.startRequested || now - state.lastStartAttemptAt < START_DEBOUNCE_MS) return;
+      state.lastStartAttemptAt = now;
       if (!isHost()) {
           showToast('작전 개시 권한이 없다.');
           return;
@@ -761,6 +776,8 @@
       if (!cbCommon.sendJson(state.socket, { type: 'START_GAME', totalRounds: 5 })) {
           showToast('채널이 끊겼다.');
       } else {
+          state.startRequested = true;
+          setStartButtonDisabled(true);
           //addSystemMessage('본부에 작전 개시를 요청했다.');
       }
   }
