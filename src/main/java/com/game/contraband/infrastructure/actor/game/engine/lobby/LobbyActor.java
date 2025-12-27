@@ -96,12 +96,12 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
                                   .onMessage(RequestDeleteLobby.class, this::onDeleteLobby)
                                   .onMessage(StartGame.class, this::onStartGame)
                                   .onMessage(EndGame.class, this::onEndGame)
-                                  .onMessage(ReSyncPlayer.class, this::onResyncPlayer)
+                                  .onMessage(ReSyncPlayer.class, this::onReSyncPlayer)
                                   .build();
     }
 
     private Behavior<LobbyCommand> onSyncPlayerJoined(SyncPlayerJoined command) {
-        if (!lobbyState.lobby().canAddToLobby()) {
+        if (lobbyState.cannotAddToLobby()) {
             command.clientSession()
                    .tell(
                            new HandleExceptionMessage(
@@ -142,13 +142,13 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         command.clientSession()
                .tell(
                        new PropagateJoinedLobby(
-                               getContext().getSelf(),
-                               lobbyState.roomId(),
-                               lobbyState.hostId(),
-                               lobbyState.lobby().getMaxPlayerCount(),
-                               currentPlayersIncludingJoiner,
-                               lobbyState.lobby().getName(),
-                               lobbyParticipants
+                                getContext().getSelf(),
+                                lobbyState.getRoomId(),
+                                lobbyState.getHostId(),
+                                lobbyState.lobbyMaxPlayerCount(),
+                                currentPlayersIncludingJoiner,
+                                lobbyState.lobbyName(),
+                                lobbyParticipants
                        )
                );
         command.clientSession().tell(new UpdateLobby(getContext().getSelf()));
@@ -163,7 +163,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
     }
 
     private PlayerProfile addToTeam(Long playerId, String playerName) {
-        Lobby lobby = lobbyState.lobby();
+        Lobby lobby = lobbyState.getLobby();
         if (lobby.canAddInspector(playerId)) {
             PlayerProfile playerProfile = PlayerProfile.create(playerId, playerName, TeamRole.INSPECTOR);
 
@@ -198,7 +198,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            lobbyState.lobby().changeMaxPlayerCount(command.maxPlayerCount(), command.executorId());
+            lobbyState.changeMaxPlayerCount(command.maxPlayerCount(), command.executorId());
         } catch (IllegalArgumentException | IllegalStateException e) {
             clientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(e), e.getMessage()));
             return this;
@@ -211,11 +211,11 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
                 target -> target.tell(
                         new PropagateJoinedLobby(
                                 getContext().getSelf(),
-                                lobbyState.roomId(),
-                                lobbyState.hostId(),
-                                lobbyState.lobby().getMaxPlayerCount(),
+                                lobbyState.getRoomId(),
+                                lobbyState.getHostId(),
+                                lobbyState.lobbyMaxPlayerCount(),
                                 currentCount,
-                                lobbyState.lobby().getName(),
+                                lobbyState.lobbyName(),
                                 lobbyParticipants
                         )
                 )
@@ -232,12 +232,12 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            lobbyState.lobby().toggleReady(command.playerId());
+            lobbyState.toggleReady(command.playerId());
         } catch (IllegalArgumentException ex) {
             clientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
         }
 
-        boolean toggleReadyState = lobbyState.lobby().getReadyStates().get(command.playerId());
+        boolean toggleReadyState = lobbyState.readyStateOf(command.playerId());
 
         sessionRegistry.forEachSession(
                 targetClientSession -> targetClientSession.tell(
@@ -255,7 +255,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            lobbyState.lobby().toggleTeam(command.playerId());
+            lobbyState.toggleTeam(command.playerId());
         } catch (IllegalArgumentException | IllegalStateException ex) {
             clientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
         }
@@ -313,7 +313,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            lobbyState.lobby().kick(command.executorId(), command.targetPlayerId());
+            lobbyState.kick(command.executorId(), command.targetPlayerId());
         } catch (IllegalStateException | IllegalArgumentException ex) {
             hostClientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
         }
@@ -345,19 +345,13 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            lobbyState.lobby().deleteLobby(command.executorId());
+            lobbyState.deleteLobby(command.executorId());
         } catch (IllegalStateException | IllegalArgumentException ex) {
             executorClientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
         }
 
-        String hostName = "";
-        try {
-            PlayerProfile profile = lobbyState.findPlayerProfile(command.executorId());
-            if (profile != null) {
-                hostName = profile.getName();
-            }
-        } catch (Exception ignored) {
-        }
+        PlayerProfile profile = lobbyState.findPlayerProfile(command.executorId());
+        String hostName = profile != null ? profile.getName() : "";
 
         lifecycleCoordinator.notifyDeleteLobby();
         sessionRegistry.remove(command.executorId());
@@ -382,20 +376,20 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         try {
-            ContrabandGame contrabandGame = lobbyState.lobby().startGame(command.totalRounds(), command.executorId());
+            ContrabandGame contrabandGame = lobbyState.startGame(command.totalRounds(), command.executorId());
 
             getContext().spawn(
-                    ContrabandGameActor.create(lobbyState.roomId(), lobbyState.entityId(), contrabandGame, getContext().getSelf(), sessionRegistry.asMapView(), messageEndpoints.chatMessageEventPublisher(), messageEndpoints.gameLifecycleEventPublisher(), messageEndpoints.chatBlacklistRepository()),
-                    "contrabandGame:" + lobbyState.roomId()
+                    ContrabandGameActor.create(lobbyState.getRoomId(), lobbyState.getEntityId(), contrabandGame, getContext().getSelf(), sessionRegistry.asMapView(), messageEndpoints.chatMessageEventPublisher(), messageEndpoints.gameLifecycleEventPublisher(), messageEndpoints.chatBlacklistRepository()),
+                    "contrabandGame:" + lobbyState.getRoomId()
             );
 
             gameStarted = true;
 
             if (messageEndpoints.gameLifecycleEventPublisher() != null) {
-                messageEndpoints.gameLifecycleEventPublisher().publishGameStarted(lobbyState.entityId(), lobbyState.roomId());
+                messageEndpoints.gameLifecycleEventPublisher().publishGameStarted(lobbyState.getEntityId(), lobbyState.getRoomId());
             }
 
-            messageEndpoints.notifyParent(new SyncRoomStarted(lobbyState.roomId(), lobbyState.lobby().getName(), lobbyState.lobby().getMaxPlayerCount(), sessionRegistry.size()));
+            messageEndpoints.notifyParent(new SyncRoomStarted(lobbyState.getRoomId(), lobbyState.lobbyName(), lobbyState.lobbyMaxPlayerCount(), sessionRegistry.size()));
             sessionRegistry.forEachSession(target -> target.tell(new ClearLobbyChat()));
             chatRelay.stopChat(getContext());
         } catch (IllegalArgumentException | IllegalStateException ex) {
@@ -427,7 +421,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         return Behaviors.stopped();
     }
 
-    private Behavior<LobbyCommand> onResyncPlayer(ReSyncPlayer command) {
+    private Behavior<LobbyCommand> onReSyncPlayer(ReSyncPlayer command) {
         ActorRef<ClientSessionCommand> targetSession = sessionRegistry.get(command.playerId());
 
         if (targetSession == null && command.clientSession() != null) {
@@ -443,11 +437,11 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         targetSession.tell(
                 new PropagateJoinedLobby(
                         getContext().getSelf(),
-                        lobbyState.roomId(),
-                        lobbyState.hostId(),
-                        lobbyState.lobby().getMaxPlayerCount(),
+                        lobbyState.getRoomId(),
+                        lobbyState.getHostId(),
+                        lobbyState.lobbyMaxPlayerCount(),
                         sessionRegistry.size(),
-                        lobbyState.lobby().getName(),
+                        lobbyState.lobbyName(),
                         lobbyParticipants
                 )
         );
