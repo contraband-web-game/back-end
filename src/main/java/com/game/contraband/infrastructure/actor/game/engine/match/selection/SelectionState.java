@@ -123,7 +123,7 @@ public class SelectionState {
     }
 
     public void initSelectionTimeout(Cancellable cancellable, Instant startedAt, Duration duration) {
-        timerState.setSelectionTimeoutCancellable(cancellable, startedAt, duration);
+        timerState.initSelectionTimeoutCancellable(cancellable, startedAt, duration);
     }
 
     public void cancelSelectionTimeout() {

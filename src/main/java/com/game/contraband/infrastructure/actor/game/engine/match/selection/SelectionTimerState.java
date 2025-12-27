@@ -11,7 +11,7 @@ class SelectionTimerState {
     private Instant selectionTimerStartedAt;
     private Duration selectionTimerDuration;
 
-    void setSelectionTimeoutCancellable(Cancellable cancellable, Instant startedAt, Duration duration) {
+    void initSelectionTimeoutCancellable(Cancellable cancellable, Instant startedAt, Duration duration) {
         cancelSelectionTimeout();
         this.selectionTimeoutCancellable = cancellable;
         this.selectionTimerStartedAt = startedAt;
