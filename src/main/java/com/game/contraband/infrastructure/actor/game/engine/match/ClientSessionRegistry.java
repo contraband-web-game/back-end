@@ -22,17 +22,6 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 @Getter
 public class ClientSessionRegistry {
 
-    private final Map<Long, ActorRef<ClientSessionCommand>> totalSessions;
-    private final Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam;
-
-    ClientSessionRegistry(
-            Map<Long, ActorRef<ClientSessionCommand>> totalSessions,
-            Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam
-    ) {
-        this.totalSessions = totalSessions;
-        this.sessionsByTeam = sessionsByTeam;
-    }
-
     public static ClientSessionRegistry create(
             ContrabandGame contrabandGame,
             Map<Long, ActorRef<ClientSessionCommand>> clientSessions,
@@ -45,80 +34,45 @@ public class ClientSessionRegistry {
         grouped.put(TeamRole.SMUGGLER, new HashMap<>());
         grouped.put(TeamRole.INSPECTOR, new HashMap<>());
 
-        PropagateStartGame startGameCommand = new PropagateStartGame(context.getSelf(), roomId, entityId, getAllPlayers(contrabandGame));
-        ActorRef<ContrabandGameCommand> contrabandGameRef = context.getSelf();
+        PropagateStartGame propagateStartGame = new PropagateStartGame(
+                context.getSelf(),
+                roomId,
+                entityId,
+                getAllPlayers(contrabandGame)
+        );
 
         contrabandGame.smugglerPlayers()
-                      .forEach(profile -> assignClientSession(
-                              grouped,
-                              TeamRole.SMUGGLER,
-                              profile.getPlayerId(),
-                              clientSessions,
-                              startGameCommand,
-                              contrabandGameRef
-                      ));
+                      .forEach(
+                              profile -> assignClientSession(
+                                      grouped,
+                                      TeamRole.SMUGGLER,
+                                      profile.getPlayerId(),
+                                      clientSessions,
+                                      propagateStartGame,
+                                      context.getSelf()
+                              )
+                      );
         contrabandGame.inspectorPlayers()
-                      .forEach(profile -> assignClientSession(
-                              grouped,
-                              TeamRole.INSPECTOR,
-                              profile.getPlayerId(),
-                              clientSessions,
-                              startGameCommand,
-                              contrabandGameRef
-                      ));
+                      .forEach(
+                              profile -> assignClientSession(
+                                      grouped,
+                                      TeamRole.INSPECTOR,
+                                      profile.getPlayerId(),
+                                      clientSessions,
+                                      propagateStartGame,
+                                      context.getSelf()
+                              )
+                      );
 
         return new ClientSessionRegistry(clientSessions, grouped);
     }
-
-    public ActorRef<ClientSessionCommand> getTotalSession(Long playerId) {
-        return totalSessions.get(playerId);
-    }
-
-    public ActorRef<ClientSessionCommand> getTeamSession(TeamRole teamRole, Long playerId) {
-        Map<Long, ActorRef<ClientSessionCommand>> sessions = sessionsByTeam.get(teamRole);
-        if (sessions == null) {
-            return null;
-        }
-        return sessions.get(playerId);
-    }
-
-    public void tellAll(ClientSessionCommand command) {
-        for (ActorRef<ClientSessionCommand> session : totalSessions.values()) {
-            session.tell(command);
-        }
-    }
-
-    public void tellTeam(TeamRole teamRole, ClientSessionCommand command) {
-        Map<Long, ActorRef<ClientSessionCommand>> sessions = sessionsByTeam.get(teamRole);
-        if (sessions == null) {
-            return;
-        }
-        for (ActorRef<ClientSessionCommand> session : sessions.values()) {
-            session.tell(command);
-        }
-    }
-
-    public void syncGameChatForAll(ActorRef<ContrabandGameChatCommand> gameChat) {
-        sessionsByTeam.entrySet().stream()
-                      .flatMap(
-                              entry -> entry.getValue()
-                                            .values()
-                                            .stream()
-                                            .map(session -> Map.entry(entry.getKey(), session))
-                      )
-                      .forEach(
-                              pair -> pair.getValue()
-                                          .tell(new SyncContrabandGameChat(gameChat, pair.getKey()))
-                      );
-    }
-
 
     private static void assignClientSession(
             Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> grouped,
             TeamRole teamRole,
             Long playerId,
             Map<Long, ActorRef<ClientSessionCommand>> clientSessions,
-            PropagateStartGame startGameCommand,
+            PropagateStartGame propagateStartGame,
             ActorRef<ContrabandGameCommand> contrabandGameRef
     ) {
         ActorRef<ClientSessionCommand> clientSession = clientSessions.get(playerId);
@@ -127,7 +81,7 @@ public class ClientSessionRegistry {
             grouped.get(teamRole)
                    .put(playerId, clientSession);
 
-            clientSession.tell(startGameCommand);
+            clientSession.tell(propagateStartGame);
             clientSession.tell(new UpdateContrabandGame(contrabandGameRef));
         }
     }
@@ -150,5 +104,61 @@ public class ClientSessionRegistry {
                              }
                      )
                      .toList();
+    }
+
+    private ClientSessionRegistry(
+            Map<Long, ActorRef<ClientSessionCommand>> totalSessions,
+            Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam
+    ) {
+        this.totalSessions = totalSessions;
+        this.sessionsByTeam = sessionsByTeam;
+    }
+
+    private final Map<Long, ActorRef<ClientSessionCommand>> totalSessions;
+    private final Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam;
+
+    public ActorRef<ClientSessionCommand> findInTotalSessions(Long playerId) {
+        return totalSessions.get(playerId);
+    }
+
+    public ActorRef<ClientSessionCommand> findInTeamSessions(TeamRole teamRole, Long playerId) {
+        Map<Long, ActorRef<ClientSessionCommand>> sessions = sessionsByTeam.get(teamRole);
+
+        if (sessions == null) {
+            return null;
+        }
+
+        return sessions.get(playerId);
+    }
+
+    public void tellAll(ClientSessionCommand command) {
+        for (ActorRef<ClientSessionCommand> session : totalSessions.values()) {
+            session.tell(command);
+        }
+    }
+
+    public void tellTeam(TeamRole teamRole, ClientSessionCommand command) {
+        Map<Long, ActorRef<ClientSessionCommand>> sessions = sessionsByTeam.get(teamRole);
+
+        if (sessions == null) {
+            return;
+        }
+        for (ActorRef<ClientSessionCommand> session : sessions.values()) {
+            session.tell(command);
+        }
+    }
+
+    public void syncGameChatForAll(ActorRef<ContrabandGameChatCommand> gameChat) {
+        sessionsByTeam.entrySet().stream()
+                      .flatMap(
+                              entry -> entry.getValue()
+                                            .values()
+                                            .stream()
+                                            .map(session -> Map.entry(entry.getKey(), session))
+                      )
+                      .forEach(
+                              pair -> pair.getValue()
+                                          .tell(new SyncContrabandGameChat(gameChat, pair.getKey()))
+                      );
     }
 }
