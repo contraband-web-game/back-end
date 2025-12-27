@@ -348,7 +348,8 @@
       hostId: null,
       roleMessageShown: false,
       roleMessageElement: null,
-      chatBlocked: false
+      chatBlocked: false,
+      isNavigatingAway: false
   };
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -411,6 +412,18 @@
       }
       if (code === 'LOBBY_READY_STATE_TEAM_CHANGE_FORBIDDEN') {
           return '이미 팀이 확정된 상태에서는 변경할 수 없다. 아니면, 첩자인가?';
+      }
+      if (code === 'LOBBY_INVALID_OPERATION') {
+          const msg = payload?.exceptionMessage || '';
+          if (msg.includes('준비 완료')) {
+              return '모든 요원이 준비 완료 상태여야 작전을 시작할 수 있다.';
+          }
+          if (msg.includes('방장이 아닙니다')) {
+              return '방장만 작전을 시작할 수 있다.';
+          }
+          if (msg.includes('로비 상태에서만')) {
+              return '이미 게임이 시작되었거나 로비 상태가 아니다.';
+          }
       }
       return cbCommon.resolveExceptionMessage(payload, { fallback });
   }
@@ -694,8 +707,8 @@
           showToast(errMessage);
       } else if (msg.type === 'START_GAME') {
           cbCommon.saveGamePayload(msg.payload);
-          showToast('작전이 시작된다. 행운을 빈다.');
-          setTimeout(() => window.location.href = '/game.html', 200);
+          state.isNavigatingAway = true;
+          window.location.href = '/game.html';
       } else if (msg.type === 'LEFT_LOBBY'
               || msg.type === 'KICKED_LOBBY'
               || msg.type === 'LOBBY_DELETED'
@@ -703,6 +716,7 @@
           if (msg.type === 'KICKED_LOBBY') {
               localStorage.setItem('kickReason', '방장이 당신을 강퇴했습니다.');
           }
+          state.isNavigatingAway = true;
           showToast('작전 지역을 이탈했다.');
           setTimeout(() => window.location.href = '/lobby-list.html', 500);
       }
@@ -714,7 +728,10 @@
       state.socket = cbCommon.createSocket(state.userId, {
           onOpen: () => {},
           onMessage: handleMessage,
-          onClose: () => showToast('채널 접속이 종료되었다. 재접속하라.'),
+          onClose: () => {
+              if (state.isNavigatingAway) return;
+              showToast('채널 접속이 종료되었다. 재접속하라.');
+          },
           onError: () => showToast('통신 장애 발생.')
       });
   }
