@@ -4,15 +4,15 @@ import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPu
 
 public class SpyGameLifecycleEventPublisher implements GameLifecycleEventPublisher {
 
-    Long roomId;
-    String entityId;
+    private Long roomId;
+    private String entityId;
+    private LifecycleType lastType;
 
     @Override
     public void publish(GameLifecycleEvent event) {
-        if (event.type() == LifecycleType.GAME_ENDED) {
-            this.roomId = event.roomId();
-            this.entityId = event.entityId();
-        }
+        this.lastType = event.type();
+        this.roomId = event.roomId();
+        this.entityId = event.entityId();
     }
 
     public Long getRoomId() {
@@ -21,5 +21,9 @@ public class SpyGameLifecycleEventPublisher implements GameLifecycleEventPublish
 
     public String getEntityId() {
         return entityId;
+    }
+
+    public LifecycleType getLastType() {
+        return lastType;
     }
 }

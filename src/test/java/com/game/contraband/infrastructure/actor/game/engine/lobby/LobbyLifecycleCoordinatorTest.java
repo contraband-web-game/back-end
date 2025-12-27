@@ -27,6 +27,8 @@ import java.util.Map;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,17 @@ import org.junit.jupiter.api.Test;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class LobbyLifecycleCoordinatorTest {
 
-    private final ActorTestKit actorTestKit = ActorTestKit.create();
+    private ActorTestKit actorTestKit;
+
+    @BeforeEach
+    void setUp() {
+        actorTestKit = ActorTestKit.create();
+    }
+
+    @AfterEach
+    void tearDown() {
+        actorTestKit.shutdownTestKit();
+    }
 
     @Test
     void 호스트_클라이언트_세션을_초기화하고_메시지를_전달한다() {
