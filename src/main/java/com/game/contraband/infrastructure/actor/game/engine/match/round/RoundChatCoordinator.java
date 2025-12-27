@@ -3,7 +3,6 @@ package com.game.contraband.infrastructure.actor.game.engine.match.round;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.ClearContrabandGameChat;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.SyncRoundChatId;
 import com.game.contraband.infrastructure.actor.game.engine.match.ClientSessionRegistry;
 import org.apache.pekko.actor.typed.ActorRef;
 
@@ -18,10 +17,6 @@ public class RoundChatCoordinator {
     ) {
         this.gameChat = gameChat;
         this.registry = registry;
-    }
-
-    public void syncRoundChatId(Long smugglerId, Long inspectorId) {
-        gameChat.tell(new SyncRoundChatId(smugglerId, inspectorId));
     }
 
     public void clearRoundChatId() {

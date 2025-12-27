@@ -34,7 +34,7 @@ public class RoundRuntimeState {
         this.inspectorActionDone = false;
     }
 
-    public void setRoundTimeoutCancellable(Cancellable cancellable, Instant startedAt, Duration duration) {
+    public void initRoundTimeoutCancellable(Cancellable cancellable, Instant startedAt, Duration duration) {
         cancelRoundTimeout();
         this.roundTimeoutCancellable = cancellable;
         this.roundTimerStartedAt = startedAt;
