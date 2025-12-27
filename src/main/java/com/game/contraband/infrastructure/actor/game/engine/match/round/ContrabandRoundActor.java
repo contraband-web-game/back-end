@@ -32,7 +32,6 @@ import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGame
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.SyncReconnectedPlayer;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.TransferAmount;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
-import com.game.contraband.infrastructure.actor.game.engine.match.dto.RoundReadySelection;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.time.Duration;
 import java.time.Instant;
@@ -110,11 +109,10 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
     }
 
     private Behavior<ContrabandGameCommand> onStartSelectedRound(StartSelectedRound command) {
-        RoundReadySelection selection = command.selection();
-        roundState.assignRound(selection);
+        roundState.assignRound(command.smugglerId(), command.inspectorId(), command.round());
 
         executeTotalCommand(
-                () -> gameContext.startNewRound(selection.smugglerId(), selection.inspectorId()),
+                () -> gameContext.startNewRound(command.smugglerId(), command.inspectorId()),
                 () -> {
                     Instant startedAt = Instant.now();
                     long serverNow = startedAt.toEpochMilli();

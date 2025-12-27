@@ -151,7 +151,12 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
 
     private Behavior<ContrabandGameCommand> onStartNewRound(StartNewRound command) {
         if (pendingRound != null) {
-            roundActor.tell(new StartSelectedRound(pendingRound));
+            roundActor.tell(
+                    new StartSelectedRound(
+                            pendingRound.smugglerId(),
+                            pendingRound.inspectorId(),
+                            pendingRound.round()
+            ));
             pendingRound = null;
         }
         return this;

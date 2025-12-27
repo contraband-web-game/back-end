@@ -46,7 +46,7 @@ public interface ContrabandGameProtocol {
 
     record RoundReady(RoundReadySelection selection) implements SelectionCommand { }
 
-    record StartSelectedRound(RoundReadySelection selection) implements RoundCommand { }
+    record StartSelectedRound(Long smugglerId, Long inspectorId, int round) implements RoundCommand { }
 
     record PrepareNextSelection(int nextRound) implements SelectionCommand { }
 
