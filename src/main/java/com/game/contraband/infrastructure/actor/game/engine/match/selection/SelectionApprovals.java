@@ -158,9 +158,9 @@ class SelectionApprovals {
     }
 
     private void ensureCurrentInspectorCandidate(Long currentCandidateId) {
-        if (!Objects.equals(currentCandidateId, inspectorCandidateId)) {
-            inspectorCandidateId = currentCandidateId;
-            inspectorApprovals.clear();
+            if (!Objects.equals(currentCandidateId, inspectorCandidateId)) {
+                inspectorCandidateId = currentCandidateId;
+                inspectorApprovals.clear();
+        }
     }
-}
 }
