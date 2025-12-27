@@ -163,7 +163,7 @@
       <div>
         <label class="block text-2xl font-hand font-bold text-ink mb-2">작전 구역 (Operation Zone)</label>
         <div class="relative">
-          <input type="text" id="room-name-input" class="w-full py-2 hand-input text-xl focus:border-ink-red transition-colors pl-1" placeholder="작전 구역의 이름을 대라." required>
+          <input type="text" id="room-name-input" class="w-full py-2 hand-input text-xl focus:border-ink-red transition-colors pl-1" placeholder="작전 구역의 이름을 대라." autocomplete="off" required>
           <i data-lucide="map" class="absolute right-2 bottom-3 w-5 h-5 text-ink opacity-60"></i>
         </div>
       </div>
@@ -175,7 +175,6 @@
           <button type="button" id="decrease-players-btn" class="sketch-btn px-4 py-1 text-2xl w-12 h-12 flex items-center justify-center">-</button>
           <div class="flex flex-col items-center">
             <span id="max-players-display" class="font-display text-5xl text-ink leading-none">4</span>
-<!--            <span class="font-body text-xs text-ink/60">Survivors</span>-->
           </div>
           <input type="hidden" id="max-players-input" value="4">
           <button type="button" id="increase-players-btn" class="sketch-btn px-4 py-1 text-2xl w-12 h-12 flex items-center justify-center">+</button>
