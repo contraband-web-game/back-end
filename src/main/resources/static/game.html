@@ -546,7 +546,7 @@
                 </button>
                 <div class="amount-display">
                   <span class="currency">$</span>
-                  <input type="number" id="inspection-amount" class="hand-input w-24 font-bold text-4xl bg-transparent" placeholder="0" min="1" step="100">
+                  <input type="number" id="inspection-amount" class="hand-input w-24 font-bold text-4xl bg-transparent" placeholder="0" min="0" step="100">
                 </div>
                 <button type="button" class="amount-arrow red" data-target="inspection-amount" data-delta="100">
                   <i data-lucide="chevron-right" class="w-6 h-6"></i>
@@ -554,7 +554,7 @@
               </div>
               <div class="amount-hint text-center text-ink-red">화살표로 100 단위 증감</div>
               <div class="flex gap-4 w-full max-w-xs mt-4">
-                <button onclick="commitAction('INSPECTION')" class="sketch-btn red px-6 py-2 text-2xl flex-1">검문 (Inspect)</button>
+                <button id="inspect-btn" onclick="commitAction('INSPECTION')" class="sketch-btn red px-6 py-2 text-2xl flex-1">검문 (Inspect)</button>
                 <button onclick="commitAction('PASS')" class="sketch-btn green px-6 py-2 text-2xl flex-1">통과 (Pass)</button>
               </div>
             </div>
@@ -623,6 +623,7 @@
   lucide.createIcons();
 
   const DEFAULT_ROUND_DURATION_MS = 30000;
+  const MIN_INSPECTION_AMOUNT = 100;
 
   const state = {
       socket: null,
@@ -674,6 +675,7 @@
       spectatorMsg: document.getElementById('spectator-msg'),
       smuggleAmount: document.getElementById('smuggle-amount'),
       inspectionAmount: document.getElementById('inspection-amount'),
+      inspectionBtn: document.getElementById('inspect-btn'),
       myMoney: document.getElementById('my-money'),
       sRoster: document.getElementById('smuggler-roster'),
       iRoster: document.getElementById('inspector-roster'),
@@ -819,6 +821,18 @@
       const next = current + delta;
       const normalized = Math.max(min, isFinite(step) && step > 0 ? Math.round(next / step) * step : next);
       inputEl.value = normalized;
+      if (inputEl === els.inspectionAmount) updateInspectionButtonState();
+  }
+
+  function getInspectionAmount() {
+      const val = Number(els.inspectionAmount?.value || 0);
+      return Number.isFinite(val) ? val : 0;
+  }
+
+  function updateInspectionButtonState() {
+      if (!els.inspectionBtn) return;
+      const amount = getInspectionAmount();
+      els.inspectionBtn.disabled = amount < MIN_INSPECTION_AMOUNT;
   }
 
   function queuePendingRoundStart(payload) {
@@ -1239,6 +1253,7 @@
           roundFormBtn.disabled = !allow;
           roundFormInput.placeholder = allow ? '상대를 떠봐라...' : '도청 불가 (참여자만 가능)';
       }
+      updateInspectionButtonState();
   }
 
   function applyStartGame(payload) {
@@ -1325,6 +1340,9 @@
       const serverNow = payload?.serverNowMillis ?? Date.now();
       const eventAt = payload?.eventAtMillis ?? serverNow;
       const alreadyRunning = serverNow >= eventAt + 1000; // 재접속 시 이미 진행 중이면 모달 생략
+      const nextRoundNumber = payload?.currentRound ?? state.round ?? 1;
+      const isHeadToHead = (state.players?.length || 0) === 2;
+      const skipSelectionModalForHeadToHead = isHeadToHead && nextRoundNumber >= 2;
 
       // Show Selection Complete Modal, then proceed
       const smugglerMessage = `<div class="text-xl mb-2 text-ink">짐을 정리해라. 곧 관문을 통과한다.</div>`;
@@ -1336,7 +1354,7 @@
           roundStartLogic();
       };
 
-      if (alreadyRunning) {
+      if (alreadyRunning || skipSelectionModalForHeadToHead) {
           closeGameModal();
           proceed();
           return;
@@ -1503,7 +1521,8 @@
           else state.smugglerActionDone = true;
       } else if (type === 'INSPECTION') {
           if (!isInspector) return toast('네놈은 검사관이 아니다.');
-          const amount = Number(els.inspectionAmount.value || 0);
+          const amount = getInspectionAmount();
+          if (amount < MIN_INSPECTION_AMOUNT) return toast('검문 금액을 제대로 설정해라.');
           if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_INSPECTION', amount })) toast('전송 실패. 통신 상태를 확인하라.');
           else state.inspectorActionDone = true;
       } else if (type === 'PASS') {
@@ -1779,6 +1798,11 @@
           const targetId = btn.dataset.target;
           btn.addEventListener('click', () => bumpAmount(document.getElementById(targetId), delta));
       });
+
+      if (els.inspectionAmount) {
+          els.inspectionAmount.addEventListener('input', updateInspectionButtonState);
+          updateInspectionButtonState();
+      }
 
       const cachedGame = cbCommon.loadGamePayload();
       if (cachedGame) {
