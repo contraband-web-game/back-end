@@ -78,11 +78,11 @@ public class RoundClientMessenger {
     }
 
     public ActorRef<ClientSessionCommand> totalSession(Long playerId) {
-        return registry.getTotalSession(playerId);
+        return registry.findInTotalSessions(playerId);
     }
 
     public ActorRef<ClientSessionCommand> teamSession(TeamRole teamRole, Long playerId) {
-        return registry.getTeamSession(teamRole, playerId);
+        return registry.findInTeamSessions(teamRole, playerId);
     }
 
     public void tellAll(ClientSessionCommand command) {
