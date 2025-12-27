@@ -64,7 +64,7 @@ public class RoundFlowState {
     }
 
     public void initRoundTimeout(Cancellable cancellable, Instant startedAt, Duration duration) {
-        runtimeState.setRoundTimeoutCancellable(cancellable, startedAt, duration);
+        runtimeState.initRoundTimeoutCancellable(cancellable, startedAt, duration);
     }
 
     public void cancelRoundTimeout() {
