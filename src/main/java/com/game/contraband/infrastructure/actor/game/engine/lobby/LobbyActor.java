@@ -379,15 +379,22 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
             ContrabandGame contrabandGame = lobbyState.startGame(command.totalRounds(), command.executorId());
 
             getContext().spawn(
-                    ContrabandGameActor.create(lobbyState.getRoomId(), lobbyState.getEntityId(), contrabandGame, getContext().getSelf(), sessionRegistry.asMapView(), messageEndpoints.chatMessageEventPublisher(), messageEndpoints.gameLifecycleEventPublisher(), messageEndpoints.chatBlacklistRepository()),
+                    ContrabandGameActor.create(
+                            lobbyState.getRoomId(),
+                            lobbyState.getEntityId(),
+                            contrabandGame,
+                            getContext().getSelf(),
+                            sessionRegistry.asMapView(),
+                            messageEndpoints.chatMessageEventPublisher(),
+                            messageEndpoints.gameLifecycleEventPublisher(),
+                            messageEndpoints.chatBlacklistRepository()
+                    ),
                     "contrabandGame:" + lobbyState.getRoomId()
             );
 
             gameStarted = true;
 
-            if (messageEndpoints.gameLifecycleEventPublisher() != null) {
-                messageEndpoints.gameLifecycleEventPublisher().publishGameStarted(lobbyState.getEntityId(), lobbyState.getRoomId());
-            }
+            messageEndpoints.publishGameStarted(lobbyState.getEntityId(), lobbyState.getRoomId());
 
             messageEndpoints.notifyParent(new SyncRoomStarted(lobbyState.getRoomId(), lobbyState.lobbyName(), lobbyState.lobbyMaxPlayerCount(), sessionRegistry.size()));
             sessionRegistry.forEachSession(target -> target.tell(new ClearLobbyChat()));

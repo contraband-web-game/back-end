@@ -42,10 +42,6 @@ public class LobbyExternalGateway {
         return lobbyChat;
     }
 
-    public ActorRef<GameManagerCommand> parent() {
-        return parent;
-    }
-
     public ChatMessageEventPublisher chatMessageEventPublisher() {
         return chatMessageEventPublisher;
     }
@@ -56,5 +52,13 @@ public class LobbyExternalGateway {
 
     public ChatBlacklistRepository chatBlacklistRepository() {
         return chatBlacklistRepository;
+    }
+
+    public void publishGameStarted(String entityId, Long roomId) {
+        if (gameLifecycleEventPublisher == null) {
+            return;
+        }
+
+        gameLifecycleEventPublisher.publishGameStarted(entityId, roomId);
     }
 }
