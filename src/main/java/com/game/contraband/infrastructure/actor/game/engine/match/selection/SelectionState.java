@@ -46,7 +46,7 @@ public class SelectionState {
         ensureSmugglerNotFixed();
         approvals.ensureCanReplaceSmuggler(candidateId);
         this.smugglerId = candidateId;
-        approvals.setSmugglerCandidate(candidateId);
+        approvals.initSmugglerCandidate(candidateId);
     }
 
     public void registerInspectorId(int currentRound, Long candidateId) {
@@ -54,7 +54,7 @@ public class SelectionState {
         ensureInspectorNotFixed();
         approvals.ensureCanReplaceInspector(candidateId);
         this.inspectorId = candidateId;
-        approvals.setInspectorCandidate(candidateId);
+        approvals.initInspectorCandidate(candidateId);
     }
 
     public void registerSmugglerId(Long candidateId) {
