@@ -348,7 +348,10 @@
       hostId: null,
       roleMessageShown: false,
       roleMessageElement: null,
-      chatBlocked: false
+      chatBlocked: false,
+      isNavigatingAway: false,
+      startRequested: false,
+      lastStartAttemptAt: 0
   };
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -356,6 +359,7 @@
   const MIN_MAX_PLAYER = 2;
   const MAX_MAX_PLAYER = 6;
   const STEP_MAX_PLAYER = 2;
+  const START_DEBOUNCE_MS = 800;
 
   function showToast(message) {
       const container = document.getElementById('toast-container');
@@ -412,6 +416,18 @@
       if (code === 'LOBBY_READY_STATE_TEAM_CHANGE_FORBIDDEN') {
           return '이미 팀이 확정된 상태에서는 변경할 수 없다. 아니면, 첩자인가?';
       }
+      if (code === 'LOBBY_INVALID_OPERATION') {
+          const msg = payload?.exceptionMessage || '';
+          if (msg.includes('준비 완료')) {
+              return '모든 요원이 준비 완료 상태여야 작전을 시작할 수 있다.';
+          }
+          if (msg.includes('방장이 아닙니다')) {
+              return '방장만 작전을 시작할 수 있다.';
+          }
+          if (msg.includes('로비 상태에서만')) {
+              return '이미 게임이 시작되었거나 로비 상태가 아니다.';
+          }
+      }
       return cbCommon.resolveExceptionMessage(payload, { fallback });
   }
 
@@ -451,6 +467,11 @@
           target.textContent = '[통신 경로 차단됨]';
           target.classList.add('chat-blocked');
       }
+  }
+
+  function setStartButtonDisabled(disabled) {
+      const startBtn = document.getElementById('start-btn');
+      if (startBtn) startBtn.disabled = disabled;
   }
 
   function isHost() {
@@ -686,16 +707,20 @@
       } else if (msg.type === 'CHAT_MESSAGE_MASKED') {
           maskChat(msg.payload?.messageId);
       } else if (msg.type === 'EXCEPTION_MESSAGE') {
+          state.startRequested = false;
+          setStartButtonDisabled(false);
           const errMessage = mapExceptionMessage(msg.payload);
           if (msg.payload?.code === 'CHAT_USER_BLOCKED') {
               notifyChatBlocked();
               return;
           }
+          if (state.isNavigatingAway) return;
           showToast(errMessage);
       } else if (msg.type === 'START_GAME') {
           cbCommon.saveGamePayload(msg.payload);
-          showToast('작전이 시작된다. 행운을 빈다.');
-          setTimeout(() => window.location.href = '/game.html', 200);
+          state.isNavigatingAway = true;
+          state.startRequested = false;
+          window.location.href = '/game.html';
       } else if (msg.type === 'LEFT_LOBBY'
               || msg.type === 'KICKED_LOBBY'
               || msg.type === 'LOBBY_DELETED'
@@ -703,6 +728,7 @@
           if (msg.type === 'KICKED_LOBBY') {
               localStorage.setItem('kickReason', '방장이 당신을 강퇴했습니다.');
           }
+          state.isNavigatingAway = true;
           showToast('작전 지역을 이탈했다.');
           setTimeout(() => window.location.href = '/lobby-list.html', 500);
       }
@@ -714,7 +740,10 @@
       state.socket = cbCommon.createSocket(state.userId, {
           onOpen: () => {},
           onMessage: handleMessage,
-          onClose: () => showToast('채널 접속이 종료되었다. 재접속하라.'),
+          onClose: () => {
+              if (state.isNavigatingAway) return;
+              showToast('채널 접속이 종료되었다. 재접속하라.');
+          },
           onError: () => showToast('통신 장애 발생.')
       });
   }
@@ -737,6 +766,9 @@
   }
 
   function sendStartGame() {
+      const now = Date.now();
+      if (state.startRequested || now - state.lastStartAttemptAt < START_DEBOUNCE_MS) return;
+      state.lastStartAttemptAt = now;
       if (!isHost()) {
           showToast('작전 개시 권한이 없다.');
           return;
@@ -744,6 +776,8 @@
       if (!cbCommon.sendJson(state.socket, { type: 'START_GAME', totalRounds: 5 })) {
           showToast('채널이 끊겼다.');
       } else {
+          state.startRequested = true;
+          setStartButtonDisabled(true);
           //addSystemMessage('본부에 작전 개시를 요청했다.');
       }
   }
