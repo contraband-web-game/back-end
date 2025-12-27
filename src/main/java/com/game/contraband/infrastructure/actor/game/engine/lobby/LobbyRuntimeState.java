@@ -86,8 +86,8 @@ public class LobbyRuntimeState {
         lobby.toggleTeam(playerId);
     }
 
-    public void kick(Long executorId, Long targetPlayerId) {
-        lobby.kick(executorId, targetPlayerId);
+    public PlayerProfile kick(Long executorId, Long targetPlayerId) {
+        return lobby.kick(executorId, targetPlayerId);
     }
 
     public void deleteLobby(Long executorId) {

@@ -28,6 +28,7 @@ import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParti
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameActor;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncRoomStarted;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
+import java.util.Optional;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
@@ -312,28 +313,26 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
             return this;
         }
 
-        try {
-            lobbyState.kick(command.executorId(), command.targetPlayerId());
-        } catch (IllegalStateException | IllegalArgumentException ex) {
-            hostClientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
-        }
-
-        ActorRef<ClientSessionCommand> kickClientSession = sessionRegistry.remove(command.targetPlayerId());
-
-        kickClientSession.tell(new PropagateKicked());
-        kickClientSession.tell(new ClearLobby());
-        kickClientSession.tell(new ClearLobbyChat());
-
-        PlayerProfile profile = lobbyState.findPlayerProfile(command.targetPlayerId());
-        String targetPlayerName = profile != null ? profile.getName() : "";
-        messageEndpoints.sendToLobbyChat(new KickedMessage(command.targetPlayerId(), targetPlayerName));
-        sessionRegistry.forEachSession(
-                targetClientSession ->
-                        targetClientSession.tell(
-                                new PropagateOtherPlayerKicked(command.targetPlayerId())
-                        )
-        );
-        lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
+        attemptKick(command, hostClientSession)
+                .flatMap(profile -> Optional.ofNullable(sessionRegistry.remove(command.targetPlayerId()))
+                                            .map(session -> new KickContext(profile, session)))
+                .ifPresent(
+                        kickContext -> {
+                            kickContext.session().tell(new PropagateKicked());
+                            kickContext.session().tell(new ClearLobby());
+                            kickContext.session().tell(new ClearLobbyChat());
+                            messageEndpoints.sendToLobbyChat(
+                                    new KickedMessage(command.targetPlayerId(), kickContext.profile().getName())
+                            );
+                            sessionRegistry.forEachSession(
+                                    targetClientSession ->
+                                            targetClientSession.tell(
+                                                    new PropagateOtherPlayerKicked(command.targetPlayerId())
+                                            )
+                            );
+                            lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
+                        }
+                );
         return this;
     }
 
@@ -456,6 +455,17 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         chatRelay.syncLobbyChat(targetSession);
         return this;
     }
+
+    private Optional<PlayerProfile> attemptKick(KickPlayer command, ActorRef<ClientSessionCommand> hostClientSession) {
+        try {
+            return Optional.ofNullable(lobbyState.kick(command.executorId(), command.targetPlayerId()));
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            hostClientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
+            return Optional.empty();
+        }
+    }
+
+    private record KickContext(PlayerProfile profile, ActorRef<ClientSessionCommand> session) { }
 
     public interface LobbyCommand extends CborSerializable { }
 

@@ -233,11 +233,15 @@ class LobbyRuntimeStateTest {
         LobbyRuntimeState state = createState(lobby);
 
         // when
-        state.kick(1L, 2L);
+        PlayerProfile kicked = state.kick(1L, 2L);
 
         // then
-        assertThat(state.lobbyParticipants())
-                .allMatch(participant -> !participant.playerId().equals(2L));
+        assertAll(
+                () -> assertThat(state.lobbyParticipants())
+                        .allMatch(participant -> !participant.playerId().equals(2L)),
+                () -> assertThat(kicked.getName()).isEqualTo("검사관"),
+                () -> assertThat(kicked.getTeamRole()).isEqualTo(TeamRole.INSPECTOR)
+        );
     }
 
     @Test
