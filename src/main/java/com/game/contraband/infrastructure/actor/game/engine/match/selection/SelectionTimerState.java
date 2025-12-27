@@ -1,5 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.selection;
 
+import com.game.contraband.infrastructure.actor.game.engine.match.selection.dto.SelectionTimerSnapshot;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -27,12 +28,10 @@ class SelectionTimerState {
         this.selectionTimerDuration = null;
     }
 
-    Optional<TimerSnapshot> currentSelectionTimer() {
+    Optional<SelectionTimerSnapshot> currentSelectionTimer() {
         if (selectionTimerStartedAt == null || selectionTimerDuration == null) {
             return Optional.empty();
         }
-        return Optional.of(new TimerSnapshot(selectionTimerStartedAt, selectionTimerDuration));
+        return Optional.of(new SelectionTimerSnapshot(selectionTimerStartedAt, selectionTimerDuration));
     }
-
-    record TimerSnapshot(Instant startedAt, Duration duration) { }
 }

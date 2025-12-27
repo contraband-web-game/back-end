@@ -1,5 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.selection;
 
+import com.game.contraband.infrastructure.actor.game.engine.match.selection.dto.SelectionTimerSnapshot;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -20,10 +21,6 @@ public class SelectionState {
         return currentRound;
     }
 
-    public int nextRound() {
-        return currentRound + 1;
-    }
-
     public Long smugglerId() {
         return smugglerId;
     }
@@ -42,14 +39,6 @@ public class SelectionState {
 
     public boolean isDifferentRound(int round) {
         return this.currentRound != round;
-    }
-
-    public boolean isNotSameSmuggler(Long targetId) {
-        return smugglerId == null || !smugglerId.equals(targetId);
-    }
-
-    public boolean isNotSameInspector(Long targetId) {
-        return inspectorId == null || !inspectorId.equals(targetId);
     }
 
     public void registerSmugglerId(int currentRound, Long candidateId) {
@@ -118,7 +107,7 @@ public class SelectionState {
         return fixedInspectorId;
     }
 
-    public Optional<SelectionTimerState.TimerSnapshot> currentSelectionTimer() {
+    public Optional<SelectionTimerSnapshot> currentSelectionTimer() {
         return timerState.currentSelectionTimer();
     }
 
@@ -130,28 +119,12 @@ public class SelectionState {
         timerState.cancelSelectionTimeout();
     }
 
-    public void addSmugglerApproval(Long voterId) {
-        approvals.addSmugglerApproval(voterId, smugglerId);
-    }
-
-    public void addInspectorApproval(Long voterId) {
-        approvals.addInspectorApproval(voterId, inspectorId);
-    }
-
     public boolean hasEnoughSmugglerApprovals(int requiredApprovals) {
         return approvals.hasEnoughSmugglerApprovals(smugglerId, requiredApprovals);
     }
 
     public boolean hasEnoughInspectorApprovals(int requiredApprovals) {
         return approvals.hasEnoughInspectorApprovals(inspectorId, requiredApprovals);
-    }
-
-    public boolean hasSmugglerApprovalFrom(Long voterId) {
-        return approvals.hasSmugglerApprovalFrom(voterId);
-    }
-
-    public boolean hasInspectorApprovalFrom(Long voterId) {
-        return approvals.hasInspectorApprovalFrom(voterId);
     }
 
     public boolean toggleSmugglerApproval(Long voterId) {
