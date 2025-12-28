@@ -12,11 +12,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.BooleanSupplier;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.awaitility.Awaitility;
 
 public class ActorTestUtils {
 
@@ -239,6 +241,25 @@ public class ActorTestUtils {
             }
         }
         bufferOf(probe).clear();
+    }
+
+    public static void waitUntilCondition(BooleanSupplier condition) {
+        waitUntilCondition(condition, DEFAULT_TIMEOUT);
+    }
+
+    public static void waitUntilCondition(BooleanSupplier condition, Duration timeout) {
+        if (condition == null) {
+            throw new AssertionError("조건이 비어 있습니다.");
+        }
+
+        try {
+            Awaitility.await()
+                      .pollInterval(POLL_SLICE)
+                      .atMost(timeout)
+                      .until(condition::getAsBoolean);
+        } catch (Exception ex) {
+            throw new AssertionError("시간 내에 조건을 만족하지 못했습니다.", ex);
+        }
     }
 
     static <T> T pollFirstMatchingFromBuffer(TestProbe<T> probe, List<Class<? extends T>> missing) {
