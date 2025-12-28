@@ -397,7 +397,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
 
             messageEndpoints.notifyParent(new SyncRoomStarted(lobbyState.getRoomId(), lobbyState.lobbyName(), lobbyState.lobbyMaxPlayerCount(), sessionRegistry.size()));
             sessionRegistry.forEachSession(target -> target.tell(new ClearLobbyChat()));
-            chatRelay.stopChat(getContext());
+            chatRelay.stopChat();
         } catch (IllegalArgumentException | IllegalStateException ex) {
             executorClientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(ex), ex.getMessage()));
         }

@@ -3,8 +3,8 @@ package com.game.contraband.infrastructure.actor.game.engine.lobby;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobbyChat;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.Shutdown;
 import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
 
 public class LobbyChatRelay {
 
@@ -22,7 +22,7 @@ public class LobbyChatRelay {
         externalGateway.sendToLobbyChat(command);
     }
 
-    public void stopChat(ActorContext<?> context) {
-        context.stop(externalGateway.lobbyChat());
+    public void stopChat() {
+        externalGateway.sendToLobbyChat(new Shutdown());
     }
 }
