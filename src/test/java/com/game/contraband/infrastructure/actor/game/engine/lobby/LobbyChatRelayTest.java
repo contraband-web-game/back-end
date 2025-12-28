@@ -8,6 +8,7 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobb
 import com.game.contraband.infrastructure.actor.dummy.DummyGameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.Shutdown;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatMessageEventPublisher;
@@ -78,7 +79,7 @@ class LobbyChatRelayTest {
                 Object.class,
                 Behaviors.setup(
                         actorContext -> {
-                            context.relay().stopChat(actorContext);
+                            context.relay().stopChat();
                             return Behaviors.stopped();
                         }
                 )
@@ -92,7 +93,14 @@ class LobbyChatRelayTest {
         ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
                 LobbyChatCommand.class,
-                Behaviors.ignore()
+                Behaviors.receiveMessage(
+                        message -> {
+                            if (message instanceof Shutdown) {
+                                return Behaviors.stopped();
+                            }
+                            return Behaviors.same();
+                        }
+                )
         );
         ActorTestUtils.MonitoredActor<ClientSessionCommand> clientSession = ActorTestUtils.spawnMonitored(
                 actorTestKit,
