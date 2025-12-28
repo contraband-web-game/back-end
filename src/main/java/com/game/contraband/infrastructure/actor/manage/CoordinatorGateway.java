@@ -13,13 +13,13 @@ public class CoordinatorGateway {
         this.coordinator = coordinator;
     }
 
-    public void registerRoom(long roomId, String entityId) {
+    public void registerRoom(Long roomId, String entityId) {
         if (coordinator != null) {
             coordinator.tell(new RegisterRoom(roomId, entityId));
         }
     }
 
-    public void notifyRoomRemoved(long roomId) {
+    public void notifyRoomRemoved(Long roomId) {
         if (coordinator != null) {
             coordinator.tell(new RoomRemovalNotification(roomId));
         }
