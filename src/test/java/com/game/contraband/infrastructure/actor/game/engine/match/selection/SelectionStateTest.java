@@ -77,7 +77,7 @@ class SelectionStateTest {
         // given
         SelectionState state = new SelectionState();
 
-        // when then
+        // when & then
         assertThatThrownBy(() -> state.registerSmugglerId(2, 10L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("현재 진행중인 라운드가 아닙니다.");
@@ -88,7 +88,7 @@ class SelectionStateTest {
         // given
         SelectionState state = new SelectionState();
 
-        // when then
+        // when & then
         assertThatThrownBy(() -> state.registerInspectorId(2, 20L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("현재 진행중인 라운드가 아닙니다.");

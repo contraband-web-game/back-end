@@ -81,6 +81,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatActor.LobbyChatCom
                                   .onMessage(JoinMessage.class, this::onJoinMessage)
                                   .onMessage(LeftMessage.class, this::onLeftMessage)
                                   .onMessage(KickedMessage.class, this::onKickedMessage)
+                                  .onMessage(Shutdown.class, this::onShutdown)
                                   .onMessage(MaskBlockedPlayerMessages.class, this::onMaskBlockedPlayerMessages)
                                   .onSignal(PostStop.class, this::onPostStop)
                                   .build();
@@ -146,6 +147,10 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatActor.LobbyChatCom
         return this;
     }
 
+    private Behavior<LobbyChatCommand> onShutdown(Shutdown command) {
+        return Behaviors.stopped();
+    }
+
     private Behavior<LobbyChatCommand> onPostStop(PostStop signal) {
         blacklistListener.close();
         return this;
@@ -169,4 +174,6 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatActor.LobbyChatCom
     public record KickedMessage(Long playerId, String playerName) implements LobbyChatCommand { }
 
     public record MaskBlockedPlayerMessages(Long playerId) implements LobbyChatCommand { }
+
+    public record Shutdown() implements LobbyChatCommand { }
 }

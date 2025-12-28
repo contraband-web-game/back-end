@@ -138,54 +138,14 @@ public class LobbyCreationHandler {
         lifecycleNotifier.roomCreated(plan.roomId());
     }
 
-    public static class LobbyCreationPlan {
-        private final long roomId;
-        private final String lobbyName;
-        private final int maxPlayerCount;
-        private final HostContext host;
-        private final LobbyClientSessionRegistry sessionRegistry;
-        private final LobbyRuntimeState lobbyState;
-
-        private LobbyCreationPlan(
-                long roomId,
-                String lobbyName,
-                int maxPlayerCount,
-                HostContext host,
-                LobbyClientSessionRegistry sessionRegistry,
-                LobbyRuntimeState lobbyState
-        ) {
-            this.roomId = roomId;
-            this.lobbyName = lobbyName;
-            this.maxPlayerCount = maxPlayerCount;
-            this.host = host;
-            this.sessionRegistry = sessionRegistry;
-            this.lobbyState = lobbyState;
-        }
-
-        public long roomId() {
-            return roomId;
-        }
-
-        public String lobbyName() {
-            return lobbyName;
-        }
-
-        public int maxPlayerCount() {
-            return maxPlayerCount;
-        }
-
-        public HostContext host() {
-            return host;
-        }
-
-        public LobbyClientSessionRegistry sessionRegistry() {
-            return sessionRegistry;
-        }
-
-        public LobbyRuntimeState lobbyState() {
-            return lobbyState;
-        }
-
+    public record LobbyCreationPlan(
+            Long roomId,
+            String lobbyName,
+            int maxPlayerCount,
+            HostContext host,
+            LobbyClientSessionRegistry sessionRegistry,
+            LobbyRuntimeState lobbyState
+    ) {
         public String lobbyActorName() {
             return "lobby:" + roomId;
         }

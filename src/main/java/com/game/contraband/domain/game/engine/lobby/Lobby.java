@@ -192,7 +192,7 @@ public class Lobby {
             throw new IllegalStateException("로비에 이미 존재하는 플레이어입니다.");
         }
 
-        if (!canAddToLobby()) {
+        if (cannotAddToLobby()) {
             throw new IllegalStateException("로비에 더 이상 플레이어를 추가할 수 없습니다.");
         }
     }
@@ -214,16 +214,16 @@ public class Lobby {
         this.metadata = metadata.withMaxPlayerCount(newMaxPlayerCount);
     }
 
-    public void kick(Long executorId, Long targetPlayerId) {
+    public PlayerProfile kick(Long executorId, Long targetPlayerId) {
         lifeCycle.requireLobbyPhase();
         guards.requireHost(executorId, metadata.getHostId(), "방장만 강퇴할 수 있습니다.");
 
-        if (!teamDrafts.hasPlayer(targetPlayerId)) {
-            throw new IllegalArgumentException("로비에 존재하지 않는 플레이어입니다.");
-        }
+        PlayerProfile targetProfile = teamDrafts.getPlayer(targetPlayerId);
 
         teamDrafts.removePlayer(targetPlayerId);
         readyStates.remove(targetPlayerId);
+
+        return targetProfile;
     }
 
     private boolean areAllReady() {
@@ -241,7 +241,7 @@ public class Lobby {
             return false;
         }
 
-        if (!canAddToLobby()) {
+        if (cannotAddToLobby()) {
             return false;
         }
 
@@ -253,7 +253,7 @@ public class Lobby {
             return false;
         }
 
-        if (!canAddToLobby()) {
+        if (cannotAddToLobby()) {
             return false;
         }
 
@@ -266,6 +266,10 @@ public class Lobby {
         }
 
         return totalPlayerCount() < metadata.getMaxPlayerCount();
+    }
+
+    public boolean cannotAddToLobby() {
+        return !canAddToLobby();
     }
 
     public Map<Long, Boolean> getReadyStates() {

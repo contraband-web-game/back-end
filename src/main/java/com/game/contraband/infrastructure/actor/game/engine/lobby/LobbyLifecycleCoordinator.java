@@ -8,6 +8,7 @@ import com.game.contraband.infrastructure.actor.client.SessionInboundActor.Updat
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateCreateLobby;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateCreatedLobby;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
+import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncDeleteLobby;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncEndGame;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncRoomPlayerCount;
@@ -31,20 +32,20 @@ public class LobbyLifecycleCoordinator {
         this.externalGateway = externalGateway;
     }
 
-    public void initializeHost(ActorContext<LobbyActor.LobbyCommand> context, LobbyChatRelay chatRelay) {
-        ActorRef<ClientSessionCommand> hostSession = sessionRegistry.get(lobbyState.hostId());
+    public void initializeHost(ActorContext<LobbyCommand> context, LobbyChatRelay chatRelay) {
+        ActorRef<ClientSessionCommand> hostSession = sessionRegistry.get(lobbyState.getHostId());
 
         if (hostSession == null) {
             return;
         }
 
-        HostInfo hostInfo = resolveHostInfo(lobbyState.findPlayerProfile(lobbyState.hostId()));
+        HostInfo hostInfo = resolveHostInfo(lobbyState.findPlayerProfile(lobbyState.getHostId()));
 
         hostSession.tell(
                 new PropagateCreateLobby(
                         context.getSelf(),
-                        lobbyState.lobby().getMaxPlayerCount(),
-                        lobbyState.lobby().getName(),
+                        lobbyState.lobbyMaxPlayerCount(),
+                        lobbyState.lobbyName(),
                         hostInfo.role()
                 )
         );
@@ -53,11 +54,11 @@ public class LobbyLifecycleCoordinator {
         hostSession.tell(
                 new PropagateCreatedLobby(
                         context.getSelf(),
-                        lobbyState.roomId(),
-                        lobbyState.hostId(),
-                        lobbyState.lobby().getMaxPlayerCount(),
+                        lobbyState.getRoomId(),
+                        lobbyState.getHostId(),
+                        lobbyState.lobbyMaxPlayerCount(),
                         sessionRegistry.size(),
-                        lobbyState.lobby().getName(),
+                        lobbyState.lobbyName(),
                         participants
                 )
         );
@@ -68,9 +69,9 @@ public class LobbyLifecycleCoordinator {
     public void notifyRoomPlayerCount(boolean gameStarted) {
         externalGateway.notifyParent(
                 new SyncRoomPlayerCount(
-                        lobbyState.roomId(),
-                        lobbyState.lobby().getName(),
-                        lobbyState.lobby().getMaxPlayerCount(),
+                        lobbyState.getRoomId(),
+                        lobbyState.lobbyName(),
+                        lobbyState.lobbyMaxPlayerCount(),
                         sessionRegistry.size(),
                         gameStarted
                 )
@@ -78,11 +79,11 @@ public class LobbyLifecycleCoordinator {
     }
 
     public void notifyDeleteLobby() {
-        externalGateway.notifyParent(new SyncDeleteLobby(lobbyState.roomId()));
+        externalGateway.notifyParent(new SyncDeleteLobby(lobbyState.getRoomId()));
     }
 
     public void notifyEndGame() {
-        externalGateway.notifyParent(new SyncEndGame(lobbyState.roomId()));
+        externalGateway.notifyParent(new SyncEndGame(lobbyState.getRoomId()));
     }
 
     private HostInfo resolveHostInfo(PlayerProfile hostProfile) {
