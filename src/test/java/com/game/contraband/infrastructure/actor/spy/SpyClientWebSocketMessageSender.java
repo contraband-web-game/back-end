@@ -5,6 +5,7 @@ import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.round.RoundOutcomeType;
 import com.game.contraband.domain.game.transfer.TransferFailureReason;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
@@ -52,6 +53,15 @@ public class SpyClientWebSocketMessageSender extends ClientWebSocketMessageSende
     public Long otherKicked;
     public boolean hostDeletedLobby;
     public boolean lobbyDeleted;
+    public String chatWelcomeName;
+    public ChatMessage chatMessageSent;
+    public String chatLeftName;
+    public String chatKickedName;
+    public Long maskedMessageId;
+    public String maskedChatEvent;
+    public ChatMessage smugglerTeamChatMessage;
+    public ChatMessage inspectorTeamChatMessage;
+    public ChatMessage roundChatMessage;
 
     public static class SelectionTimer {
         public final int round;
@@ -277,6 +287,47 @@ public class SpyClientWebSocketMessageSender extends ClientWebSocketMessageSende
     public void sendExceptionMessage(ExceptionCode code, String exceptionMessage) {
         this.exceptionCode = code;
         this.exceptionMessage = exceptionMessage;
+    }
+
+    @Override
+    public void sendChatWelcome(String playerName) {
+        this.chatWelcomeName = playerName;
+    }
+
+    @Override
+    public void sendChatMessage(ChatMessage chatMessage) {
+        this.chatMessageSent = chatMessage;
+    }
+
+    @Override
+    public void sendChatLeft(String playerName) {
+        this.chatLeftName = playerName;
+    }
+
+    @Override
+    public void sendChatKicked(String playerName) {
+        this.chatKickedName = playerName;
+    }
+
+    @Override
+    public void sendMaskedChatMessage(Long messageId, String chatEvent) {
+        this.maskedMessageId = messageId;
+        this.maskedChatEvent = chatEvent;
+    }
+
+    @Override
+    public void sendSmugglerTeamChatMessage(ChatMessage chatMessage) {
+        this.smugglerTeamChatMessage = chatMessage;
+    }
+
+    @Override
+    public void sendInspectorTeamChatMessage(ChatMessage chatMessage) {
+        this.inspectorTeamChatMessage = chatMessage;
+    }
+
+    @Override
+    public void sendRoundChatMessage(ChatMessage chatMessage) {
+        this.roundChatMessage = chatMessage;
     }
 
     @Override
