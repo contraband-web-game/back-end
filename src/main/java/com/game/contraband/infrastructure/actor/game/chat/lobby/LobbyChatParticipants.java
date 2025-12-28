@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.pekko.actor.typed.ActorRef;
 
-public final class LobbyChatParticipants {
+public class LobbyChatParticipants {
 
     private final Map<Long, ActorRef<ClientSessionCommand>> sessions = new HashMap<>();
 
