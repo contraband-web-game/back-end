@@ -230,6 +230,17 @@ public class ActorTestUtils {
         }
     }
 
+    public static <T> void drainMessages(TestProbe<T> probe) {
+        while (true) {
+            try {
+                probe.receiveMessage(Duration.ofMillis(10));
+            } catch (AssertionError timeout) {
+                break;
+            }
+        }
+        bufferOf(probe).clear();
+    }
+
     static <T> T pollFirstMatchingFromBuffer(TestProbe<T> probe, List<Class<? extends T>> missing) {
         Deque<T> buf = bufferOf(probe);
         if (buf.isEmpty()) {

@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateJoinedLobby;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateKicked;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateToggleReady;
+import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateToggleTeam;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.dummy.DummyGameLifecycleEventPublisher;
@@ -29,9 +30,12 @@ import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.Tog
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.ToggleTeam;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
+import com.game.contraband.infrastructure.actor.utils.BehaviorTestUtils;
+import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
+import org.apache.pekko.actor.testkit.typed.javadsl.TestInbox;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -61,8 +65,16 @@ class LobbyActorTest {
     void 로비에_정원이_가득차면_입장할_수_없다() {
         // given
         PlayerProfile hostProfile = PlayerProfile.create(1L, "호스트", TeamRole.INSPECTOR);
-        Lobby lobby = Lobby.create(100L, "로비", hostProfile, 1);
+        Lobby lobby = Lobby.create(100L, "로비", hostProfile, 2);
+
+        lobby.addSmuggler(PlayerProfile.create(2L, "참가자", TeamRole.SMUGGLER));
+
         ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> otherSession = ActorTestUtils.spawnMonitored(
                 actorTestKit,
                 ClientSessionCommand.class,
                 Behaviors.ignore()
@@ -74,16 +86,21 @@ class LobbyActorTest {
         );
         TestContext context = createContext(
                 lobby,
-                Map.of(1L, hostSession.ref())
+                Map.of(
+                        1L, hostSession.ref(),
+                        2L, otherSession.ref()
+                )
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
+        ActorTestUtils.drainMessages(otherSession.monitor());
 
         // when
-        context.actor().ref().tell(new SyncPlayerJoined(clientSession.ref(), "신규", 2L));
+        context.actor().ref().tell(new SyncPlayerJoined(clientSession.ref(), "신규", 3L));
 
         // then
         HandleExceptionMessage actual = (HandleExceptionMessage) clientSession.monitor().receiveMessage();
 
-        assertThat(actual.code().name()).isEqualTo("LOBBY_FULL");
+        assertThat(actual.code()).isEqualTo(ExceptionCode.LOBBY_FULL);
     }
 
     @Test
@@ -102,12 +119,15 @@ class LobbyActorTest {
                 Behaviors.ignore()
         );
         Map<Long, ActorRef<ClientSessionCommand>> sessions = new HashMap<>();
+
         sessions.put(1L, hostSession.ref());
         sessions.put(2L, clientSession.ref());
+
         TestContext context = createContext(
                 lobby,
                 sessions
         );
+        ActorTestUtils.drainMessages(clientSession.monitor());
 
         // when
         context.actor().ref().tell(new ChangeMaxPlayerCount(6, 2L));
@@ -115,7 +135,7 @@ class LobbyActorTest {
         // then
         HandleExceptionMessage actual = (HandleExceptionMessage) clientSession.monitor().receiveMessage();
 
-        assertThat(actual.code().name()).isEqualTo("LOBBY_MAX_PLAYER_CHANGE_FORBIDDEN");
+        assertThat(actual.code()).isEqualTo(ExceptionCode.LOBBY_MAX_PLAYER_CHANGE_FORBIDDEN);
     }
 
     @Test
@@ -132,12 +152,19 @@ class LobbyActorTest {
                 lobby,
                 Map.of(1L, hostSession.ref())
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
 
         // when
         context.actor().ref().tell(new ChangeMaxPlayerCount(6, 1L));
 
         // then
-        assertThat(context.lobbyState().lobbyMaxPlayerCount()).isEqualTo(6);
+        ClientSessionCommand message = hostSession.monitor().receiveMessage();
+        PropagateJoinedLobby actual = (PropagateJoinedLobby) message;
+
+        assertAll(
+                () -> assertThat(actual.maxPlayerCount()).isEqualTo(6),
+                () -> assertThat(context.lobbyState().lobbyMaxPlayerCount()).isEqualTo(6)
+        );
     }
 
     @Test
@@ -154,6 +181,7 @@ class LobbyActorTest {
                 lobby,
                 Map.of(1L, hostSession.ref())
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
 
         // when
         context.actor().ref().tell(new ToggleReady(1L));
@@ -161,7 +189,6 @@ class LobbyActorTest {
         // then
         assertAll(
                 () -> assertThat(context.lobbyState().readyStateOf(1L)).isTrue(),
-//                () -> assertThat(hostSession.monitor().receiveMessage()).isInstanceOf(PropagateToggleReady.class)
                 () -> ActorTestUtils.expectMessages(hostSession.monitor(), PropagateToggleReady.class)
         );
     }
@@ -171,21 +198,41 @@ class LobbyActorTest {
         // given
         PlayerProfile hostProfile = PlayerProfile.create(1L, "호스트", TeamRole.INSPECTOR);
         Lobby lobby = Lobby.create(100L, "로비", hostProfile, 4);
-        ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
-                actorTestKit,
-                ClientSessionCommand.class,
-                Behaviors.ignore()
+        LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", lobby);
+        TestInbox<ClientSessionCommand> hostSession = TestInbox.create();
+        LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(Map.of(1L, hostSession.getRef()));
+        TestInbox<LobbyChatCommand> lobbyChat = TestInbox.create();
+        TestInbox<GameManagerCommand> parent = TestInbox.create();
+        LobbyExternalGateway gateway = new LobbyExternalGateway(
+                lobbyChat.getRef(),
+                parent.getRef(),
+                new DummyChatMessageEventPublisher(),
+                new DummyGameLifecycleEventPublisher(),
+                new DummyChatBlacklistRepository()
         );
-        TestContext context = createContext(
-                lobby,
-                Map.of(1L, hostSession.ref())
+        LobbyChatRelay relay = new LobbyChatRelay(gateway);
+        LobbyLifecycleCoordinator lifecycleCoordinator = new LobbyLifecycleCoordinator(
+                lobbyState,
+                registry,
+                gateway
         );
+        Behavior<LobbyCommand> behavior = LobbyActor.create(
+                lobbyState,
+                registry,
+                gateway,
+                lifecycleCoordinator,
+                relay
+        );
+        BehaviorTestUtils.BehaviorTestHarness<LobbyCommand> harness = BehaviorTestUtils.createHarness(behavior);
 
         // when
-        context.actor().ref().tell(new ToggleTeam(1L));
+        harness.kit().run(new ToggleTeam(1L));
 
         // then
-        assertThat(context.lobbyState().findPlayerProfile(1L).getTeamRole()).isEqualTo(TeamRole.SMUGGLER);
+        assertAll(
+                () -> BehaviorTestUtils.expectMessages(hostSession, PropagateToggleTeam.class),
+                () -> assertThat(lobbyState.findPlayerProfile(1L).getTeamRole()).isEqualTo(TeamRole.SMUGGLER)
+        );
     }
 
     @Test
@@ -202,6 +249,7 @@ class LobbyActorTest {
                 lobby,
                 Map.of(1L, hostSession.ref())
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
 
         // when
         context.actor().ref().tell(new LeaveLobby(1L));
@@ -258,6 +306,7 @@ class LobbyActorTest {
                 lobby,
                 Map.of(1L, hostSession.ref())
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
 
         // when
         context.actor().ref().tell(new RequestDeleteLobby(1L));
@@ -280,13 +329,15 @@ class LobbyActorTest {
                 lobby,
                 Map.of(1L, hostSession.ref())
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
 
         // when
         context.actor().ref().tell(new StartGame(1L, 3));
 
         // then
         HandleExceptionMessage actual = (HandleExceptionMessage) hostSession.monitor().receiveMessage();
-        assertThat(actual.code().name()).isEqualTo("LOBBY_INVALID_OPERATION");
+
+        assertThat(actual.code()).isEqualTo(ExceptionCode.LOBBY_TEAM_BALANCE_REQUIRED);
     }
 
     @Test
@@ -299,6 +350,7 @@ class LobbyActorTest {
                 ClientSessionCommand.class,
                 Behaviors.ignore()
         );
+        ActorTestUtils.drainMessages(hostSession.monitor());
         TestContext context = createContext(
                 lobby,
                 Map.of(1L, hostSession.ref())
@@ -308,13 +360,12 @@ class LobbyActorTest {
                 LobbyCommand.class,
                 Behaviors.ignore()
         );
-        watcher.monitor().expectTerminated(context.actor().ref());
 
         // when
         context.actor().ref().tell(new EndGame());
 
         // then
-        watcher.monitor().receiveMessage();
+        watcher.monitor().expectTerminated(context.actor().ref());
     }
 
     @Test
@@ -427,4 +478,5 @@ class LobbyActorTest {
             ActorTestUtils.MonitoredActor<LobbyCommand> actor,
             LobbyRuntimeState lobbyState
     ) { }
+
 }
