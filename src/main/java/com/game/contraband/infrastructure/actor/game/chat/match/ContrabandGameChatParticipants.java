@@ -35,9 +35,4 @@ public class ContrabandGameChatParticipants {
         teamMembers(teamRole).values()
                              .forEach(action);
     }
-
-    public void forEachSession(Consumer<ActorRef<ClientSessionCommand>> action) {
-        sessionsByTeam.values()
-                      .forEach(team -> team.values().forEach(action));
-    }
 }
