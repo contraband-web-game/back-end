@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -22,7 +23,7 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 
-public class LobbyChatActor extends AbstractBehavior<LobbyChatActor.LobbyChatCommand> {
+public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
 
     public static Behavior<LobbyChatCommand> create(
             Long roomId,
