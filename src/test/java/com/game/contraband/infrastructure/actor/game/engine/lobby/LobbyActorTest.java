@@ -16,7 +16,6 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.dummy.DummyGameLifecycleEventPublisher;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.ChangeMaxPlayerCount;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.EndGame;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.KickPlayer;
@@ -201,27 +200,15 @@ class LobbyActorTest {
         LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", lobby);
         TestInbox<ClientSessionCommand> hostSession = TestInbox.create();
         LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(Map.of(1L, hostSession.getRef()));
-        TestInbox<LobbyChatCommand> lobbyChat = TestInbox.create();
         TestInbox<GameManagerCommand> parent = TestInbox.create();
-        LobbyExternalGateway gateway = new LobbyExternalGateway(
-                lobbyChat.getRef(),
-                parent.getRef(),
-                new DummyChatMessageEventPublisher(),
-                new DummyGameLifecycleEventPublisher(),
-                new DummyChatBlacklistRepository()
-        );
-        LobbyChatRelay relay = new LobbyChatRelay(gateway);
-        LobbyLifecycleCoordinator lifecycleCoordinator = new LobbyLifecycleCoordinator(
-                lobbyState,
-                registry,
-                gateway
-        );
         Behavior<LobbyCommand> behavior = LobbyActor.create(
                 lobbyState,
                 registry,
-                gateway,
-                lifecycleCoordinator,
-                relay
+                parent.getRef(),
+                new DummyChatMessageEventPublisher(),
+                new DummyGameLifecycleEventPublisher(),
+                new DummyChatBlacklistRepository(),
+                "lobby-chat-" + lobbyState.getRoomId()
         );
         BehaviorTestUtils.BehaviorTestHarness<LobbyCommand> harness = BehaviorTestUtils.createHarness(behavior);
 
@@ -378,37 +365,26 @@ class LobbyActorTest {
                 ClientSessionCommand.class,
                 Behaviors.ignore()
         );
-        LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", lobby);
-        LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(new HashMap<>());
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                ClientSessionCommand.class,
                 Behaviors.ignore()
         );
+        LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", lobby);
+        LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(Map.of(1L, hostSession.ref()));
         ActorTestUtils.MonitoredActor<GameManagerCommand> parent = ActorTestUtils.spawnMonitored(
                 actorTestKit,
                 GameManagerCommand.class,
                 Behaviors.ignore()
         );
-        LobbyExternalGateway gateway = new LobbyExternalGateway(
-                lobbyChat.ref(),
-                parent.ref(),
-                new DummyChatMessageEventPublisher(),
-                new DummyGameLifecycleEventPublisher(),
-                new DummyChatBlacklistRepository()
-        );
-        LobbyChatRelay relay = new LobbyChatRelay(gateway);
-        LobbyLifecycleCoordinator lifecycleCoordinator = new LobbyLifecycleCoordinator(
-                lobbyState,
-                registry,
-                gateway
-        );
         Behavior<LobbyCommand> behavior = LobbyActor.create(
                 lobbyState,
                 registry,
-                gateway,
-                lifecycleCoordinator,
-                relay
+                parent.ref(),
+                new DummyChatMessageEventPublisher(),
+                new DummyGameLifecycleEventPublisher(),
+                new DummyChatBlacklistRepository(),
+                "lobby-chat-" + lobbyState.getRoomId()
         );
         ActorTestUtils.MonitoredActor<LobbyCommand> actor = ActorTestUtils.spawnMonitored(
                 actorTestKit,
@@ -432,35 +408,19 @@ class LobbyActorTest {
         LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", lobby);
         LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(initialSessions);
 
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
-                actorTestKit,
-                LobbyChatCommand.class,
-                Behaviors.ignore()
-        );
         ActorTestUtils.MonitoredActor<GameManagerCommand> parent = ActorTestUtils.spawnMonitored(
                 actorTestKit,
                 GameManagerCommand.class,
                 Behaviors.ignore()
         );
-        LobbyExternalGateway gateway = new LobbyExternalGateway(
-                lobbyChat.ref(),
-                parent.ref(),
-                new DummyChatMessageEventPublisher(),
-                new DummyGameLifecycleEventPublisher(),
-                new DummyChatBlacklistRepository()
-        );
-        LobbyChatRelay relay = new LobbyChatRelay(gateway);
-        LobbyLifecycleCoordinator lifecycleCoordinator = new LobbyLifecycleCoordinator(
-                lobbyState,
-                registry,
-                gateway
-        );
         Behavior<LobbyCommand> behavior = LobbyActor.create(
                 lobbyState,
                 registry,
-                gateway,
-                lifecycleCoordinator,
-                relay
+                parent.ref(),
+                new DummyChatMessageEventPublisher(),
+                new DummyGameLifecycleEventPublisher(),
+                new DummyChatBlacklistRepository(),
+                "lobby-chat-" + lobbyState.getRoomId()
         );
         ActorTestUtils.MonitoredActor<LobbyCommand> actor = ActorTestUtils.spawnMonitored(
                 actorTestKit,

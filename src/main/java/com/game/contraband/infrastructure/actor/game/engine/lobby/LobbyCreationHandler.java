@@ -8,8 +8,6 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.Client
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectorySync;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.manage.CoordinatorGateway;
 import com.game.contraband.infrastructure.actor.manage.GameLifecycleNotifier;
@@ -77,39 +75,19 @@ public class LobbyCreationHandler {
         return lobbyName;
     }
 
-    public Behavior<LobbyChatCommand> lobbyChatBehavior(LobbyCreationPlan plan) {
-        return LobbyChatActor.create(
-                plan.roomId(),
-                entityId,
-                plan.host().session(),
-                plan.host().id(),
-                plan.host().chatMessageEventPublisher(),
-                chatBlacklistRepository
-        );
-    }
-
     public LobbyActorAssembly buildLobbyActor(
             LobbyCreationPlan plan,
-            ActorRef<LobbyChatCommand> lobbyChat,
             ActorRef<GameManagerCommand> parent,
             GameLifecycleNotifier lifecycleNotifier
     ) {
-        LobbyExternalGateway gateway = new LobbyExternalGateway(
-                lobbyChat,
-                parent,
-                plan.host().chatMessageEventPublisher(),
-                lifecycleNotifier.publisher(),
-                chatBlacklistRepository
-        );
-        LobbyChatRelay chatRelay = new LobbyChatRelay(gateway);
-        LobbyLifecycleCoordinator lifecycleCoordinator = new LobbyLifecycleCoordinator(plan.lobbyState(), plan.sessionRegistry(), gateway);
-
         Behavior<LobbyCommand> behavior = LobbyActor.create(
                 plan.lobbyState(),
                 plan.sessionRegistry(),
-                gateway,
-                lifecycleCoordinator,
-                chatRelay
+                parent,
+                plan.host().chatMessageEventPublisher(),
+                lifecycleNotifier.publisher(),
+                chatBlacklistRepository,
+                plan.lobbyChatActorName()
         );
 
         return new LobbyActorAssembly(behavior);
