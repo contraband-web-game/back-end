@@ -8,7 +8,6 @@ import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.Roo
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectorySnapshot;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectorySync;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.SyncPlayerJoined;
@@ -114,13 +113,8 @@ public class GameManagerEntity extends AbstractBehavior<GameManagerCommand> {
                 command.lobbyName(),
                 command.chatMessageEventPublisher()
         );
-        ActorRef<LobbyChatCommand> lobbyChat = getContext().spawn(
-                lobbyCreationHandler.lobbyChatBehavior(plan),
-                plan.lobbyChatActorName()
-        );
         LobbyActorAssembly lobbyActorAssembly = lobbyCreationHandler.buildLobbyActor(
                 plan,
-                lobbyChat,
                 getContext().getSelf(),
                 gameLifecycleNotifier
         );
@@ -214,4 +208,3 @@ public class GameManagerEntity extends AbstractBehavior<GameManagerCommand> {
 
     public record SyncRoomStarted(Long roomId, String lobbyName, int maxPlayerCount, int currentPlayerCount) implements GameManagerCommand { }
 }
-

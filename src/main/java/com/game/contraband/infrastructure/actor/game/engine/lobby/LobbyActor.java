@@ -23,11 +23,17 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.JoinMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LeftMessage;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameActor;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncRoomStarted;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
+import com.game.contraband.domain.monitor.ChatBlacklistRepository;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
+import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor;
+import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
+import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import java.util.Optional;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -42,12 +48,36 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
     public static Behavior<LobbyCommand> create(
             LobbyRuntimeState lobbyState,
             LobbyClientSessionRegistry sessionRegistry,
-            LobbyExternalGateway messageEndpoints,
-            LobbyLifecycleCoordinator lifecycleCoordinator,
-            LobbyChatRelay chatRelay
+            ActorRef<GameManagerCommand> parent,
+            ChatMessageEventPublisher chatMessageEventPublisher,
+            GameLifecycleEventPublisher gameLifecycleEventPublisher,
+            ChatBlacklistRepository chatBlacklistRepository,
+            String lobbyChatActorName
     ) {
         return Behaviors.setup(
                 context -> {
+                    ActorRef<ClientSessionCommand> hostSession = sessionRegistry.get(lobbyState.getHostId());
+                    ActorRef<LobbyChatCommand> lobbyChat = context.spawn(
+                            LobbyChatActor.create(
+                                    lobbyState.getRoomId(),
+                                    lobbyState.getEntityId(),
+                                    hostSession,
+                                    lobbyState.getHostId(),
+                                    chatMessageEventPublisher,
+                                    chatBlacklistRepository
+                            ),
+                            lobbyChatActorName
+                    );
+                    LobbyExternalGateway messageEndpoints = new LobbyExternalGateway(
+                            lobbyChat,
+                            parent,
+                            chatMessageEventPublisher,
+                            gameLifecycleEventPublisher,
+                            chatBlacklistRepository
+                    );
+                    LobbyChatRelay chatRelay = new LobbyChatRelay(messageEndpoints);
+                    LobbyLifecycleCoordinator lifecycleCoordinator =
+                            new LobbyLifecycleCoordinator(lobbyState, sessionRegistry, messageEndpoints);
                     lifecycleCoordinator.initializeHost(context, chatRelay);
 
                     return new LobbyActor(
