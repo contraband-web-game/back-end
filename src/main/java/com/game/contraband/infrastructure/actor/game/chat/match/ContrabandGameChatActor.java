@@ -17,7 +17,6 @@ import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameCh
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.PostStop;
@@ -55,9 +54,6 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
             );
         });
     }
-
-    private static final HandleExceptionMessage BLOCKED_CHAT_EXCEPTION =
-            new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다.");
 
     private final ContrabandGameChatMetadata metadata;
     private final ContrabandGameChatParticipants participants;
@@ -97,40 +93,137 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
                 .build();
     }
 
-    public Behavior<ContrabandGameChatCommand> onChatSmugglerTeam(ChatSmugglerTeam command) {
-        return handleTeamChat(
+    private Behavior<ContrabandGameChatCommand> onChatSmugglerTeam(ChatSmugglerTeam command) {
+        if (!participants.hasSession(TeamRole.SMUGGLER, command.playerId())) {
+            return this;
+        }
+
+        if (blacklistListener.isBlocked(command.playerId())) {
+            ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.SMUGGLER, command.playerId());
+            if (senderSession != null) {
+                senderSession.tell(
+                        new HandleExceptionMessage(
+                                ExceptionCode.CHAT_USER_BLOCKED,
+                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
+                        )
+                );
+            }
+            return this;
+        }
+
+        ChatMessage chatMessage = timelines.appendTeamMessage(
                 TeamRole.SMUGGLER,
                 command.playerId(),
-                () -> timelines.appendTeamMessage(TeamRole.SMUGGLER, command.playerId(), command.playerName(), command.message()),
-                PropagateSmugglerTeamChat::new,
-                ChatEventType.SMUGGLER_TEAM_CHAT
+                command.playerName(),
+                command.message()
         );
+
+        participants.forEachTeamMember(
+                TeamRole.SMUGGLER,
+                targetClientSession -> targetClientSession.tell(new PropagateSmugglerTeamChat(chatMessage))
+        );
+        chatMessageEventPublisher.publish(
+                new ChatMessageEvent(
+                        metadata.entityId(),
+                        metadata.roomId(),
+                        ChatEventType.SMUGGLER_TEAM_CHAT,
+                        roundParticipants.currentRound(),
+                        chatMessage
+                )
+        );
+        return this;
     }
 
-    public Behavior<ContrabandGameChatCommand> onChatInspectorTeam(ChatInspectorTeam command) {
-        return handleTeamChat(
+    private Behavior<ContrabandGameChatCommand> onChatInspectorTeam(ChatInspectorTeam command) {
+        if (!participants.hasSession(TeamRole.INSPECTOR, command.playerId())) {
+            return this;
+        }
+
+        if (blacklistListener.isBlocked(command.playerId())) {
+            ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.INSPECTOR, command.playerId());
+            if (senderSession != null) {
+                senderSession.tell(
+                        new HandleExceptionMessage(
+                                ExceptionCode.CHAT_USER_BLOCKED,
+                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
+                        )
+                );
+            }
+            return this;
+        }
+
+        ChatMessage chatMessage = timelines.appendTeamMessage(TeamRole.INSPECTOR, command.playerId(), command.playerName(), command.message());
+
+        participants.forEachTeamMember(
                 TeamRole.INSPECTOR,
-                command.playerId(),
-                () -> timelines.appendTeamMessage(TeamRole.INSPECTOR, command.playerId(), command.playerName(), command.message()),
-                PropagateInspectorTeamChat::new,
-                ChatEventType.INSPECTOR_TEAM_CHAT
+                targetClientSession -> targetClientSession.tell(new PropagateInspectorTeamChat(chatMessage))
         );
+        chatMessageEventPublisher.publish(
+                new ChatMessageEvent(
+                        metadata.entityId(),
+                        metadata.roomId(),
+                        ChatEventType.INSPECTOR_TEAM_CHAT,
+                        roundParticipants.currentRound(),
+                        chatMessage
+                )
+        );
+        return this;
     }
 
-    public Behavior<ContrabandGameChatCommand> onChatInRound(ChatInRound command) {
-        if (!canRoundChat(command)) {
+    private Behavior<ContrabandGameChatCommand> onChatInRound(ChatInRound command) {
+        if (roundParticipants.cannotRoundChat()) {
+            return this;
+        }
+        if (roundParticipants.isNotRoundParticipant(command.playerId())) {
+            return this;
+        }
+        if (roundParticipants.isRoundMismatch(command.currentRound())) {
+            return this;
+        }
+        if (blacklistListener.isBlocked(command.playerId())) {
+            TeamRole role = roundParticipants.isSmuggler(command.playerId()) ? TeamRole.SMUGGLER : TeamRole.INSPECTOR;
+            ActorRef<ClientSessionCommand> senderSession = participants.session(role, command.playerId());
+            if (senderSession != null) {
+                senderSession.tell(
+                        new HandleExceptionMessage(
+                                ExceptionCode.CHAT_USER_BLOCKED,
+                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
+                        )
+                );
+            }
             return this;
         }
 
-        TeamRole senderRole = resolveRoundRole(command.playerId());
-        if (rejectIfBlocked(senderRole, command.playerId())) {
-            return this;
+        ChatMessage chatMessage = timelines.appendRoundMessage(
+                command.playerId(),
+                command.playerName(),
+                command.message()
+        );
+        ActorRef<ClientSessionCommand> smugglerSession = participants.session(
+                TeamRole.SMUGGLER,
+                roundParticipants.smugglerId()
+        );
+        ActorRef<ClientSessionCommand> inspectorSession = participants.session(
+                TeamRole.INSPECTOR,
+                roundParticipants.inspectorId()
+        );
+
+        if (smugglerSession != null) {
+            smugglerSession.tell(new PropagateRoundChat(chatMessage));
+        }
+        if (inspectorSession != null) {
+            inspectorSession.tell(new PropagateRoundChat(chatMessage));
         }
 
-        ChatMessage chatMessage = timelines.appendRoundMessage(command.playerId(), command.playerName(), command.message());
-        broadcastRound(chatMessage);
-        publish(ChatEventType.ROUND_CHAT, chatMessage);
-
+        chatMessageEventPublisher.publish(
+                new ChatMessageEvent(
+                        metadata.entityId(),
+                        metadata.roomId(),
+                        ChatEventType.ROUND_CHAT,
+                        roundParticipants.currentRound(),
+                        chatMessage
+                )
+        );
         return this;
     }
 
@@ -140,7 +233,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         return this;
     }
 
-    public Behavior<ContrabandGameChatCommand> onClearRoundChatId(ClearRoundChatId command) {
+    private Behavior<ContrabandGameChatCommand> onClearRoundChatId(ClearRoundChatId command) {
         roundParticipants.clear();
         return this;
     }
@@ -155,88 +248,6 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
     private Behavior<ContrabandGameChatCommand> onPostStop(PostStop signal) {
         blacklistListener.close();
         return this;
-    }
-
-    private Behavior<ContrabandGameChatCommand> handleTeamChat(
-            TeamRole teamRole,
-            Long playerId,
-            ChatMessageSupplier chatMessageSupplier,
-            Function<ChatMessage, ClientSessionCommand> outboundMapper,
-            ChatEventType eventType
-    ) {
-        if (!participants.hasSession(teamRole, playerId)) {
-            return this;
-        }
-        if (rejectIfBlocked(teamRole, playerId)) {
-            return this;
-        }
-
-        ChatMessage chatMessage = chatMessageSupplier.get();
-        broadcastTeam(teamRole, outboundMapper.apply(chatMessage));
-        publish(eventType, chatMessage);
-
-        return this;
-    }
-
-    private boolean canRoundChat(ChatInRound command) {
-        if (roundParticipants.cannotRoundChat()) {
-            return false;
-        }
-        if (roundParticipants.isNotRoundParticipant(command.playerId())) {
-            return false;
-        }
-
-        return !roundParticipants.isRoundMismatch(command.currentRound());
-    }
-
-    private TeamRole resolveRoundRole(Long playerId) {
-        return roundParticipants.isSmuggler(playerId) ? TeamRole.SMUGGLER : TeamRole.INSPECTOR;
-    }
-
-    private boolean rejectIfBlocked(TeamRole role, Long playerId) {
-        if (!blacklistListener.isBlocked(playerId)) {
-            return false;
-        }
-        sendBlockedException(role, playerId);
-        return true;
-    }
-
-    private void sendBlockedException(TeamRole role, Long playerId) {
-        ActorRef<ClientSessionCommand> session = participants.session(role, playerId);
-
-        if (session == null) {
-            return;
-        }
-
-        session.tell(BLOCKED_CHAT_EXCEPTION);
-    }
-
-    private void broadcastTeam(TeamRole teamRole, ClientSessionCommand outbound) {
-        participants.forEachTeamMember(teamRole, session -> session.tell(outbound));
-    }
-
-    private void broadcastRound(ChatMessage chatMessage) {
-        ActorRef<ClientSessionCommand> smugglerSession =
-                participants.session(TeamRole.SMUGGLER, roundParticipants.smugglerId());
-        ActorRef<ClientSessionCommand> inspectorSession =
-                participants.session(TeamRole.INSPECTOR, roundParticipants.inspectorId());
-
-        if (smugglerSession != null) {
-            smugglerSession.tell(new PropagateRoundChat(chatMessage));
-        }
-        if (inspectorSession != null) {
-            inspectorSession.tell(new PropagateRoundChat(chatMessage));
-        }
-    }
-
-    private void publish(ChatEventType eventType, ChatMessage chatMessage) {
-        chatMessageEventPublisher.publish(new ChatMessageEvent(
-                metadata.entityId(),
-                metadata.roomId(),
-                eventType,
-                roundParticipants.currentRound(),
-                chatMessage
-        ));
     }
 
     private void maskAndBroadcastTeam(Long playerId, TeamRole teamRole, ChatEventType eventType) {
@@ -265,11 +276,6 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         return masked.stream()
                      .map(msg -> new PropagateMaskedChatMessage(msg.id(), eventType))
                      .toList();
-    }
-
-    @FunctionalInterface
-    private interface ChatMessageSupplier {
-        ChatMessage get();
     }
 
     public interface ContrabandGameChatCommand extends CborSerializable { }
