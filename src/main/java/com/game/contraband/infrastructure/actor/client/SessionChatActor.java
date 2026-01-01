@@ -58,6 +58,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(PropagateLeftMessage.class, this::onPropagateLeftMessage)
                                   .onMessage(PropagateKickedMessage.class, this::onPropagateKickedMessage)
                                   .onMessage(PropagateMaskedChatMessage.class, this::onPropagateMaskedChatMessage)
+                                  .onMessage(PropagateMaskedChatBatch.class, this::onPropagateMaskedChatBatch)
                                   .onMessage(PropagateSmugglerTeamChat.class, this::onPropagateSmugglerTeamChat)
                                   .onMessage(PropagateInspectorTeamChat.class, this::onPropagateInspectorTeamChat)
                                   .onMessage(PropagateRoundChat.class, this::onPropagateRoundChat)
@@ -134,7 +135,10 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private Behavior<ChatCommand> onRequestSendTeamChat(RequestSendTeamChat command) {
         if (chatBlacklistRepository.isBlocked(command.playerId())) {
-            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다.");
+            sender.sendExceptionMessage(
+                    ExceptionCode.CHAT_USER_BLOCKED,
+                    "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
+            );
             return this;
         }
         ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
@@ -191,6 +195,12 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         if (gameChatRef.teamRole.isInspector()) {
             gameChatRef.chat.tell(new ChatInspectorTeam(command.playerId(), command.playerName(), command.message()));
         }
+        return this;
+    }
+
+    private Behavior<ChatCommand> onPropagateMaskedChatBatch(PropagateMaskedChatBatch command) {
+        command.messageIds()
+               .forEach(messageId -> sender.sendMaskedChatMessage(messageId, command.chatEvent().name()));
         return this;
     }
 
