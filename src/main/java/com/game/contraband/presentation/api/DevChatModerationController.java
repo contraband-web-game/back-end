@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile("dev")
 @RestController
 @RequestMapping("/api/chat/moderation")
-public class ChatModerationController {
+public class DevChatModerationController {
 
     private final ChatModerationService chatModerationService;
 
-    public ChatModerationController(ChatModerationService chatModerationService) {
+    public DevChatModerationController(ChatModerationService chatModerationService) {
         this.chatModerationService = chatModerationService;
     }
 
