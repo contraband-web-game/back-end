@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -100,7 +101,15 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
 
         ChatMessage chatMessage = chatTimeline.append(command.writerId(), command.writerName(), command.message());
         participants.forEach(target -> target.tell(new PropagateNewMessage(chatMessage)));
-        chatMessageEventPublisher.publish(new ChatMessageEvent(chatMetadata.entityId(), chatMetadata.roomId(), ChatEventType.LOBBY_CHAT, null, chatMessage));
+        chatMessageEventPublisher.publish(
+                new ChatMessageEvent(
+                        chatMetadata.entityId(),
+                        chatMetadata.roomId(),
+                        ChatEventType.LOBBY_CHAT,
+                        ChatRoundInfo.lobby(),
+                        chatMessage
+                )
+        );
         return this;
     }
 

@@ -13,6 +13,7 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -122,7 +123,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
                         metadata.entityId(),
                         metadata.roomId(),
                         ChatEventType.SMUGGLER_TEAM_CHAT,
-                        roundParticipants.currentRound(),
+                        ChatRoundInfo.matchRound(roundParticipants.currentRound()),
                         chatMessage
                 )
         );
@@ -153,7 +154,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
                         metadata.entityId(),
                         metadata.roomId(),
                         ChatEventType.INSPECTOR_TEAM_CHAT,
-                        roundParticipants.currentRound(),
+                        ChatRoundInfo.matchRound(roundParticipants.currentRound()),
                         chatMessage
                 )
         );
@@ -205,7 +206,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
                         metadata.entityId(),
                         metadata.roomId(),
                         ChatEventType.ROUND_CHAT,
-                        roundParticipants.currentRound(),
+                        ChatRoundInfo.matchRound(roundParticipants.currentRound()),
                         chatMessage
                 )
         );
