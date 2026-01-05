@@ -70,13 +70,10 @@ class SessionOutboundActorTest {
         TestContext context = createContext();
 
         // when
-        send(context, new HandleExceptionMessage(ExceptionCode.UNKNOWN_ERROR, "예외 메시지"));
+        send(context, new HandleExceptionMessage(ExceptionCode.UNKNOWN_ERROR));
 
         // then
-        assertAll(
-                () -> assertThat(context.sender().exceptionCode).isEqualTo(ExceptionCode.UNKNOWN_ERROR),
-                () -> assertThat(context.sender().exceptionMessage).isEqualTo("예외 메시지")
-        );
+        assertThat(context.sender().exceptionCode).isEqualTo(ExceptionCode.UNKNOWN_ERROR);
     }
 
     @Test

@@ -90,16 +90,11 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
 
     private Behavior<LobbyChatCommand> onSendMessage(SendMessage command) {
         if (command.message() == null || command.message().isBlank()) {
-            sendTo(
-                    command.writerId(),
-                    new HandleExceptionMessage(
-                            ExceptionCode.CHAT_MESSAGE_EMPTY,
-                            "메시지는 비어 있을 수 없습니다.")
-            );
+            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_MESSAGE_EMPTY));
             return this;
         }
         if (blacklistListener.isBlocked(command.writerId())) {
-            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다."));
+            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
             return this;
         }
 

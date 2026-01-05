@@ -135,13 +135,12 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private Behavior<ChatCommand> onRequestSendTeamChat(RequestSendTeamChat command) {
         if (chatBlacklistRepository.isBlocked(command.playerId())) {
-            sender.sendExceptionMessage(
-                    ExceptionCode.CHAT_USER_BLOCKED,
-                    "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
-            );
+            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED);
             return this;
         }
+
         ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
+
         if (gameChatRef == null) {
             return this;
         }
@@ -157,7 +156,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private Behavior<ChatCommand> onRequestSendRoundChat(RequestSendRoundChat command) {
         if (chatBlacklistRepository.isBlocked(command.playerId())) {
-            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다.");
+            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED);
             return this;
         }
         ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
@@ -171,12 +170,10 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private Behavior<ChatCommand> onRequestSendChat(RequestSendChat command) {
         if (chatBlacklistRepository.isBlocked(command.playerId())) {
-            sender.sendExceptionMessage(
-                    ExceptionCode.CHAT_USER_BLOCKED,
-                    "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
-            );
+            sender.sendExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED);
             return this;
         }
+
         ActorRef<LobbyChatCommand> lobbyChat = lobbyChatHolder.get();
         if (lobbyChat != null) {
             lobbyChat.tell(new SendMessage(command.playerId(), command.playerName(), command.message()));

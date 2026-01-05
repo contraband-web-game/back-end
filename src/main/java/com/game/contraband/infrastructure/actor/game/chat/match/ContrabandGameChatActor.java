@@ -101,12 +101,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         if (blacklistListener.isBlocked(command.playerId())) {
             ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.SMUGGLER, command.playerId());
             if (senderSession != null) {
-                senderSession.tell(
-                        new HandleExceptionMessage(
-                                ExceptionCode.CHAT_USER_BLOCKED,
-                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
-                        )
-                );
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
             }
             return this;
         }
@@ -142,12 +137,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         if (blacklistListener.isBlocked(command.playerId())) {
             ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.INSPECTOR, command.playerId());
             if (senderSession != null) {
-                senderSession.tell(
-                        new HandleExceptionMessage(
-                                ExceptionCode.CHAT_USER_BLOCKED,
-                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
-                        )
-                );
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
             }
             return this;
         }
@@ -184,12 +174,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
             TeamRole role = roundParticipants.isSmuggler(command.playerId()) ? TeamRole.SMUGGLER : TeamRole.INSPECTOR;
             ActorRef<ClientSessionCommand> senderSession = participants.session(role, command.playerId());
             if (senderSession != null) {
-                senderSession.tell(
-                        new HandleExceptionMessage(
-                                ExceptionCode.CHAT_USER_BLOCKED,
-                                "차단된 사용자입니다. 채팅을 보낼 수 없습니다."
-                        )
-                );
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
             }
             return this;
         }

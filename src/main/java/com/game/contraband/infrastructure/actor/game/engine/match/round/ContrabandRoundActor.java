@@ -178,10 +178,7 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
         }
         if (roundState.isNotCurrentSmuggler(command.smugglerId())) {
             smugglerClientSession.tell(
-                    new HandleExceptionMessage(
-                            ExceptionCode.NOT_CURRENT_ROUND_SMUGGLER,
-                            "현재 라운드를 진행하는 밀수꾼이 아닙니다."
-                    )
+                    new HandleExceptionMessage(ExceptionCode.NOT_CURRENT_ROUND_SMUGGLER)
             );
             return this;
         }
@@ -208,12 +205,7 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
             return this;
         }
         if (roundState.isNotCurrentInspector(command.inspectorId())) {
-            inspectorClientSession.tell(
-                    new HandleExceptionMessage(
-                            ExceptionCode.NOT_CURRENT_ROUND_INSPECTOR,
-                            "현재 라운드를 진행하는 검사관이 아닙니다."
-                    )
-            );
+            inspectorClientSession.tell(new HandleExceptionMessage(ExceptionCode.NOT_CURRENT_ROUND_INSPECTOR));
             return this;
         }
 
@@ -239,12 +231,7 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
             return this;
         }
         if (roundState.isNotCurrentInspector(command.inspectorId())) {
-            inspectorClientSession.tell(
-                    new HandleExceptionMessage(
-                            ExceptionCode.NOT_CURRENT_ROUND_INSPECTOR,
-                            "현재 라운드를 진행하는 검사관이 아닙니다."
-                    )
-            );
+            inspectorClientSession.tell(new HandleExceptionMessage(ExceptionCode.NOT_CURRENT_ROUND_INSPECTOR));
             return this;
         }
 
@@ -489,13 +476,13 @@ public class ContrabandRoundActor extends AbstractBehavior<ContrabandGameCommand
             command.execute();
             onSuccess.run();
         } catch (Exception ex) {
-            clientMessenger.tellAll(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE, ex.getMessage()));
+            clientMessenger.tellAll(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE));
             onError.run();
         }
     }
 
     private Consumer<Exception> forwardExceptionTo(ActorRef<ClientSessionCommand> clientSession) {
-        return ex -> clientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE, ex.getMessage()));
+        return ex -> clientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE));
     }
 
     private void handleTransferFailure(

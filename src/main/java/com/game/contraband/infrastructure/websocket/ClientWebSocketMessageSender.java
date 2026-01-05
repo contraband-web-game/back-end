@@ -69,9 +69,9 @@ public class ClientWebSocketMessageSender {
         sinkHolder.compareAndSet(sink, null);
     }
 
-    public void sendExceptionMessage(ExceptionCode code, String exceptionMessage) {
+    public void sendExceptionMessage(ExceptionCode code) {
         ExceptionCode resolvedCode = code == null ? ExceptionCode.UNKNOWN_ERROR : code;
-        ExceptionMessagePayload payload = new ExceptionMessagePayload(resolvedCode, exceptionMessage);
+        ExceptionMessagePayload payload = new ExceptionMessagePayload(resolvedCode);
         WebSocketOutboundMessage webSocketOutboundMessage = new WebSocketOutboundMessage(
                 WebSocketOutboundMessageType.EXCEPTION_MESSAGE,
                 payload

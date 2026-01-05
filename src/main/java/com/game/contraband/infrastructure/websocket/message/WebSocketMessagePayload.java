@@ -20,7 +20,7 @@ public interface WebSocketMessagePayload {
         }
     }
 
-    record ExceptionMessagePayload(ExceptionCode code, String exceptionMessage) implements WebSocketMessagePayload { }
+    record ExceptionMessagePayload(ExceptionCode code) implements WebSocketMessagePayload { }
 
     record RoomDirectoryEntryPayload(Long roomId, String roomIdString, String lobbyName, int maxPlayerCount, int currentPlayerCount, String entityId, boolean gameStarted) implements WebSocketMessagePayload { }
 
