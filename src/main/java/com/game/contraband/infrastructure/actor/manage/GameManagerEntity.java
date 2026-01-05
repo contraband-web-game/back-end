@@ -139,12 +139,7 @@ public class GameManagerEntity extends AbstractBehavior<GameManagerCommand> {
 
         if (lobbyActor == null) {
             command.clientSession()
-                   .tell(
-                           new HandleExceptionMessage(
-                                   ExceptionCode.GAME_ROOM_NOT_FOUND,
-                                   "지정한 게임 방이 존재하지 않습니다."
-                           )
-                   );
+                   .tell(new HandleExceptionMessage(ExceptionCode.GAME_ROOM_NOT_FOUND));
             return this;
         }
 

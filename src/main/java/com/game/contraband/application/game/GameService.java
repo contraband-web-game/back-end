@@ -59,22 +59,12 @@ public class GameService {
                         actorSystem.scheduler()
                 ).handle((reply, ex) -> {
                     if (ex != null) {
-                        hostSession.tell(
-                                new HandleExceptionMessage(
-                                        ExceptionCode.LOBBY_CREATE_FAILED,
-                                        "로비 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
-                                )
-                        );
+                        hostSession.tell(new HandleExceptionMessage(ExceptionCode.LOBBY_CREATE_FAILED));
                         throw new IllegalStateException("게임 매니저 엔티티 할당 중 오류가 발생했습니다.", ex);
                     }
 
                     if (reply.isError()) {
-                        hostSession.tell(
-                                new HandleExceptionMessage(
-                                        ExceptionCode.LOBBY_CREATE_FAILED,
-                                        "로비 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
-                                )
-                        );
+                        hostSession.tell(new HandleExceptionMessage(ExceptionCode.LOBBY_CREATE_FAILED));
                         throw new IllegalStateException("게임 매니저 엔티티 할당에 실패했습니다.", reply.getError());
                     }
 

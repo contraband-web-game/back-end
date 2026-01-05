@@ -119,7 +119,7 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
             clientMessenger.tellTeam(TeamRole.SMUGGLER, new PropagateRegisterSmugglerId(command.smugglerId()));
             propagateSmugglerApprovalState();
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            smugglerClientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE, ex.getMessage()));
+            smugglerClientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE));
         }
         return this;
     }
@@ -169,7 +169,7 @@ public class ContrabandSelectionActor extends AbstractBehavior<ContrabandGameCom
             clientMessenger.tellTeam(TeamRole.INSPECTOR, new PropagateRegisterInspectorId(command.inspectorId()));
             propagateInspectorApprovalState();
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            inspectorClientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE, ex.getMessage()));
+            inspectorClientSession.tell(new HandleExceptionMessage(ExceptionCode.GAME_INVALID_STATE));
         }
         return this;
     }

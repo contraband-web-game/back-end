@@ -17,7 +17,6 @@ import java.util.Set;
 public class SpyClientWebSocketMessageSender extends ClientWebSocketMessageSender {
 
     public ExceptionCode exceptionCode;
-    public String exceptionMessage;
     public boolean pingSent;
     public boolean reconnectRequested;
     public List<RoomDirectorySnapshot> roomSnapshots = List.of();
@@ -284,9 +283,8 @@ public class SpyClientWebSocketMessageSender extends ClientWebSocketMessageSende
     }
 
     @Override
-    public void sendExceptionMessage(ExceptionCode code, String exceptionMessage) {
+    public void sendExceptionMessage(ExceptionCode code) {
         this.exceptionCode = code;
-        this.exceptionMessage = exceptionMessage;
     }
 
     @Override

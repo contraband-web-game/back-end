@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -90,22 +91,25 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
 
     private Behavior<LobbyChatCommand> onSendMessage(SendMessage command) {
         if (command.message() == null || command.message().isBlank()) {
-            sendTo(
-                    command.writerId(),
-                    new HandleExceptionMessage(
-                            ExceptionCode.CHAT_MESSAGE_EMPTY,
-                            "메시지는 비어 있을 수 없습니다.")
-            );
+            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_MESSAGE_EMPTY));
             return this;
         }
         if (blacklistListener.isBlocked(command.writerId())) {
-            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED, "차단된 사용자입니다. 채팅을 보낼 수 없습니다."));
+            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
             return this;
         }
 
         ChatMessage chatMessage = chatTimeline.append(command.writerId(), command.writerName(), command.message());
         participants.forEach(target -> target.tell(new PropagateNewMessage(chatMessage)));
-        chatMessageEventPublisher.publish(new ChatMessageEvent(chatMetadata.entityId(), chatMetadata.roomId(), ChatEventType.LOBBY_CHAT, null, chatMessage));
+        chatMessageEventPublisher.publish(
+                new ChatMessageEvent(
+                        chatMetadata.entityId(),
+                        chatMetadata.roomId(),
+                        ChatEventType.LOBBY_CHAT,
+                        ChatRoundInfo.lobby(),
+                        chatMessage
+                )
+        );
         return this;
     }
 

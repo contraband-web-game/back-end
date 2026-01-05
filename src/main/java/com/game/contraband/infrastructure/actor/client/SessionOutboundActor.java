@@ -88,7 +88,7 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
     }
 
     private Behavior<OutboundCommand> onHandleExceptionMessage(HandleExceptionMessage command) {
-        sender.sendExceptionMessage(command.code(), command.exceptionMessage());
+        sender.sendExceptionMessage(command.code());
         return this;
     }
 
@@ -365,7 +365,7 @@ public class SessionOutboundActor extends AbstractBehavior<OutboundCommand> {
         return this;
     }
 
-    public record HandleExceptionMessage(ExceptionCode code, String exceptionMessage) implements OutboundCommand { }
+    public record HandleExceptionMessage(ExceptionCode code) implements OutboundCommand { }
 
     public record SendWebSocketPing() implements OutboundCommand { }
 
