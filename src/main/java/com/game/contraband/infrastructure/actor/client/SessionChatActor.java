@@ -5,6 +5,7 @@ import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMuteReason;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.SendMessage;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
@@ -50,6 +51,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     private final ChatBlacklistRepository chatBlacklistRepository;
     private final LobbyChatHolder lobbyChatHolder = new LobbyChatHolder();
     private final ContrabandGameChatHolder contrabandGameChatHolder = new ContrabandGameChatHolder();
+    private long mutedUntilMillis = 0L;
+    private ChatMuteReason muteReason = ChatMuteReason.NONE;
 
     @Override
     public Receive<ChatCommand> createReceive() {
@@ -69,6 +72,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(RequestSendTeamChat.class, this::onRequestSendTeamChat)
                                   .onMessage(RequestSendRoundChat.class, this::onRequestSendRoundChat)
                                   .onMessage(RequestSendChat.class, this::onRequestSendChat)
+                                  .onMessage(ApplyChatMute.class, this::onApplyChatMute)
+                                  .onMessage(ClearChatMute.class, this::onClearChatMute)
                                   .onSignal(Terminated.class, this::onTerminated)
                                   .build();
     }
@@ -201,6 +206,24 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         return this;
     }
 
+    private Behavior<ChatCommand> onApplyChatMute(ApplyChatMute command) {
+        if (command.untilMillis <= 0L) {
+            this.mutedUntilMillis = 0L;
+            this.muteReason = ChatMuteReason.NONE;
+            return this;
+        }
+
+        this.mutedUntilMillis = Math.max(this.mutedUntilMillis, command.untilMillis);
+        this.muteReason = command.reason();
+        return this;
+    }
+
+    private Behavior<ChatCommand> onClearChatMute(ClearChatMute command) {
+        this.mutedUntilMillis = 0L;
+        this.muteReason = ChatMuteReason.NONE;
+        return this;
+    }
+
     private Behavior<ChatCommand> onTerminated(Terminated signal) {
         if (lobbyChatHolder.isTerminated(signal.getRef())) {
             lobbyChatHolder.clear();
@@ -290,4 +313,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     public record RequestSendRoundChat(Long playerId, String playerName, String message, int currentRound) implements ChatCommand { }
 
     public record RequestSendChat(Long playerId, String playerName, String message) implements ChatCommand { }
+
+    public record ApplyChatMute(long untilMillis, ChatMuteReason reason) implements ChatCommand { }
+
+    public record ClearChatMute() implements ChatCommand { }
 }
