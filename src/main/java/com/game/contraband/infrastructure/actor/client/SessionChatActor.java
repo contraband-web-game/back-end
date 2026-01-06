@@ -6,7 +6,7 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ChatCo
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMuteReason;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.SendMessage;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
@@ -179,7 +179,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             return this;
         }
 
-        ActorRef<LobbyChatCommand> lobbyChat = lobbyChatHolder.get();
+        ActorRef<GameChatCommand> lobbyChat = lobbyChatHolder.get();
         if (lobbyChat != null) {
             lobbyChat.tell(new SendMessage(command.playerId(), command.playerName(), command.message()));
             return this;
@@ -236,9 +236,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private static class LobbyChatHolder {
 
-        private ActorRef<LobbyChatCommand> ref;
+        private ActorRef<GameChatCommand> ref;
 
-        void set(ActorRef<LobbyChatCommand> ref, ActorContext<ChatCommand> context) {
+        void set(ActorRef<GameChatCommand> ref, ActorContext<ChatCommand> context) {
             this.ref = ref;
             context.watch(ref);
         }
@@ -247,7 +247,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             this.ref = null;
         }
 
-        ActorRef<LobbyChatCommand> get() {
+        ActorRef<GameChatCommand> get() {
             return ref;
         }
 
@@ -304,7 +304,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     public record ClearContrabandGameChat() implements ChatCommand { }
 
-    public record SyncLobbyChat(ActorRef<LobbyChatCommand> lobbyChat) implements ChatCommand { }
+    public record SyncLobbyChat(ActorRef<GameChatCommand> lobbyChat) implements ChatCommand { }
 
     public record ClearLobbyChat() implements ChatCommand { }
 

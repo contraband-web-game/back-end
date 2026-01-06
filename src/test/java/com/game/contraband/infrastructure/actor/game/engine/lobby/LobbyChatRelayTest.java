@@ -6,8 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobbyChat;
 import com.game.contraband.infrastructure.actor.dummy.DummyGameLifecycleEventPublisher;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.Shutdown;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
@@ -90,9 +91,9 @@ class LobbyChatRelayTest {
     }
 
     private TestContext createContext() {
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.receiveMessage(
                         message -> {
                             if (message instanceof Shutdown) {
@@ -134,7 +135,7 @@ class LobbyChatRelayTest {
     private record TestContext(
             LobbyChatRelay relay,
             LobbyExternalGateway gateway,
-            ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat,
+            ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> clientSession,
             ActorTestUtils.MonitoredActor<GameManagerCommand> parent
     ) { }

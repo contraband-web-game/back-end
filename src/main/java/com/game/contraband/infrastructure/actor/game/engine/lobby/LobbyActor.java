@@ -20,10 +20,10 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateOtherPlayerLeftLobby;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateToggleReady;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateToggleTeam;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.JoinMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LeftMessage;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.dto.LobbyParticipant;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameActor;
@@ -57,7 +57,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         return Behaviors.setup(
                 context -> {
                     ActorRef<ClientSessionCommand> hostSession = sessionRegistry.get(lobbyState.getHostId());
-                    ActorRef<LobbyChatCommand> lobbyChat = context.spawn(
+                    ActorRef<GameChatCommand> lobbyChat = context.spawn(
                             LobbyChatActor.create(
                                     lobbyState.getRoomId(),
                                     lobbyState.getEntityId(),

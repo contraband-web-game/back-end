@@ -2,7 +2,7 @@ package com.game.contraband.infrastructure.actor.game.engine.lobby;
 
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobbyChat;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.Shutdown;
 import org.apache.pekko.actor.typed.ActorRef;
 

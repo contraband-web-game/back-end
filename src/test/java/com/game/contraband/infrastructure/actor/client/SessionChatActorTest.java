@@ -22,7 +22,7 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncCont
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobbyChat;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.SendMessage;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
@@ -300,9 +300,9 @@ class SessionChatActorTest {
         // given
         TestContext context = createContext();
         context.chatBlacklistRepository().setBlockedReturn(true);
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncLobbyChat(lobbyChat.ref()));
@@ -322,9 +322,9 @@ class SessionChatActorTest {
     void 로비_채팅을_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncLobbyChat(lobbyChat.ref()));
@@ -412,9 +412,9 @@ class SessionChatActorTest {
     void 로비_채팅_초기화_후에는_로비_채팅을_입력할_수_없다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncLobbyChat(lobbyChat.ref()));
@@ -431,7 +431,7 @@ class SessionChatActorTest {
     void 로비_채팅_Actor_종료를_동기화_받는다() {
         // given
         TestContext context = createContext();
-        ActorRef<LobbyChatCommand> lobbyChat = actorTestKit.spawn(Behaviors.ignore());
+        ActorRef<GameChatCommand> lobbyChat = actorTestKit.spawn(Behaviors.ignore());
         context.actor().tell(new SyncLobbyChat(lobbyChat));
 
         // when

@@ -5,8 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatMessageEventPublisher;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncDeleteLobby;
 import com.game.contraband.infrastructure.actor.spy.SpyGameLifecycleEventPublisher;
@@ -84,9 +85,9 @@ class LobbyExternalGatewayTest {
     }
 
     private TestContext createContext() {
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         ActorTestUtils.MonitoredActor<GameManagerCommand> parent = ActorTestUtils.spawnMonitored(
@@ -114,7 +115,7 @@ class LobbyExternalGatewayTest {
 
     private record TestContext(
             LobbyExternalGateway gateway,
-            ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat,
+            ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat,
             ActorTestUtils.MonitoredActor<GameManagerCommand> parent,
             SpyGameLifecycleEventPublisher lifecyclePublisher
     ) { }

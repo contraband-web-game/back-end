@@ -12,6 +12,7 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.Propagat
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.HandleExceptionMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.JoinMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.KickedMessage;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LeftMessage;
@@ -212,7 +213,7 @@ class LobbyChatActorTest {
         );
         SpyChatMessageEventPublisher publisher = new SpyChatMessageEventPublisher();
 
-        Behavior<LobbyChatActor.LobbyChatCommand> behavior = LobbyChatActor.create(
+        Behavior<GameChatCommand> behavior = LobbyChatActor.create(
                 1L,
                 "entity",
                 host.ref(),
@@ -220,9 +221,9 @@ class LobbyChatActorTest {
                 publisher,
                 repository
         );
-        ActorTestUtils.MonitoredActor<LobbyChatActor.LobbyChatCommand> actor = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> actor = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatActor.LobbyChatCommand.class,
+                GameChatCommand.class,
                 behavior
         );
 
@@ -234,7 +235,7 @@ class LobbyChatActorTest {
     }
 
     private record TestContext(
-            ActorTestUtils.MonitoredActor<LobbyChatActor.LobbyChatCommand> actor,
+            ActorTestUtils.MonitoredActor<GameChatCommand> actor,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> host,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> joined,
             SpyChatMessageEventPublisher publisher

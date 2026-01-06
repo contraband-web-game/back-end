@@ -1,7 +1,6 @@
 package com.game.contraband.infrastructure.actor.game.chat.lobby;
 
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
-import com.game.contraband.global.actor.CborSerializable;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateKickedMessage;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateLeftMessage;
@@ -13,7 +12,8 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.LobbyChatCommand;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -24,9 +24,9 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 
-public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
+public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
 
-    public static Behavior<LobbyChatCommand> create(
+    public static Behavior<GameChatCommand> create(
             Long roomId,
             String entityId,
             ActorRef<ClientSessionCommand> hostClientSession,
@@ -56,7 +56,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
     }
 
     private LobbyChatActor(
-            ActorContext<LobbyChatCommand> context,
+            ActorContext<GameChatCommand> context,
             LobbyChatMetadata chatMetadata,
             LobbyChatParticipants participants,
             LobbyChatTimeline chatTimeline,
@@ -78,7 +78,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
     private final LobbyChatBlacklistListener blacklistListener;
 
     @Override
-    public Receive<LobbyChatCommand> createReceive() {
+    public Receive<GameChatCommand> createReceive() {
         return newReceiveBuilder().onMessage(SendMessage.class, this::onSendMessage)
                                   .onMessage(JoinMessage.class, this::onJoinMessage)
                                   .onMessage(LeftMessage.class, this::onLeftMessage)
@@ -89,7 +89,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
                                   .build();
     }
 
-    private Behavior<LobbyChatCommand> onSendMessage(SendMessage command) {
+    private Behavior<GameChatCommand> onSendMessage(SendMessage command) {
         if (command.message() == null || command.message().isBlank()) {
             sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_MESSAGE_EMPTY));
             return this;
@@ -113,7 +113,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
         return this;
     }
 
-    private Behavior<LobbyChatCommand> onJoinMessage(JoinMessage command) {
+    private Behavior<GameChatCommand> onJoinMessage(JoinMessage command) {
         participants.add(command.playerId(), command.clientSession());
         participants.forEach(
                 targetClientSession -> targetClientSession.tell(new PropagateWelcomeMessage(command.playerName()))
@@ -121,7 +121,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
         return this;
     }
 
-    private Behavior<LobbyChatCommand> onLeftMessage(LeftMessage command) {
+    private Behavior<GameChatCommand> onLeftMessage(LeftMessage command) {
         participants.remove(command.playerId());
         participants.forEach(
                 targetClientSession -> targetClientSession.tell(new PropagateLeftMessage(command.playerName()))
@@ -129,7 +129,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
         return this;
     }
 
-    private Behavior<LobbyChatCommand> onKickedMessage(KickedMessage command) {
+    private Behavior<GameChatCommand> onKickedMessage(KickedMessage command) {
         participants.remove(command.playerId());
         participants.forEach(
                 targetClientSession -> targetClientSession.tell(new PropagateKickedMessage(command.playerName()))
@@ -137,7 +137,7 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
         return this;
     }
 
-    private Behavior<LobbyChatCommand> onMaskBlockedPlayerMessages(MaskBlockedPlayerMessages command) {
+    private Behavior<GameChatCommand> onMaskBlockedPlayerMessages(MaskBlockedPlayerMessages command) {
         List<ChatMessage> masked = chatTimeline.maskMessagesByWriter(command.playerId());
 
         if (masked.isEmpty()) {
@@ -152,11 +152,11 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
         return this;
     }
 
-    private Behavior<LobbyChatCommand> onShutdown(Shutdown command) {
+    private Behavior<GameChatCommand> onShutdown(Shutdown command) {
         return Behaviors.stopped();
     }
 
-    private Behavior<LobbyChatCommand> onPostStop(PostStop signal) {
+    private Behavior<GameChatCommand> onPostStop(PostStop signal) {
         blacklistListener.close();
         return this;
     }
@@ -167,8 +167,6 @@ public class LobbyChatActor extends AbstractBehavior<LobbyChatCommand> {
             clientSession.tell(message);
         }
     }
-
-    public interface LobbyChatCommand extends CborSerializable { }
 
     public record SendMessage(Long writerId, String writerName, String message) implements LobbyChatCommand { }
 

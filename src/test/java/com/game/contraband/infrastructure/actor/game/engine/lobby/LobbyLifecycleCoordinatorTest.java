@@ -12,10 +12,10 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncLobb
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.UpdateLobby;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateCreateLobby;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateCreatedLobby;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.dummy.DummyChatMessageEventPublisher;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncDeleteLobby;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncEndGame;
@@ -130,9 +130,9 @@ class LobbyLifecycleCoordinatorTest {
                 ClientSessionCommand.class,
                 Behaviors.ignore()
         );
-        ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                LobbyChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         ActorTestUtils.MonitoredActor<GameManagerCommand> parent = ActorTestUtils.spawnMonitored(
@@ -141,7 +141,6 @@ class LobbyLifecycleCoordinatorTest {
                 Behaviors.ignore()
         );
         SpyGameLifecycleEventPublisher lifecyclePublisher = new SpyGameLifecycleEventPublisher();
-
         LobbyRuntimeState lobbyState = new LobbyRuntimeState(100L, 1L, "entity-1", defaultLobby());
         LobbyClientSessionRegistry registry = new LobbyClientSessionRegistry(
                 Map.of(1L, hostSession.ref())
@@ -179,7 +178,7 @@ class LobbyLifecycleCoordinatorTest {
             LobbyLifecycleCoordinator coordinator,
             LobbyChatRelay chatRelay,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession,
-            ActorTestUtils.MonitoredActor<LobbyChatCommand> lobbyChat,
+            ActorTestUtils.MonitoredActor<GameChatCommand> lobbyChat,
             ActorTestUtils.MonitoredActor<GameManagerCommand> parent
     ) { }
 }
