@@ -11,7 +11,6 @@ import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.S
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatSmugglerTeam;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -167,7 +166,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
 
         if (gameChatRef != null) {
-            gameChatRef.chat.tell(new ChatInRound(command.playerId(), command.playerName(), command.message(), command.currentRound()));
+            gameChatRef.chat.tell(
+                    new ChatInRound(command.playerId(), command.playerName(), command.message(), command.currentRound())
+            );
         }
 
         return this;
@@ -260,7 +261,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
         private GameChatRef ref;
 
-        void set(ActorRef<ContrabandGameChatCommand> ref, TeamRole teamRole, ActorContext<ChatCommand> context) {
+        void set(ActorRef<GameChatCommand> ref, TeamRole teamRole, ActorContext<ChatCommand> context) {
             this.ref = new GameChatRef(ref, teamRole);
             context.watch(ref);
         }
@@ -277,7 +278,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             return ref != null && ref.chat.equals(terminated);
         }
 
-        private record GameChatRef(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) { }
+        private record GameChatRef(ActorRef<GameChatCommand> chat, TeamRole teamRole) { }
     }
 
     public record PropagateWelcomeMessage(String playerName) implements ChatCommand { }
@@ -300,7 +301,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     public record PropagateRoundChat(ChatMessage chatMessage) implements ChatCommand { }
 
-    public record SyncContrabandGameChat(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
+    public record SyncContrabandGameChat(ActorRef<GameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
 
     public record ClearContrabandGameChat() implements ChatCommand { }
 

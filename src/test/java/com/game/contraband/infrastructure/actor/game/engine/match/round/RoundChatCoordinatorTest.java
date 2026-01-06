@@ -8,8 +8,8 @@ import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.game.player.TeamRoster;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.ClearContrabandGameChat;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ClearRoundChatId;
 import com.game.contraband.infrastructure.actor.game.engine.match.ClientSessionRegistry;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
@@ -53,7 +53,7 @@ class RoundChatCoordinatorTest {
         coordinator.clearRoundChatId();
 
         // then
-        ActorTestUtils.expectMessages(context.gameChat(), ContrabandGameChatActor.ClearRoundChatId.class);
+        ActorTestUtils.expectMessages(context.gameChat(), ClearRoundChatId.class);
     }
 
     @Test
@@ -79,7 +79,7 @@ class RoundChatCoordinatorTest {
         RoundChatCoordinator coordinator = context.coordinator();
 
         // when
-        ActorRef<ContrabandGameChatCommand> gameChat = coordinator.gameChat();
+        ActorRef<GameChatCommand> gameChat = coordinator.gameChat();
 
         // then
         assertThat(gameChat).isEqualTo(context.gameChat().getRef());
@@ -97,7 +97,7 @@ class RoundChatCoordinatorTest {
             Map<Long, ActorRef<ClientSessionCommand>> sessionRefs
     ) {
         ClientSessionRegistry registry = createRegistry(sessionRefs);
-        TestProbe<ContrabandGameChatCommand> gameChat = actorTestKit.createTestProbe(ContrabandGameChatCommand.class);
+        TestProbe<GameChatCommand> gameChat = actorTestKit.createTestProbe(GameChatCommand.class);
 
         RoundChatCoordinator coordinator = new RoundChatCoordinator(gameChat.getRef(), registry);
 
@@ -157,7 +157,7 @@ class RoundChatCoordinatorTest {
 
     private record RoundChatCoordinatorTestContext(
             RoundChatCoordinator coordinator,
-            TestProbe<ContrabandGameChatCommand> gameChat,
+            TestProbe<GameChatCommand> gameChat,
             Map<Long, TestProbe<ClientSessionCommand>> sessions
     ) {
         TestProbe<ClientSessionCommand> session(Long playerId) {

@@ -17,8 +17,8 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateStartGame;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateStartNewRound;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateTransfer;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ClearRoundChatId;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.EndGame;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ClientSessionRegistry;
@@ -416,7 +416,7 @@ class ContrabandRoundActorTest {
 
         TestProbe<LobbyCommand> lobby = actorTestKit.createTestProbe();
         TestProbe<ContrabandGameCommand> facadeMonitor = actorTestKit.createTestProbe();
-        TestProbe<ContrabandGameChatCommand> gameChat = actorTestKit.createTestProbe(ContrabandGameChatCommand.class);
+        TestProbe<GameChatCommand> gameChat = actorTestKit.createTestProbe(GameChatCommand.class);
 
         AtomicReference<ActorRef<ContrabandGameCommand>> roundRef = new AtomicReference<>();
         ActorRef<ContrabandGameCommand> forwardingFacade = actorTestKit.spawn(
@@ -544,7 +544,7 @@ class ContrabandRoundActorTest {
             ClientSessionRegistry registry,
             TestProbe<ContrabandGameCommand> facade,
             TestProbe<LobbyCommand> lobby,
-            TestProbe<ContrabandGameChatCommand> gameChat
+            TestProbe<GameChatCommand> gameChat
     ) {
         ActorRef<ContrabandGameCommand> commandRef() {
             return monitoredRound.ref();

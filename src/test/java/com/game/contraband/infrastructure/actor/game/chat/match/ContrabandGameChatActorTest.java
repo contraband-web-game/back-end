@@ -10,6 +10,7 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.Propagat
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateSmugglerTeamChat;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.HandleExceptionMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.spy.SpyChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.spy.SpyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
@@ -167,16 +168,16 @@ class ContrabandGameChatActorTest {
         sessionsByTeam.put(TeamRole.INSPECTOR, Map.of(2L, inspector.ref()));
 
         SpyChatMessageEventPublisher publisher = new SpyChatMessageEventPublisher();
-        Behavior<ContrabandGameChatActor.ContrabandGameChatCommand> behavior = ContrabandGameChatActor.create(
+        Behavior<GameChatCommand> behavior = ContrabandGameChatActor.create(
                 1L,
                 "entity",
                 publisher,
                 sessionsByTeam,
                 repository
         );
-        ActorTestUtils.MonitoredActor<ContrabandGameChatActor.ContrabandGameChatCommand> actor = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> actor = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatActor.ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 behavior
         );
 
@@ -184,7 +185,7 @@ class ContrabandGameChatActorTest {
     }
 
     private record TestContext(
-            ActorTestUtils.MonitoredActor<ContrabandGameChatActor.ContrabandGameChatCommand> actor,
+            ActorTestUtils.MonitoredActor<GameChatCommand> actor,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> smuggler,
             ActorTestUtils.MonitoredActor<ClientSessionCommand> inspector,
             SpyChatMessageEventPublisher publisher

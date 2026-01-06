@@ -27,7 +27,6 @@ import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.S
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatSmugglerTeam;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.actor.spy.SpyChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.spy.SpyClientWebSocketMessageSender;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
@@ -181,9 +180,9 @@ class SessionChatActorTest {
     void 밀수꾼_팀_채팅을_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -204,9 +203,9 @@ class SessionChatActorTest {
     void 검사관_팀_채팅을_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.INSPECTOR));
@@ -227,9 +226,9 @@ class SessionChatActorTest {
     void 라운드_채팅을_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -252,9 +251,9 @@ class SessionChatActorTest {
         // given
         TestContext context = createContext();
         context.chatBlacklistRepository().setBlockedReturn(true);
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -276,9 +275,9 @@ class SessionChatActorTest {
         // given
         TestContext context = createContext();
         context.chatBlacklistRepository().setBlockedReturn(true);
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -345,9 +344,9 @@ class SessionChatActorTest {
     void 로비가_없는_경우_밀수꾼의_채팅은_밀수꾼_팀_채팅으로_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -369,9 +368,9 @@ class SessionChatActorTest {
     void 로비가_없는_경우_검사관의_채팅은_검사관_팀_채팅으로_전송한다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.INSPECTOR));
@@ -393,9 +392,9 @@ class SessionChatActorTest {
     void 게임_채팅_초기화_후에는_팀_채팅을_입력할_수_없다() {
         // given
         TestContext context = createContext();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
+        ActorTestUtils.MonitoredActor<GameChatCommand> contrabandChat = ActorTestUtils.spawnMonitored(
                 actorTestKit,
-                ContrabandGameChatCommand.class,
+                GameChatCommand.class,
                 Behaviors.ignore()
         );
         context.actor().tell(new SyncContrabandGameChat(contrabandChat.ref(), TeamRole.SMUGGLER));
@@ -446,12 +445,14 @@ class SessionChatActorTest {
     void 게임_채팅_Actor_종료를_동기화_받는다() {
         // given
         TestContext context = createContext();
-        ActorRef<ContrabandGameChatCommand> contrabandChat = actorTestKit.spawn(Behaviors.ignore());
-        context.actor().tell(new SyncContrabandGameChat(contrabandChat, TeamRole.SMUGGLER));
+        ActorRef<GameChatCommand> contrabandChat = actorTestKit.spawn(Behaviors.ignore());
+        context.actor()
+               .tell(new SyncContrabandGameChat(contrabandChat, TeamRole.SMUGGLER));
 
         // when
         actorTestKit.stop(contrabandChat);
-        context.actor().tell(new RequestSendTeamChat(PLAYER_ID, "플레이어", "무시"));
+        context.actor()
+               .tell(new RequestSendTeamChat(PLAYER_ID, "플레이어", "무시"));
 
         // then
         assertThat(context.sender().exceptionCode).isNull();

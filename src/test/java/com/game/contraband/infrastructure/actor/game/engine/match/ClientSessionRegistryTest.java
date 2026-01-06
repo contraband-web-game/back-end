@@ -13,7 +13,7 @@ import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncCont
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.UpdateContrabandGame;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateRegisterSmugglerId;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateStartGame;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
 import com.game.contraband.infrastructure.actor.utils.BehaviorTestUtils;
@@ -143,7 +143,7 @@ class ClientSessionRegistryTest {
         ActorTestUtils.expectMessages(smugglerSession, PropagateStartGame.class, UpdateContrabandGame.class);
         ActorTestUtils.expectMessages(inspectorSession, PropagateStartGame.class, UpdateContrabandGame.class);
 
-        TestProbe<ContrabandGameChatCommand> gameChat = actorTestKit.createTestProbe(ContrabandGameChatCommand.class);
+        TestProbe<GameChatCommand> gameChat = actorTestKit.createTestProbe(GameChatCommand.class);
 
         // when
         ClientSessionRegistry clientSessionRegistry = context.registry();

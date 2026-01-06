@@ -4,8 +4,8 @@ import com.game.contraband.domain.game.engine.match.ContrabandGame;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.LobbyCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
@@ -58,7 +58,7 @@ public class ContrabandGameActor extends AbstractBehavior<ContrabandGameCommand>
                             roomId,
                             entityId
                     );
-                    ActorRef<ContrabandGameChatCommand> gameChat = context.spawn(
+                    ActorRef<GameChatCommand> gameChat = context.spawn(
                             ContrabandGameChatActor.create(
                                     roomId,
                                     entityId,
