@@ -14,8 +14,13 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublis
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
 import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.limit.ModerationResult;
+import com.game.contraband.infrastructure.actor.game.chat.limit.PlayerModerationState;
+import com.game.contraband.infrastructure.actor.game.chat.limit.RateLimitPolicy;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.PostStop;
@@ -69,6 +74,8 @@ public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
         this.chatTimeline = chatTimeline;
         this.chatMessageEventPublisher = chatMessageEventPublisher;
         this.blacklistListener = blacklistListener;
+        this.rateLimitPolicy = RateLimitPolicy.defaultPolicy();
+        this.moderationStates = new HashMap<>();
     }
 
     private final LobbyChatMetadata chatMetadata;
@@ -76,6 +83,8 @@ public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
     private final LobbyChatTimeline chatTimeline;
     private final ChatMessageEventPublisher chatMessageEventPublisher;
     private final LobbyChatBlacklistListener blacklistListener;
+    private final RateLimitPolicy rateLimitPolicy;
+    private final Map<Long, PlayerModerationState> moderationStates;
 
     @Override
     public Receive<GameChatCommand> createReceive() {
@@ -96,6 +105,19 @@ public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
         }
         if (blacklistListener.isBlocked(command.writerId())) {
             sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
+            return this;
+        }
+
+        PlayerModerationState state = moderationStates.computeIfAbsent(
+                command.writerId(),
+                id -> new PlayerModerationState(rateLimitPolicy.windowMillis)
+        );
+
+        long now = System.currentTimeMillis();
+        ModerationResult result = state.evaluate(now, rateLimitPolicy);
+
+        if (!result.allowed()) {
+            sendTo(command.writerId(), new HandleExceptionMessage(ExceptionCode.CHAT_RATE_LIMITED));
             return this;
         }
 
@@ -123,6 +145,7 @@ public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
 
     private Behavior<GameChatCommand> onLeftMessage(LeftMessage command) {
         participants.remove(command.playerId());
+        moderationStates.remove(command.playerId());
         participants.forEach(
                 targetClientSession -> targetClientSession.tell(new PropagateLeftMessage(command.playerName()))
         );
@@ -131,6 +154,7 @@ public class LobbyChatActor extends AbstractBehavior<GameChatCommand> {
 
     private Behavior<GameChatCommand> onKickedMessage(KickedMessage command) {
         participants.remove(command.playerId());
+        moderationStates.remove(command.playerId());
         participants.forEach(
                 targetClientSession -> targetClientSession.tell(new PropagateKickedMessage(command.playerName()))
         );

@@ -192,6 +192,90 @@ class LobbyChatActorTest {
         assertThat(repository.isUnsubscribeInvoked()).isTrue();
     }
 
+    @Test
+    void 제한_내_메시지는_정상_전송된다() {
+        // given
+        TestContext context = createContextWithJoined();
+
+        // when
+        for (int i = 0; i < 19; i++) {
+            context.actor().ref().tell(new SendMessage(1L, "호스트", "메시지" + i));
+            ActorTestUtils.drainMessages(context.host().monitor());
+            ActorTestUtils.drainMessages(context.joined().monitor());
+        }
+        context.actor().ref().tell(new SendMessage(1L, "호스트", "20번째"));
+
+        // then
+        PropagateNewMessage hostActual = (PropagateNewMessage) context.host().monitor().receiveMessage();
+        PropagateNewMessage joinedActual = (PropagateNewMessage) context.joined().monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(hostActual.chatMessage().message()).isEqualTo("20번째"),
+                () -> assertThat(joinedActual.chatMessage().message()).isEqualTo("20번째")
+        );
+    }
+
+    @Test
+    void 속도_제한_초과_시_차단된다() {
+        // given
+        TestContext context = createContextWithJoined();
+
+        // when
+        for (int i = 0; i < 20; i++) {
+            context.actor().ref().tell(new SendMessage(1L, "호스트", "메시지" + i));
+            ActorTestUtils.drainMessages(context.host().monitor());
+            ActorTestUtils.drainMessages(context.joined().monitor());
+        }
+        context.actor().ref().tell(new SendMessage(1L, "호스트", "21번째"));
+
+        // then
+        HandleExceptionMessage actual = (HandleExceptionMessage) context.host().monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(actual.code()).isEqualTo(ExceptionCode.CHAT_RATE_LIMITED),
+                () -> ActorTestUtils.expectNoMessages(context.joined().monitor())
+        );
+    }
+
+    @Test
+    void 플레이어_퇴장_후_재참여_시_속도_제한_상태가_초기화된다() {
+        // given
+        TestContext context = createContextWithJoined();
+
+        for (int i = 0; i < 19; i++) {
+            context.actor().ref().tell(new SendMessage(2L, "참가자", "메시지" + i));
+            ActorTestUtils.drainMessages(context.host().monitor());
+            ActorTestUtils.drainMessages(context.joined().monitor());
+        }
+
+        // when
+        context.actor().ref().tell(new LeftMessage(2L, "참가자"));
+        ActorTestUtils.drainMessages(context.host().monitor());
+        ActorTestUtils.drainMessages(context.joined().monitor());
+
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> rejoined = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        context.actor().ref().tell(new JoinMessage(rejoined.ref(), 2L, "참가자"));
+        ActorTestUtils.drainMessages(context.host().monitor());
+        ActorTestUtils.drainMessages(context.joined().monitor());
+        ActorTestUtils.drainMessages(rejoined.monitor());
+
+        context.actor().ref().tell(new SendMessage(2L, "참가자", "재참여 후 메시지"));
+
+        // then
+        PropagateNewMessage hostActual = (PropagateNewMessage) context.host().monitor().receiveMessage();
+        PropagateNewMessage rejoinedActual = (PropagateNewMessage) rejoined.monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(hostActual.chatMessage().message()).isEqualTo("재참여 후 메시지"),
+                () -> assertThat(rejoinedActual.chatMessage().message()).isEqualTo("재참여 후 메시지"),
+                () -> ActorTestUtils.expectNoMessages(context.joined().monitor())
+        );
+    }
+
     private TestContext createContext() {
         return createContextWithJoined(new SpyChatBlacklistRepository());
     }

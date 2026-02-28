@@ -17,7 +17,7 @@ import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
@@ -148,6 +148,83 @@ class ContrabandGameChatActorTest {
         return collected;
     }
 
+    @Test
+    void 밀수꾼_팀_채팅_속도_제한_초과_시_차단된다() {
+        // given
+        TestContext context = createContext();
+
+        // when
+        for (int i = 0; i < 20; i++) {
+            context.actor().ref().tell(new ContrabandGameChatActor.ChatSmugglerTeam(1L, "밀수꾼", "메시지" + i));
+            ActorTestUtils.drainMessages(context.smuggler().monitor());
+        }
+        context.actor().ref().tell(new ContrabandGameChatActor.ChatSmugglerTeam(1L, "밀수꾼", "21번째"));
+
+        // then
+        HandleExceptionMessage actual = (HandleExceptionMessage) context.smuggler().monitor().receiveMessage();
+
+        assertThat(actual.code()).isEqualTo(ExceptionCode.CHAT_RATE_LIMITED);
+    }
+
+    @Test
+    void 검사관_팀_채팅_속도_제한_초과_시_차단된다() {
+        // given
+        TestContext context = createContext();
+
+        // when
+        for (int i = 0; i < 20; i++) {
+            context.actor().ref().tell(new ContrabandGameChatActor.ChatInspectorTeam(2L, "검사", "메시지" + i));
+            ActorTestUtils.drainMessages(context.inspector().monitor());
+        }
+        context.actor().ref().tell(new ContrabandGameChatActor.ChatInspectorTeam(2L, "검사", "21번째"));
+
+        // then
+        HandleExceptionMessage actual = (HandleExceptionMessage) context.inspector().monitor().receiveMessage();
+
+        assertThat(actual.code()).isEqualTo(ExceptionCode.CHAT_RATE_LIMITED);
+    }
+
+    @Test
+    void 라운드_채팅_속도_제한_초과_시_차단된다() {
+        // given
+        TestContext context = createContext();
+        context.actor().ref().tell(new ContrabandGameChatActor.SyncRoundChatId(1L, 2L));
+
+        // when
+        for (int i = 0; i < 20; i++) {
+            context.actor().ref().tell(new ContrabandGameChatActor.ChatInRound(1L, "밀수", "메시지" + i, 1));
+            ActorTestUtils.drainMessages(context.smuggler().monitor());
+            ActorTestUtils.drainMessages(context.inspector().monitor());
+        }
+        context.actor().ref().tell(new ContrabandGameChatActor.ChatInRound(1L, "밀수", "21번째", 1));
+
+        // then
+        HandleExceptionMessage actual = (HandleExceptionMessage) context.smuggler().monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(actual.code()).isEqualTo(ExceptionCode.CHAT_RATE_LIMITED),
+                () -> ActorTestUtils.expectNoMessages(context.inspector().monitor())
+        );
+    }
+
+    @Test
+    void 제한_내_팀_채팅은_정상_전송된다() {
+        // given
+        TestContext context = createContext();
+
+        // when
+        for (int i = 0; i < 19; i++) {
+            context.actor().ref().tell(new ContrabandGameChatActor.ChatSmugglerTeam(1L, "밀수꾼", "메시지" + i));
+            ActorTestUtils.drainMessages(context.smuggler().monitor());
+        }
+        context.actor().ref().tell(new ContrabandGameChatActor.ChatSmugglerTeam(1L, "밀수꾼", "20번째"));
+
+        // then
+        PropagateSmugglerTeamChat actual = (PropagateSmugglerTeamChat) context.smuggler().monitor().receiveMessage();
+
+        assertThat(actual.chatMessage().message()).isEqualTo("20번째");
+    }
+
     private TestContext createContext() {
         return createContext(new SpyChatBlacklistRepository());
     }
@@ -163,7 +240,7 @@ class ContrabandGameChatActorTest {
                 ClientSessionCommand.class,
                 org.apache.pekko.actor.typed.javadsl.Behaviors.ignore()
         );
-        Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam = new HashMap<>();
+        Map<TeamRole, Map<Long, ActorRef<ClientSessionCommand>>> sessionsByTeam = new EnumMap<>(TeamRole.class);
         sessionsByTeam.put(TeamRole.SMUGGLER, Map.of(1L, smuggler.ref()));
         sessionsByTeam.put(TeamRole.INSPECTOR, Map.of(2L, inspector.ref()));
 
