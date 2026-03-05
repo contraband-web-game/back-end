@@ -2,7 +2,6 @@ package com.game.contraband.infrastructure.actor.game.chat.match;
 
 import com.game.contraband.domain.game.player.TeamRole;
 import com.game.contraband.domain.monitor.ChatBlacklistRepository;
-import com.game.contraband.global.actor.CborSerializable;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateInspectorTeamChat;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.PropagateMaskedChatMessage;
@@ -14,8 +13,13 @@ import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatMessageEvent;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessageEventPublisher.ChatRoundInfo;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.limit.ModerationResult;
+import com.game.contraband.infrastructure.actor.game.chat.limit.PlayerModerationState;
+import com.game.contraband.infrastructure.actor.game.chat.limit.RateLimitPolicy;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -26,9 +30,9 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 
-public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChatCommand> {
+public class ContrabandGameChatActor extends AbstractBehavior<GameChatCommand> {
 
-    public static Behavior<ContrabandGameChatCommand> create(
+    public static Behavior<GameChatCommand> create(
             Long roomId,
             String entityId,
             ChatMessageEventPublisher chatMessageEventPublisher,
@@ -42,7 +46,8 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
             ContrabandRoundParticipants roundParticipants = new ContrabandRoundParticipants();
             ContrabandGameChatBlacklistListener blacklistListener = new ContrabandGameChatBlacklistListener(
                     chatBlacklistRepository,
-                    blocked -> context.getSelf().tell(new MaskBlockedPlayerMessages(blocked))
+                    blocked -> context.getSelf()
+                                      .tell(new MaskBlockedPlayerMessages(blocked))
             );
             return new ContrabandGameChatActor(
                     context,
@@ -62,9 +67,11 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
     private final ContrabandRoundParticipants roundParticipants;
     private final ChatMessageEventPublisher chatMessageEventPublisher;
     private final ContrabandGameChatBlacklistListener blacklistListener;
+    private final RateLimitPolicy rateLimitPolicy;
+    private final Map<Long, PlayerModerationState> moderationStates;
 
     private ContrabandGameChatActor(
-            ActorContext<ContrabandGameChatCommand> context,
+            ActorContext<GameChatCommand> context,
             ContrabandGameChatMetadata metadata,
             ContrabandGameChatParticipants participants,
             ContrabandGameChatTimelines timelines,
@@ -79,30 +86,39 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         this.roundParticipants = roundParticipants;
         this.chatMessageEventPublisher = chatMessageEventPublisher;
         this.blacklistListener = blacklistListener;
+        this.rateLimitPolicy = RateLimitPolicy.defaultPolicy();
+        this.moderationStates = new HashMap<>();
     }
 
     @Override
-    public Receive<ContrabandGameChatCommand> createReceive() {
-        return newReceiveBuilder()
-                .onMessage(ChatSmugglerTeam.class, this::onChatSmugglerTeam)
-                .onMessage(ChatInspectorTeam.class, this::onChatInspectorTeam)
-                .onMessage(ChatInRound.class, this::onChatInRound)
-                .onMessage(SyncRoundChatId.class, this::onSyncRoundChatId)
-                .onMessage(ClearRoundChatId.class, this::onClearRoundChatId)
-                .onMessage(MaskBlockedPlayerMessages.class, this::onMaskBlockedPlayerMessages)
-                .onSignal(PostStop.class, this::onPostStop)
-                .build();
+    public Receive<GameChatCommand> createReceive() {
+        return newReceiveBuilder().onMessage(ChatSmugglerTeam.class, this::onChatSmugglerTeam)
+                                  .onMessage(ChatInspectorTeam.class, this::onChatInspectorTeam)
+                                  .onMessage(ChatInRound.class, this::onChatInRound)
+                                  .onMessage(SyncRoundChatId.class, this::onSyncRoundChatId)
+                                  .onMessage(ClearRoundChatId.class, this::onClearRoundChatId)
+                                  .onMessage(MaskBlockedPlayerMessages.class, this::onMaskBlockedPlayerMessages)
+                                  .onSignal(PostStop.class, this::onPostStop)
+                                  .build();
     }
 
-    private Behavior<ContrabandGameChatCommand> onChatSmugglerTeam(ChatSmugglerTeam command) {
+    private Behavior<GameChatCommand> onChatSmugglerTeam(ChatSmugglerTeam command) {
         if (!participants.hasSession(TeamRole.SMUGGLER, command.playerId())) {
             return this;
         }
 
+        ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.SMUGGLER, command.playerId());
+
         if (blacklistListener.isBlocked(command.playerId())) {
-            ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.SMUGGLER, command.playerId());
             if (senderSession != null) {
                 senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
+            }
+            return this;
+        }
+
+        if (isRateLimited(command.playerId())) {
+            if (senderSession != null) {
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_RATE_LIMITED));
             }
             return this;
         }
@@ -130,15 +146,23 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onChatInspectorTeam(ChatInspectorTeam command) {
+    private Behavior<GameChatCommand> onChatInspectorTeam(ChatInspectorTeam command) {
         if (!participants.hasSession(TeamRole.INSPECTOR, command.playerId())) {
             return this;
         }
 
+        ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.INSPECTOR, command.playerId());
+
         if (blacklistListener.isBlocked(command.playerId())) {
-            ActorRef<ClientSessionCommand> senderSession = participants.session(TeamRole.INSPECTOR, command.playerId());
             if (senderSession != null) {
                 senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
+            }
+            return this;
+        }
+
+        if (isRateLimited(command.playerId())) {
+            if (senderSession != null) {
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_RATE_LIMITED));
             }
             return this;
         }
@@ -161,7 +185,7 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onChatInRound(ChatInRound command) {
+    private Behavior<GameChatCommand> onChatInRound(ChatInRound command) {
         if (roundParticipants.cannotRoundChat()) {
             return this;
         }
@@ -171,11 +195,20 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         if (roundParticipants.isRoundMismatch(command.currentRound())) {
             return this;
         }
+
+        TeamRole role = roundParticipants.isSmuggler(command.playerId()) ? TeamRole.SMUGGLER : TeamRole.INSPECTOR;
+        ActorRef<ClientSessionCommand> senderSession = participants.session(role, command.playerId());
+
         if (blacklistListener.isBlocked(command.playerId())) {
-            TeamRole role = roundParticipants.isSmuggler(command.playerId()) ? TeamRole.SMUGGLER : TeamRole.INSPECTOR;
-            ActorRef<ClientSessionCommand> senderSession = participants.session(role, command.playerId());
             if (senderSession != null) {
                 senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_USER_BLOCKED));
+            }
+            return this;
+        }
+
+        if (isRateLimited(command.playerId())) {
+            if (senderSession != null) {
+                senderSession.tell(new HandleExceptionMessage(ExceptionCode.CHAT_RATE_LIMITED));
             }
             return this;
         }
@@ -213,27 +246,39 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onSyncRoundChatId(SyncRoundChatId command) {
+    private Behavior<GameChatCommand> onSyncRoundChatId(SyncRoundChatId command) {
         roundParticipants.registerInspector(command.inspectorId());
         roundParticipants.registerSmuggler(command.smugglerId());
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onClearRoundChatId(ClearRoundChatId command) {
+    private Behavior<GameChatCommand> onClearRoundChatId(ClearRoundChatId command) {
         roundParticipants.clear();
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onMaskBlockedPlayerMessages(MaskBlockedPlayerMessages command) {
+    private Behavior<GameChatCommand> onMaskBlockedPlayerMessages(MaskBlockedPlayerMessages command) {
         maskAndBroadcastTeam(command.playerId(), TeamRole.SMUGGLER, ChatEventType.SMUGGLER_TEAM_CHAT);
         maskAndBroadcastTeam(command.playerId(), TeamRole.INSPECTOR, ChatEventType.INSPECTOR_TEAM_CHAT);
         maskAndBroadcastRound(command.playerId());
         return this;
     }
 
-    private Behavior<ContrabandGameChatCommand> onPostStop(PostStop signal) {
+    private Behavior<GameChatCommand> onPostStop(PostStop signal) {
         blacklistListener.close();
         return this;
+    }
+
+    private boolean isRateLimited(Long playerId) {
+        PlayerModerationState state = moderationStates.computeIfAbsent(
+                playerId,
+                id -> new PlayerModerationState(rateLimitPolicy.windowMillis)
+        );
+
+        long now = System.currentTimeMillis();
+        ModerationResult result = state.evaluate(now, rateLimitPolicy);
+
+        return !result.allowed();
     }
 
     private void maskAndBroadcastTeam(Long playerId, TeamRole teamRole, ChatEventType eventType) {
@@ -263,8 +308,6 @@ public class ContrabandGameChatActor extends AbstractBehavior<ContrabandGameChat
                      .map(msg -> new PropagateMaskedChatMessage(msg.id(), eventType))
                      .toList();
     }
-
-    public interface ContrabandGameChatCommand extends CborSerializable { }
 
     public record ChatSmugglerTeam(Long playerId, String playerName, String message) implements ContrabandGameChatCommand { }
 

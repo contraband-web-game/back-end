@@ -1,20 +1,17 @@
 package com.game.contraband.infrastructure.actor.game.engine.match.round;
 
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.ClearContrabandGameChat;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ClientSessionRegistry;
 import org.apache.pekko.actor.typed.ActorRef;
 
 public class RoundChatCoordinator {
 
-    private final ActorRef<ContrabandGameChatCommand> gameChat;
+    private final ActorRef<GameChatCommand> gameChat;
     private final ClientSessionRegistry registry;
 
-    public RoundChatCoordinator(
-            ActorRef<ContrabandGameChatCommand> gameChat,
-            ClientSessionRegistry registry
-    ) {
+    public RoundChatCoordinator(ActorRef<GameChatCommand> gameChat, ClientSessionRegistry registry) {
         this.gameChat = gameChat;
         this.registry = registry;
     }
@@ -27,7 +24,7 @@ public class RoundChatCoordinator {
         registry.tellAll(new ClearContrabandGameChat());
     }
 
-    public ActorRef<ContrabandGameChatCommand> gameChat() {
+    public ActorRef<GameChatCommand> gameChat() {
         return gameChat;
     }
 }

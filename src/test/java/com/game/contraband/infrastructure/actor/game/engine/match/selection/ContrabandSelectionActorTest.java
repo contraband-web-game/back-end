@@ -18,7 +18,7 @@ import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.Prop
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateInspectorApprovalState;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateStartGame;
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.UpdateContrabandGame;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.SyncRoundChatId;
 import com.game.contraband.infrastructure.actor.game.engine.match.ClientSessionRegistry;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
@@ -270,9 +270,11 @@ class ContrabandSelectionActorTest {
         );
 
         SelectionClientMessenger messenger = new SelectionClientMessenger(registry);
-
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> gameChat =
-                ActorTestUtils.spawnMonitored(actorTestKit, ContrabandGameChatCommand.class, Behaviors.empty());
+        ActorTestUtils.MonitoredActor<GameChatCommand> gameChat = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                GameChatCommand.class,
+                Behaviors.empty()
+        );
         SelectionChatCoordinator chatCoordinator = new SelectionChatCoordinator(gameChat.ref());
 
         ActorTestUtils.MonitoredActor<ContrabandGameCommand> facade =
@@ -444,7 +446,7 @@ class ContrabandSelectionActorTest {
             ActorTestUtils.MonitoredActor<ContrabandGameCommand> selectionActor,
             TestProbe<ClientSessionCommand> smugglerSessionProbe,
             TestProbe<ClientSessionCommand> inspectorSessionProbe,
-            TestProbe<ContrabandGameChatCommand> gameChatProbe,
+            TestProbe<GameChatCommand> gameChatProbe,
             TestProbe<ContrabandGameCommand> facadeProbe
     ) { }
 }

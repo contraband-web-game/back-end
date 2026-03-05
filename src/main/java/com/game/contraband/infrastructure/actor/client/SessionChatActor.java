@@ -5,12 +5,12 @@ import com.game.contraband.domain.monitor.ChatBlacklistRepository;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.ChatEventType;
 import com.game.contraband.infrastructure.actor.game.chat.ChatMessage;
-import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.LobbyChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.ChatMuteReason;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.lobby.LobbyChatActor.SendMessage;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInRound;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatInspectorTeam;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ChatSmugglerTeam;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
 import java.util.List;
@@ -50,6 +50,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     private final ChatBlacklistRepository chatBlacklistRepository;
     private final LobbyChatHolder lobbyChatHolder = new LobbyChatHolder();
     private final ContrabandGameChatHolder contrabandGameChatHolder = new ContrabandGameChatHolder();
+    private long mutedUntilMillis = 0L;
+    private ChatMuteReason muteReason = ChatMuteReason.NONE;
 
     @Override
     public Receive<ChatCommand> createReceive() {
@@ -69,6 +71,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
                                   .onMessage(RequestSendTeamChat.class, this::onRequestSendTeamChat)
                                   .onMessage(RequestSendRoundChat.class, this::onRequestSendRoundChat)
                                   .onMessage(RequestSendChat.class, this::onRequestSendChat)
+                                  .onMessage(ApplyChatMute.class, this::onApplyChatMute)
+                                  .onMessage(ClearChatMute.class, this::onClearChatMute)
                                   .onSignal(Terminated.class, this::onTerminated)
                                   .build();
     }
@@ -162,7 +166,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         ContrabandGameChatHolder.GameChatRef gameChatRef = contrabandGameChatHolder.get();
 
         if (gameChatRef != null) {
-            gameChatRef.chat.tell(new ChatInRound(command.playerId(), command.playerName(), command.message(), command.currentRound()));
+            gameChatRef.chat.tell(
+                    new ChatInRound(command.playerId(), command.playerName(), command.message(), command.currentRound())
+            );
         }
 
         return this;
@@ -174,7 +180,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             return this;
         }
 
-        ActorRef<LobbyChatCommand> lobbyChat = lobbyChatHolder.get();
+        ActorRef<GameChatCommand> lobbyChat = lobbyChatHolder.get();
         if (lobbyChat != null) {
             lobbyChat.tell(new SendMessage(command.playerId(), command.playerName(), command.message()));
             return this;
@@ -201,6 +207,24 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
         return this;
     }
 
+    private Behavior<ChatCommand> onApplyChatMute(ApplyChatMute command) {
+        if (command.untilMillis <= 0L) {
+            this.mutedUntilMillis = 0L;
+            this.muteReason = ChatMuteReason.NONE;
+            return this;
+        }
+
+        this.mutedUntilMillis = Math.max(this.mutedUntilMillis, command.untilMillis);
+        this.muteReason = command.reason();
+        return this;
+    }
+
+    private Behavior<ChatCommand> onClearChatMute(ClearChatMute command) {
+        this.mutedUntilMillis = 0L;
+        this.muteReason = ChatMuteReason.NONE;
+        return this;
+    }
+
     private Behavior<ChatCommand> onTerminated(Terminated signal) {
         if (lobbyChatHolder.isTerminated(signal.getRef())) {
             lobbyChatHolder.clear();
@@ -213,9 +237,9 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     private static class LobbyChatHolder {
 
-        private ActorRef<LobbyChatCommand> ref;
+        private ActorRef<GameChatCommand> ref;
 
-        void set(ActorRef<LobbyChatCommand> ref, ActorContext<ChatCommand> context) {
+        void set(ActorRef<GameChatCommand> ref, ActorContext<ChatCommand> context) {
             this.ref = ref;
             context.watch(ref);
         }
@@ -224,7 +248,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             this.ref = null;
         }
 
-        ActorRef<LobbyChatCommand> get() {
+        ActorRef<GameChatCommand> get() {
             return ref;
         }
 
@@ -237,7 +261,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
         private GameChatRef ref;
 
-        void set(ActorRef<ContrabandGameChatCommand> ref, TeamRole teamRole, ActorContext<ChatCommand> context) {
+        void set(ActorRef<GameChatCommand> ref, TeamRole teamRole, ActorContext<ChatCommand> context) {
             this.ref = new GameChatRef(ref, teamRole);
             context.watch(ref);
         }
@@ -254,7 +278,7 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
             return ref != null && ref.chat.equals(terminated);
         }
 
-        private record GameChatRef(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) { }
+        private record GameChatRef(ActorRef<GameChatCommand> chat, TeamRole teamRole) { }
     }
 
     public record PropagateWelcomeMessage(String playerName) implements ChatCommand { }
@@ -277,11 +301,11 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
 
     public record PropagateRoundChat(ChatMessage chatMessage) implements ChatCommand { }
 
-    public record SyncContrabandGameChat(ActorRef<ContrabandGameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
+    public record SyncContrabandGameChat(ActorRef<GameChatCommand> chat, TeamRole teamRole) implements ChatCommand { }
 
     public record ClearContrabandGameChat() implements ChatCommand { }
 
-    public record SyncLobbyChat(ActorRef<LobbyChatCommand> lobbyChat) implements ChatCommand { }
+    public record SyncLobbyChat(ActorRef<GameChatCommand> lobbyChat) implements ChatCommand { }
 
     public record ClearLobbyChat() implements ChatCommand { }
 
@@ -290,4 +314,8 @@ public class SessionChatActor extends AbstractBehavior<ChatCommand> {
     public record RequestSendRoundChat(Long playerId, String playerName, String message, int currentRound) implements ChatCommand { }
 
     public record RequestSendChat(Long playerId, String playerName, String message) implements ChatCommand { }
+
+    public record ApplyChatMute(long untilMillis, ChatMuteReason reason) implements ChatCommand { }
+
+    public record ClearChatMute() implements ChatCommand { }
 }

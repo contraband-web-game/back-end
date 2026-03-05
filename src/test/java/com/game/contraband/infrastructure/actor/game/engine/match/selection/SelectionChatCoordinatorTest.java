@@ -3,7 +3,7 @@ package com.game.contraband.infrastructure.actor.game.engine.match.selection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.SyncRoundChatId;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
@@ -34,9 +34,12 @@ class SelectionChatCoordinatorTest {
     @Test
     void 라운드_채팅_ID를_동기화한다() {
         // given
-        Behavior<ContrabandGameChatCommand> emptyChat = Behaviors.empty();
-        ActorTestUtils.MonitoredActor<ContrabandGameChatCommand> gameChat =
-                ActorTestUtils.spawnMonitored(actorTestKit, ContrabandGameChatCommand.class, emptyChat);
+        Behavior<GameChatCommand> emptyChat = Behaviors.empty();
+        ActorTestUtils.MonitoredActor<GameChatCommand> gameChat = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                GameChatCommand.class,
+                emptyChat
+        );
         SelectionChatCoordinator coordinator = new SelectionChatCoordinator(gameChat.ref());
 
         Long smugglerId = 1L;

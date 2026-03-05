@@ -7,7 +7,7 @@ import com.game.contraband.infrastructure.actor.client.ClientSessionActor.Client
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.SyncContrabandGameChat;
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.UpdateContrabandGame;
 import com.game.contraband.infrastructure.actor.client.SessionOutboundActor.PropagateStartGame;
-import com.game.contraband.infrastructure.actor.game.chat.match.ContrabandGameChatActor.ContrabandGameChatCommand;
+import com.game.contraband.infrastructure.actor.game.chat.GameChatProtocol.GameChatCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.ContrabandGameProtocol.ContrabandGameCommand;
 import com.game.contraband.infrastructure.actor.game.engine.match.dto.GameStartPlayer;
 import java.util.EnumMap;
@@ -148,7 +148,7 @@ public class ClientSessionRegistry {
         }
     }
 
-    public void syncGameChatForAll(ActorRef<ContrabandGameChatCommand> gameChat) {
+    public void syncGameChatForAll(ActorRef<GameChatCommand> gameChat) {
         sessionsByTeam.entrySet().stream()
                       .flatMap(
                               entry -> entry.getValue()
