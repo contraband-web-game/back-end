@@ -726,7 +726,7 @@
               || msg.type === 'LOBBY_DELETED'
               || msg.type === 'HOST_DELETED_LOBBY') {
           if (msg.type === 'KICKED_LOBBY') {
-              localStorage.setItem('kickReason', '방장이 당신을 강퇴했습니다.');
+              localStorage.setItem('kickReason', '너는 작전에서 추방당했다.');
           }
           state.isNavigatingAway = true;
           showToast('작전 지역을 이탈했다.');
