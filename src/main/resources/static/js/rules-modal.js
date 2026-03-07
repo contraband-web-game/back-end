@@ -28,6 +28,26 @@
             transition: transform 0.1s;
         }
         .rules-floating-btn:hover { transform: translateY(-2px) scale(1.02); color: #fff; }
+        .rules-floating-btn.top-left {
+            top: 92px;
+            left: 18px;
+            bottom: auto;
+        }
+        .rules-floating-btn.lobby-safe {
+            top: 152px;
+            left: 18px;
+            bottom: auto;
+        }
+        @media (max-width: 1024px) {
+            .rules-floating-btn.top-left {
+                top: 78px;
+                left: 12px;
+            }
+            .rules-floating-btn.lobby-safe {
+                top: 118px;
+                left: 12px;
+            }
+        }
         .rules-modal-backdrop {
             position: fixed;
             inset: 0;
@@ -185,6 +205,11 @@
 
         const btn = document.createElement('button');
         btn.className = 'rules-floating-btn';
+        if (/\/game(\.html)?$/.test(window.location.pathname)) {
+            btn.classList.add('top-left');
+        } else if (/\/lobby(\.html)?$/.test(window.location.pathname)) {
+            btn.classList.add('lobby-safe');
+        }
         btn.type = 'button';
         btn.textContent = '게임 룰';
         btn.addEventListener('click', open);
