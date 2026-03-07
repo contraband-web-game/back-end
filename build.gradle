@@ -60,4 +60,5 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	systemProperty 'PEKKO_PORT', '0'
 }

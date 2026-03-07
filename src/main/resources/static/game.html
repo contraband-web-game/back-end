@@ -154,6 +154,13 @@
         box-shadow: 4px 6px 0 rgba(0,0,0,0.4);
         background: linear-gradient(135deg, #4a2f2f, #7f1d1d);
     }
+    .amount-arrow:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        filter: grayscale(0.6);
+    }
     .amount-hint {
         font-family: 'Nanum Pen Script', cursive;
         font-size: 1.1rem;
@@ -533,7 +540,7 @@
                 </button>
               </div>
               <div class="amount-hint text-center">화살표로 100 단위 증감</div>
-              <button onclick="commitAction('SMUGGLE')" class="sketch-btn px-6 py-2 text-2xl w-full max-w-xs mt-4">밀수 (Smuggle)</button>
+              <button id="smuggle-btn" onclick="commitAction('SMUGGLE')" class="sketch-btn px-6 py-2 text-2xl w-full max-w-xs mt-4">밀수 (Smuggle)</button>
             </div>
           </div>
           <!-- Inspector View -->
@@ -555,7 +562,7 @@
               <div class="amount-hint text-center text-ink-red">화살표로 100 단위 증감</div>
               <div class="flex gap-4 w-full max-w-xs mt-4">
                 <button id="inspect-btn" onclick="commitAction('INSPECTION')" class="sketch-btn red px-6 py-2 text-2xl flex-1">검문 (Inspect)</button>
-                <button onclick="commitAction('PASS')" class="sketch-btn green px-6 py-2 text-2xl flex-1">통과 (Pass)</button>
+                <button id="pass-btn" onclick="commitAction('PASS')" class="sketch-btn green px-6 py-2 text-2xl flex-1">통과 (Pass)</button>
               </div>
             </div>
           </div>
@@ -673,9 +680,11 @@
       smugglerControls: document.getElementById('smuggler-controls'),
       inspectorControls: document.getElementById('inspector-controls'),
       spectatorMsg: document.getElementById('spectator-msg'),
+      smuggleBtn: document.getElementById('smuggle-btn'),
       smuggleAmount: document.getElementById('smuggle-amount'),
       inspectionAmount: document.getElementById('inspection-amount'),
       inspectionBtn: document.getElementById('inspect-btn'),
+      passBtn: document.getElementById('pass-btn'),
       myMoney: document.getElementById('my-money'),
       sRoster: document.getElementById('smuggler-roster'),
       iRoster: document.getElementById('inspector-roster'),
@@ -727,6 +736,8 @@
    * @param {(label: string, timeLeft: number) => string} countdownFormatter Custom renderer for countdown text
    */
   function showGameModal(title, content, countdownLabel, onComplete, countdownFormatter) {
+      const rulesBtn = document.querySelector('.rules-floating-btn');
+      if (rulesBtn) rulesBtn.classList.add('hidden-view');
       els.modalTitle.textContent = title;
       els.modalContent.innerHTML = content;
 
@@ -758,6 +769,22 @@
       }, 1000);
   }
 
+  function resolvePerspectiveResult(myRole, gameWinnerType) {
+      if (gameWinnerType === 'DRAW') return 'DRAW';
+      if (myRole === 'SMUGGLER') return gameWinnerType === 'SMUGGLER_TEAM' ? 'VICTORY' : 'DEFEAT';
+      if (myRole === 'INSPECTOR') return gameWinnerType === 'INSPECTOR_TEAM' ? 'VICTORY' : 'DEFEAT';
+      return null;
+  }
+
+  function resolveMyRole() {
+      if (state.myRole === 'SMUGGLER' || state.myRole === 'INSPECTOR') return state.myRole;
+      const me = state.players.find((p) => String(p.playerId) === String(state.userId));
+      if (me?.teamRole === 'SMUGGLER' || me?.teamRole === 'INSPECTOR') return me.teamRole;
+      if (state.userId != null && state.smugglerId != null && String(state.userId) === String(state.smugglerId)) return 'SMUGGLER';
+      if (state.userId != null && state.inspectorId != null && String(state.userId) === String(state.inspectorId)) return 'INSPECTOR';
+      return null;
+  }
+
   function finalizeGame(gameWinnerType, smugglerTotalBalance, inspectorTotalBalance) {
       if (state.gameFinished) return;
       closeTransferModal();
@@ -767,6 +794,7 @@
       state.roundStarting = false;
       state.awaitingRoundResult = false;
       state.pendingRoundStartPayload = null;
+      updateDecisionControlsState();
 
       const winnerLabelMap = {
           SMUGGLER_TEAM: '밀수꾼 팀 승리',
@@ -778,13 +806,23 @@
               : (gameWinnerType === 'INSPECTOR_TEAM' ? 'INSPECTOR' : 'DRAW');
       const sTotal = Number(smugglerTotalBalance ?? 0);
       const iTotal = Number(inspectorTotalBalance ?? 0);
+      const myRole = resolveMyRole();
+      const myResult = resolvePerspectiveResult(myRole, gameWinnerType);
+      const perspectiveLabelMap = {
+          VICTORY: '당신의 팀 승리',
+          DEFEAT: '당신의 팀 패배',
+          DRAW: '무승부'
+      };
       const winnerLabel = winnerLabelMap[gameWinnerType] || '게임 종료';
+      const perspectiveLabel = perspectiveLabelMap[myResult] || winnerLabel;
 
       try {
           const payload = {
               winner: winnerParam,
               sScore: sTotal,
               iScore: iTotal,
+              myRole,
+              myResult,
               at: Date.now()
           };
           sessionStorage.setItem('cbGameResult', JSON.stringify(payload));
@@ -795,7 +833,8 @@
       showGameModal(
               '작전 종료',
               `<div class="font-hand text-3xl mb-4">모든 라운드가 종료되었다.</div>
-               <div class="text-2xl mb-2"><span class="font-bold text-ink-red">${winnerLabel}</span></div>
+               <div class="text-2xl mb-2"><span class="font-bold text-ink-red">${perspectiveLabel}</span></div>
+               <div class="text-lg mb-2 text-ink/70">최종 판정: ${winnerLabel}</div>
                <div class="text-xl mb-2">밀수꾼 총합: $${sTotal.toLocaleString()}</div>
                <div class="text-xl mb-2">검사관 총합: $${iTotal.toLocaleString()}</div>`,
               '결과 화면 이동까지...',
@@ -807,6 +846,8 @@
 
   function closeGameModal() {
       els.gameModal.classList.add('hidden-view');
+      const rulesBtn = document.querySelector('.rules-floating-btn');
+      if (rulesBtn) rulesBtn.classList.remove('hidden-view');
       if (modalTimerInterval) clearInterval(modalTimerInterval);
       // Hide timer element when closing
       const timerEl = document.getElementById('modal-countdown');
@@ -832,7 +873,36 @@
   function updateInspectionButtonState() {
       if (!els.inspectionBtn) return;
       const amount = getInspectionAmount();
-      els.inspectionBtn.disabled = amount < MIN_INSPECTION_AMOUNT;
+      const isInspector = state.userId != null
+              && state.inspectorId != null
+              && String(state.userId) === String(state.inspectorId);
+      const actionLocked = !state.roundActive || !isInspector || state.inspectorActionDone;
+      els.inspectionBtn.disabled = actionLocked || amount < MIN_INSPECTION_AMOUNT;
+  }
+
+  function updateDecisionControlsState() {
+      const isSmuggler = state.userId != null
+              && state.smugglerId != null
+              && String(state.userId) === String(state.smugglerId);
+      const isInspector = state.userId != null
+              && state.inspectorId != null
+              && String(state.userId) === String(state.inspectorId);
+
+      const smugglerActionLocked = !state.roundActive || !isSmuggler || state.smugglerActionDone;
+      if (els.smuggleBtn) els.smuggleBtn.disabled = smugglerActionLocked;
+      if (els.smuggleAmount) els.smuggleAmount.disabled = smugglerActionLocked;
+      document.querySelectorAll('#smuggler-controls .amount-arrow').forEach((btn) => {
+          btn.disabled = smugglerActionLocked;
+      });
+
+      const inspectorActionLocked = !state.roundActive || !isInspector || state.inspectorActionDone;
+      if (els.passBtn) els.passBtn.disabled = inspectorActionLocked;
+      if (els.inspectionAmount) els.inspectionAmount.disabled = inspectorActionLocked;
+      document.querySelectorAll('#inspector-controls .amount-arrow').forEach((btn) => {
+          btn.disabled = inspectorActionLocked;
+      });
+
+      updateInspectionButtonState();
   }
 
   function queuePendingRoundStart(payload) {
@@ -853,6 +923,9 @@
       state.awaitingRoundResult = false;
       state.roundActive = false;
       state.roundStarting = false;
+      state.smugglerActionDone = false;
+      state.inspectorActionDone = false;
+      updateDecisionControlsState();
       state.round = payload.round || state.round + 1;
       if (els.roundNumber) els.roundNumber.textContent = state.round;
       state.smugglerId = null;
@@ -1253,7 +1326,7 @@
           roundFormBtn.disabled = !allow;
           roundFormInput.placeholder = allow ? '상대를 떠봐라...' : '도청 불가 (참여자만 가능)';
       }
-      updateInspectionButtonState();
+      updateDecisionControlsState();
   }
 
   function applyStartGame(payload) {
@@ -1293,6 +1366,7 @@
           const duration = 30000;
           startRoundTimerWithServerClock(Date.now(), duration, Date.now(), Date.now() + duration);
       }
+      updateDecisionControlsState();
   }
 
   function startRoundFromPayload(payload) {
@@ -1376,6 +1450,7 @@
       state.roundActive = false;
       state.smugglerActionDone = false;
       state.inspectorActionDone = false;
+      updateDecisionControlsState();
       stopRoundTimer();
       if (els.roundChat) els.roundChat.innerHTML = '<div class="text-center text-ink/40 text-xl">-- 라운드 종료 --</div>';
       setPhase('라운드 종료');
@@ -1516,19 +1591,31 @@
       const isInspector = state.userId && String(state.userId) === String(state.inspectorId);
       if (type === 'SMUGGLE') {
           if (!isSmuggler) return toast('네놈은 밀수꾼이 아니다.');
+          if (state.smugglerActionDone) return;
           const amount = Number(els.smuggleAmount.value || 0);
           if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_SMUGGLE_AMOUNT', amount })) toast('전송 실패. 통신 상태를 점검하라.');
-          else state.smugglerActionDone = true;
+          else {
+              state.smugglerActionDone = true;
+              updateDecisionControlsState();
+          }
       } else if (type === 'INSPECTION') {
           if (!isInspector) return toast('네놈은 검사관이 아니다.');
+          if (state.inspectorActionDone) return;
           const amount = getInspectionAmount();
           if (amount < MIN_INSPECTION_AMOUNT) return toast('검문 금액을 제대로 설정해라.');
           if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_INSPECTION', amount })) toast('전송 실패. 통신 상태를 확인하라.');
-          else state.inspectorActionDone = true;
+          else {
+              state.inspectorActionDone = true;
+              updateDecisionControlsState();
+          }
       } else if (type === 'PASS') {
           if (!isInspector) return toast('검사관만 통과시킬 수 있다.');
+          if (state.inspectorActionDone) return;
           if (!cbCommon.sendJson(state.socket, { type: 'DECIDE_PASS' })) toast('전송 실패. 통신 상태를 점검하라.');
-          else state.inspectorActionDone = true;
+          else {
+              state.inspectorActionDone = true;
+              updateDecisionControlsState();
+          }
       }
   }
 
@@ -1747,12 +1834,15 @@
           startRoundFromPayload(startPayload);
       } else if (msg.type === 'DECIDED_SMUGGLER_AMOUNT_FOR_SMUGGLER_TEAM' || msg.type === 'DECIDED_SMUGGLER_AMOUNT_FOR_INSPECTOR_TEAM') {
           state.smugglerActionDone = true;
+          updateDecisionControlsState();
           appendChat(els.roundChat, { message: '밀수꾼, 금액을 결정했다.', isSystem: true });
       } else if (msg.type === 'DECIDED_PASS') {
           state.inspectorActionDone = true;
+          updateDecisionControlsState();
           appendChat(els.roundChat, { message: '검사관, 통과를 선택했다.', isSystem: true }); // Changed for consistent messaging
       } else if (msg.type === 'DECIDED_INSPECTION' || msg.type === 'DECIDED_INSPECTOR_BEHAVIOR_FOR_SMUGGLER_TEAM') {
           state.inspectorActionDone = true;
+          updateDecisionControlsState();
           appendChat(els.roundChat, { message: '검사관, 검문 방식을 결정했다.', isSystem: true });
       } else if (msg.type === 'FINISHED_ROUND') {
           finishRound(msg.payload);
@@ -1803,6 +1893,7 @@
           els.inspectionAmount.addEventListener('input', updateInspectionButtonState);
           updateInspectionButtonState();
       }
+      updateDecisionControlsState();
 
       const cachedGame = cbCommon.loadGamePayload();
       if (cachedGame) {

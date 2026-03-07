@@ -100,6 +100,34 @@ class LobbyTest {
     }
 
     @Test
+    void 같은_팀_두_명인_상태에서는_최대_인원을_2로_줄일_수_없다() {
+        // given
+        Lobby lobby = createLobbyWithSmugglerHost();
+        lobby.changeMaxPlayerCount(4, 1L);
+        lobby.addSmuggler(PlayerProfile.create(2L, "밀수꾼2", TeamRole.SMUGGLER));
+
+        // when & then
+        assertThatThrownBy(() -> lobby.changeMaxPlayerCount(2, 1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("둘 중 한 명은 적이 되어야 한다.");
+        assertThat(lobby.getMaxPlayerCount()).isEqualTo(4);
+    }
+
+    @Test
+    void 서로_다른_팀_두_명인_상태에서는_최대_인원을_2로_줄일_수_있다() {
+        // given
+        Lobby lobby = createLobbyWithSmugglerHost();
+        lobby.changeMaxPlayerCount(4, 1L);
+        lobby.addInspector(PlayerProfile.create(2L, "검사관1", TeamRole.INSPECTOR));
+
+        // when
+        lobby.changeMaxPlayerCount(2, 1L);
+
+        // then
+        assertThat(lobby.getMaxPlayerCount()).isEqualTo(2);
+    }
+
+    @Test
     void 방장이_아니면_최대_참여_인원을_변경할_수_없다() {
         // given
         Lobby lobby = createLobbyWithSmugglerHost();

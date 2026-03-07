@@ -175,6 +175,7 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         sessionRegistry.add(command.playerId(), command.clientSession());
         chatRelay.syncLobbyChat(command.clientSession());
         chatRelay.sendToChat(new JoinMessage(command.clientSession(), command.playerId(), command.playerName()));
+        lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
         return this;
     }
 
@@ -216,27 +217,31 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
             lobbyState.changeMaxPlayerCount(command.maxPlayerCount(), command.executorId());
         } catch (IllegalArgumentException | IllegalStateException e) {
             clientSession.tell(new HandleExceptionMessage(resolveLobbyExceptionCode(e)));
+            clientSession.tell(buildLobbySnapshotMessage());
             return this;
         }
 
+        sessionRegistry.forEachSession(
+                target -> target.tell(buildLobbySnapshotMessage())
+        );
+        lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
+
+        return this;
+    }
+
+    private PropagateJoinedLobby buildLobbySnapshotMessage() {
         List<LobbyParticipant> lobbyParticipants = getLobbyParticipants();
         int currentCount = sessionRegistry.size();
 
-        sessionRegistry.forEachSession(
-                target -> target.tell(
-                        new PropagateJoinedLobby(
-                                getContext().getSelf(),
-                                lobbyState.getRoomId(),
-                                lobbyState.getHostId(),
-                                lobbyState.lobbyMaxPlayerCount(),
-                                currentCount,
-                                lobbyState.lobbyName(),
-                                lobbyParticipants
-                        )
-                )
+        return new PropagateJoinedLobby(
+                getContext().getSelf(),
+                lobbyState.getRoomId(),
+                lobbyState.getHostId(),
+                lobbyState.lobbyMaxPlayerCount(),
+                currentCount,
+                lobbyState.lobbyName(),
+                lobbyParticipants
         );
-
-        return this;
     }
 
     private Behavior<LobbyCommand> onToggleReady(ToggleReady command) {
@@ -328,25 +333,24 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         }
 
         attemptKick(command, hostClientSession)
-                .flatMap(profile -> Optional.ofNullable(sessionRegistry.remove(command.targetPlayerId()))
-                                            .map(session -> new KickContext(profile, session)))
-                .ifPresent(
-                        kickContext -> {
-                            kickContext.session().tell(new PropagateKicked());
-                            kickContext.session().tell(new ClearLobby());
-                            kickContext.session().tell(new ClearLobbyChat());
-                            messageEndpoints.sendToLobbyChat(
-                                    new KickedMessage(command.targetPlayerId(), kickContext.profile().getName())
-                            );
-                            sessionRegistry.forEachSession(
-                                    targetClientSession ->
-                                            targetClientSession.tell(
-                                                    new PropagateOtherPlayerKicked(command.targetPlayerId())
-                                            )
-                            );
-                            lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
-                        }
-                );
+                .ifPresent(profile -> {
+                    ActorRef<ClientSessionCommand> kickedSession = sessionRegistry.remove(command.targetPlayerId());
+                    if (kickedSession != null) {
+                        kickedSession.tell(new PropagateKicked());
+                        kickedSession.tell(new ClearLobby());
+                        kickedSession.tell(new ClearLobbyChat());
+                    }
+                    messageEndpoints.sendToLobbyChat(
+                            new KickedMessage(command.targetPlayerId(), profile.getName())
+                    );
+                    sessionRegistry.forEachSession(
+                            targetClientSession ->
+                                    targetClientSession.tell(
+                                            new PropagateOtherPlayerKicked(command.targetPlayerId())
+                                    )
+                    );
+                    lifecycleCoordinator.notifyRoomPlayerCount(gameStarted);
+                });
         return this;
     }
 
@@ -428,6 +432,9 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
         if (message.contains("두 팀의 인원 수가 같아야")) {
             return ExceptionCode.LOBBY_TEAM_BALANCE_REQUIRED;
         }
+        if (message.contains("둘 중 한 명은 적이 되어야")) {
+            return ExceptionCode.LOBBY_TEAM_BALANCE_REQUIRED;
+        }
         if (message.contains("ready 상태에서는 팀을 변경할 수 없습니다")) {
             return ExceptionCode.LOBBY_READY_STATE_TEAM_CHANGE_FORBIDDEN;
         }
@@ -478,8 +485,6 @@ public class LobbyActor extends AbstractBehavior<LobbyCommand> {
             return Optional.empty();
         }
     }
-
-    private record KickContext(PlayerProfile profile, ActorRef<ClientSessionCommand> session) { }
 
     public interface LobbyCommand extends CborSerializable { }
 

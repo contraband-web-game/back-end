@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ClientSessionCommand;
 import com.game.contraband.infrastructure.actor.client.ClientSessionActor.FetchRoomDirectoryPage;
-import com.game.contraband.infrastructure.actor.client.ClientSessionActor.ReSyncClientSession;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.RequestSendChat;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.RequestSendRoundChat;
 import com.game.contraband.infrastructure.actor.client.SessionChatActor.RequestSendTeamChat;
@@ -25,6 +24,7 @@ import com.game.contraband.infrastructure.actor.client.SessionInboundActor.Reque
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.RequestToggleTeam;
 import com.game.contraband.infrastructure.actor.client.SessionInboundActor.RequestTransferMoney;
 import com.game.contraband.infrastructure.actor.client.SessionPresenceActor.SessionPongReceived;
+import com.game.contraband.infrastructure.actor.client.service.ClientSessionActorManageService.BoundClientSession;
 import com.game.contraband.infrastructure.actor.client.service.ClientSessionActorManageService;
 import com.game.contraband.infrastructure.websocket.message.WebSocketInboundMessageType;
 import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMessage;
@@ -32,7 +32,6 @@ import com.game.contraband.infrastructure.websocket.message.WebSocketOutboundMes
 import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
@@ -63,17 +62,29 @@ public class GameWebSocketHandler implements WebSocketHandler {
         WebSocketConnectionContext context = extractConnectionContext(session);
         Sinks.Many<WebSocketOutboundMessage> messageSink = createMessageSink();
         ClientWebSocketMessageSender clientWebSocketMessageSender = getOrCreateMessageSender(context, messageSink);
-        CompletionStage<ActorRef<ClientSessionCommand>> clientSession = getOrCreateClientSessionActor(
-                context,
+        CompletionStage<BoundClientSession> boundClientSession = manageService.bindClientSession(
+                context.getPlayerId(),
                 clientWebSocketMessageSender
         );
-        clientSession.thenAccept(actorRef -> actorRef.tell(new ReSyncClientSession(context.getPlayerId())));
+        CompletionStage<ActorRef<ClientSessionCommand>> clientSession = boundClientSession.thenApply(
+                BoundClientSession::sessionRef
+        );
+        CompletionStage<ActorRef<ClientSessionCommand>> runtimeSession = boundClientSession.thenApply(
+                BoundClientSession::runtimeSessionRef
+        );
         Mono<Void> inbound = handleInboundMessages(session, context, messageSink, clientSession);
         Flux<WebSocketMessage> outbound = handleOutboundMessages(session, messageSink);
 
         return session.send(outbound)
                       .and(inbound)
-                      .doFinally(signal -> cleanupConnection(clientWebSocketMessageSender, messageSink));
+                      .doFinally(
+                              signal -> cleanupConnection(
+                                      context,
+                                      clientWebSocketMessageSender,
+                                      messageSink,
+                                      runtimeSession
+                              )
+                      );
     }
 
     private WebSocketConnectionContext extractConnectionContext(WebSocketSession session) {
@@ -100,15 +111,6 @@ public class GameWebSocketHandler implements WebSocketHandler {
                     return actualSender;
                 }
         );
-    }
-
-    private CompletionStage<ActorRef<ClientSessionCommand>> getOrCreateClientSessionActor(
-            WebSocketConnectionContext context,
-            ClientWebSocketMessageSender clientWebSocketMessageSender
-    ) {
-        return manageService.findClientSession(context.getPlayerId())
-                            .map(ref -> (CompletionStage<ActorRef<ClientSessionCommand>>) CompletableFuture.completedFuture(ref))
-                            .orElseGet(() -> manageService.createClientSessionActor(context.getPlayerId(), clientWebSocketMessageSender));
     }
 
     private Mono<Void> handleInboundMessages(
@@ -381,11 +383,14 @@ public class GameWebSocketHandler implements WebSocketHandler {
     }
 
     private void cleanupConnection(
+            WebSocketConnectionContext context,
             ClientWebSocketMessageSender clientWebSocketMessageSender,
-            Sinks.Many<WebSocketOutboundMessage> sink
+            Sinks.Many<WebSocketOutboundMessage> sink,
+            CompletionStage<ActorRef<ClientSessionCommand>> runtimeSession
     ) {
         clientWebSocketMessageSender.detachSink(sink);
         sink.tryEmitComplete();
+        runtimeSession.thenAccept(actorRef -> manageService.unbindClientSession(context.getPlayerId(), actorRef));
     }
 
     @Getter

@@ -190,7 +190,7 @@ class ClientSessionActorTest {
     }
 
     @Test
-    void 자기_자신_종료_시_세션을_해제한다() {
+    void 자기_자신_종료_시_presence_actor에_추가_메시지를_보내지_않는다() {
         // given
         TestContext context = createContext();
 
@@ -198,10 +198,7 @@ class ClientSessionActorTest {
         actorTestKit.stop(context.actor());
 
         // then
-        SessionPresenceActor.UnregisterSessionCommand actual =
-                (SessionPresenceActor.UnregisterSessionCommand) context.presence().monitor().receiveMessage();
-
-        assertThat(actual).isNotNull();
+        ActorTestUtils.expectNoMessages(context.presence().monitor(), java.time.Duration.ofMillis(300L));
     }
 
     private TestContext createContext() {

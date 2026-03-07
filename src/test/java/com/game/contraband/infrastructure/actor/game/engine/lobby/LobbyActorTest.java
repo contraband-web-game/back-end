@@ -28,6 +28,7 @@ import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.Syn
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.ToggleReady;
 import com.game.contraband.infrastructure.actor.game.engine.lobby.LobbyActor.ToggleTeam;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.GameManagerCommand;
+import com.game.contraband.infrastructure.actor.manage.GameManagerEntity.SyncRoomPlayerCount;
 import com.game.contraband.infrastructure.actor.utils.ActorTestUtils;
 import com.game.contraband.infrastructure.actor.utils.BehaviorTestUtils;
 import com.game.contraband.infrastructure.websocket.message.ExceptionCode;
@@ -163,6 +164,109 @@ class LobbyActorTest {
         assertAll(
                 () -> assertThat(actual.maxPlayerCount()).isEqualTo(6),
                 () -> assertThat(context.lobbyState().lobbyMaxPlayerCount()).isEqualTo(6)
+        );
+    }
+
+    @Test
+    void 같은_팀_두_명일_때_최대_정원을_2로_줄이면_팀_밸런스_오류를_보내고_정원을_유지한다() {
+        // given
+        PlayerProfile hostProfile = PlayerProfile.create(1L, "호스트", TeamRole.INSPECTOR);
+        Lobby lobby = Lobby.create(100L, "로비", hostProfile, 4);
+        lobby.addInspector(PlayerProfile.create(2L, "참가자", TeamRole.INSPECTOR));
+
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> participantSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        TestContext context = createContext(
+                lobby,
+                Map.of(1L, hostSession.ref(), 2L, participantSession.ref())
+        );
+        ActorTestUtils.drainMessages(hostSession.monitor());
+        ActorTestUtils.drainMessages(participantSession.monitor());
+
+        // when
+        context.actor().ref().tell(new ChangeMaxPlayerCount(2, 1L));
+
+        // then
+        HandleExceptionMessage actual = (HandleExceptionMessage) hostSession.monitor().receiveMessage();
+        PropagateJoinedLobby synchronizedLobby = (PropagateJoinedLobby) hostSession.monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(actual.code()).isEqualTo(ExceptionCode.LOBBY_TEAM_BALANCE_REQUIRED),
+                () -> assertThat(synchronizedLobby.maxPlayerCount()).isEqualTo(4),
+                () -> assertThat(context.lobbyState().lobbyMaxPlayerCount()).isEqualTo(4)
+        );
+    }
+
+    @Test
+    void 플레이어_입장시_룸_디렉토리_인원수가_동기화된다() {
+        // given
+        PlayerProfile hostProfile = PlayerProfile.create(1L, "호스트", TeamRole.INSPECTOR);
+        Lobby lobby = Lobby.create(100L, "로비", hostProfile, 4);
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> joinerSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        TestContext context = createContext(
+                lobby,
+                Map.of(1L, hostSession.ref())
+        );
+        ActorTestUtils.drainMessages(hostSession.monitor());
+
+        // when
+        context.actor().ref().tell(new SyncPlayerJoined(joinerSession.ref(), "참가자", 2L));
+
+        // then
+        SyncRoomPlayerCount actual = (SyncRoomPlayerCount) context.parent().monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(actual.roomId()).isEqualTo(100L),
+                () -> assertThat(actual.maxPlayerCount()).isEqualTo(4),
+                () -> assertThat(actual.currentPlayerCount()).isEqualTo(2),
+                () -> assertThat(actual.gameStarted()).isFalse()
+        );
+    }
+
+    @Test
+    void 로비_최대_정원_변경시_룸_디렉토리_정원이_동기화된다() {
+        // given
+        PlayerProfile hostProfile = PlayerProfile.create(1L, "호스트", TeamRole.INSPECTOR);
+        Lobby lobby = Lobby.create(100L, "로비", hostProfile, 4);
+        ActorTestUtils.MonitoredActor<ClientSessionCommand> hostSession = ActorTestUtils.spawnMonitored(
+                actorTestKit,
+                ClientSessionCommand.class,
+                Behaviors.ignore()
+        );
+        TestContext context = createContext(
+                lobby,
+                Map.of(1L, hostSession.ref())
+        );
+        ActorTestUtils.drainMessages(hostSession.monitor());
+
+        // when
+        context.actor().ref().tell(new ChangeMaxPlayerCount(6, 1L));
+
+        // then
+        SyncRoomPlayerCount actual = (SyncRoomPlayerCount) context.parent().monitor().receiveMessage();
+
+        assertAll(
+                () -> assertThat(actual.roomId()).isEqualTo(100L),
+                () -> assertThat(actual.maxPlayerCount()).isEqualTo(6),
+                () -> assertThat(actual.currentPlayerCount()).isEqualTo(1),
+                () -> assertThat(actual.gameStarted()).isFalse()
         );
     }
 
@@ -430,13 +534,15 @@ class LobbyActorTest {
 
         return new TestContext(
                 actor,
-                lobbyState
+                lobbyState,
+                parent
         );
     }
 
     private record TestContext(
             ActorTestUtils.MonitoredActor<LobbyCommand> actor,
-            LobbyRuntimeState lobbyState
+            LobbyRuntimeState lobbyState,
+            ActorTestUtils.MonitoredActor<GameManagerCommand> parent
     ) { }
 
 }

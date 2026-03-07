@@ -204,6 +204,9 @@ public class Lobby {
         if (newMaxPlayerCount < totalPlayerCount()) {
             throw new IllegalStateException("새 최대 인원은 현재 참가자 수보다 작을 수 없습니다.");
         }
+        if (requiresOpposingTeamsForTwoPlayerLobby(newMaxPlayerCount)) {
+            throw new IllegalStateException("둘 중 한 명은 적이 되어야 한다.");
+        }
 
         int newTeamSize = calculateNewTeamSize(newMaxPlayerCount);
         if (!teamDrafts.canResizeTo(newTeamSize)) {
@@ -212,6 +215,20 @@ public class Lobby {
 
         teamDrafts.updateMaxTeamSize(newTeamSize);
         this.metadata = metadata.withMaxPlayerCount(newMaxPlayerCount);
+    }
+
+    private boolean requiresOpposingTeamsForTwoPlayerLobby(int newMaxPlayerCount) {
+        if (newMaxPlayerCount != 2) {
+            return false;
+        }
+        if (totalPlayerCount() != 2) {
+            return false;
+        }
+
+        int smugglerCount = teamDrafts.smugglerPlayers().size();
+        int inspectorCount = teamDrafts.inspectorPlayers().size();
+
+        return smugglerCount == 2 || inspectorCount == 2;
     }
 
     public PlayerProfile kick(Long executorId, Long targetPlayerId) {

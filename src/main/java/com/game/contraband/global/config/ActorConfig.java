@@ -5,6 +5,7 @@ import com.game.contraband.global.actor.GuardianActor;
 import com.game.contraband.global.actor.GuardianActor.GuardianCommand;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor;
 import com.game.contraband.infrastructure.actor.directory.RoomDirectoryActor.RoomDirectoryCommand;
+import com.game.contraband.infrastructure.actor.client.ClientSessionGatewayActor;
 import com.game.contraband.infrastructure.actor.game.engine.GameLifecycleEventPublisher;
 import com.game.contraband.infrastructure.actor.manage.GameManagerEntity;
 import com.game.contraband.infrastructure.actor.manage.GameRoomCoordinatorEntity;
@@ -87,10 +88,17 @@ public class ActorConfig {
                                     )
                             )
                     );
+                    sharding.init(
+                            Entity.of(
+                                    ClientSessionGatewayActor.ENTITY_TYPE_KEY,
+                                    entityContext -> ClientSessionGatewayActor.create()
+                            )
+                    );
 
                     return GuardianActor.create(
                             roomDirectory,
                             gameRoomCoordinator,
+                            sharding,
                             monitorEventBroadcaster,
                             chatBlacklistRepository
                     );

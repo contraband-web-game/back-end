@@ -15,6 +15,7 @@
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/cb-common.js"></script>
   <script src="js/rules-modal.js"></script>
 
   <!-- Config & Styles -->
@@ -198,6 +199,15 @@
       // 한 번 사용 후 정리
       sessionStorage.removeItem('cbGameResult');
   }
+  if (resultData) {
+      const inferredRole = inferMyRole(resultData);
+      if ((resultData.myRole !== 'SMUGGLER' && resultData.myRole !== 'INSPECTOR') && inferredRole) {
+          resultData.myRole = inferredRole;
+      }
+      if ((resultData.myResult !== 'VICTORY' && resultData.myResult !== 'DEFEAT' && resultData.myResult !== 'DRAW') && resultData.myRole) {
+          resultData.myResult = derivePerspectiveResult(resultData.myRole, resultData.winner);
+      }
+  }
 
   // --- Animation Logic ---
   document.addEventListener('DOMContentLoaded', () => {
@@ -222,6 +232,7 @@
       // 2. Verdict Animation (after numbers settle)
       setTimeout(() => {
           winnerText.classList.remove('hidden-view');
+          const perspectiveResult = resolvePerspectiveResult(resultData);
 
           if (resultData.winner === 'SMUGGLER') {
               sCard.classList.add('winner-glow');
@@ -237,8 +248,6 @@
               iStamp.style.fontSize = "3rem";
               iStamp.classList.remove('hidden-view');
 
-              winnerText.innerHTML = `"놈들의 눈을 완벽히 속였다."`;
-
           } else if (resultData.winner === 'INSPECTOR') {
               iCard.classList.add('winner-glow');
               sCard.classList.add('loser-fade');
@@ -253,8 +262,6 @@
               sStamp.style.fontSize = "3rem";
               sStamp.classList.remove('hidden-view');
 
-              winnerText.innerHTML = `"놈들의 거짓을 모두 파헤쳤다."`;
-
           } else {
               // Draw
               sStamp.textContent = "DRAW";
@@ -263,10 +270,8 @@
               iStamp.classList.remove('hidden-view');
               sStamp.style.color = "#333"; sStamp.style.borderColor = "#333";
               iStamp.style.color = "#333"; iStamp.style.borderColor = "#333";
-
-              // 문구 수정
-              winnerText.innerHTML = `"서로 시간만 낭비했군."`;
           }
+          winnerText.innerHTML = resolveResultAnnouncement(perspectiveResult, resultData.winner, resultData.myRole);
       }, 1800);
   });
 
@@ -281,6 +286,47 @@
           }
       };
       window.requestAnimationFrame(step);
+  }
+
+  function resolvePerspectiveResult(data) {
+      if (!data) return null;
+      if (data.myResult === 'VICTORY' || data.myResult === 'DEFEAT' || data.myResult === 'DRAW') return data.myResult;
+      if (data.winner === 'DRAW') return 'DRAW';
+      if (data.myRole === 'SMUGGLER') return data.winner === 'SMUGGLER' ? 'VICTORY' : 'DEFEAT';
+      if (data.myRole === 'INSPECTOR') return data.winner === 'INSPECTOR' ? 'VICTORY' : 'DEFEAT';
+      return null;
+  }
+
+  function resolveResultAnnouncement(perspectiveResult, winner, myRole) {
+      if (perspectiveResult === 'VICTORY' && myRole === 'SMUGGLER') return '"놈들의 눈을 완벽히 속였다."';
+      if (perspectiveResult === 'VICTORY' && myRole === 'INSPECTOR') return '"놈들의 거짓을 모두 파헤쳤다."';
+      if (perspectiveResult === 'DEFEAT' && myRole === 'SMUGGLER') return '"놈들에게 덜미를 잡혔다."';
+      if (perspectiveResult === 'DEFEAT' && myRole === 'INSPECTOR') return '"놈들을 놓치고 말았다."';
+      if (perspectiveResult === 'VICTORY') return '"작전을 성공시켰다. 승리했다."';
+      if (perspectiveResult === 'DEFEAT') return '"작전에 실패했다. 패배했다."';
+      if (perspectiveResult === 'DRAW') return '"서로 시간만 낭비했군."';
+      if (winner === 'SMUGGLER') return '"놈들의 눈을 완벽히 속였다."';
+      if (winner === 'INSPECTOR') return '"놈들의 거짓을 모두 파헤쳤다."';
+      return '"서로 시간만 낭비했군."';
+  }
+
+  function derivePerspectiveResult(myRole, winner) {
+      if (winner === 'DRAW') return 'DRAW';
+      if (myRole === 'SMUGGLER') return winner === 'SMUGGLER' ? 'VICTORY' : 'DEFEAT';
+      if (myRole === 'INSPECTOR') return winner === 'INSPECTOR' ? 'VICTORY' : 'DEFEAT';
+      return null;
+  }
+
+  function inferMyRole(data) {
+      if (data?.myRole === 'SMUGGLER' || data?.myRole === 'INSPECTOR') return data.myRole;
+      const session = window.cbCommon?.loadSession?.();
+      const userId = session?.userId != null ? String(session.userId) : null;
+      const gamePayload = window.cbCommon?.loadGamePayload?.();
+      const allPlayers = Array.isArray(gamePayload?.allPlayers) ? gamePayload.allPlayers : [];
+      if (!userId || allPlayers.length === 0) return null;
+      const me = allPlayers.find((p) => String(p.playerId) === userId);
+      if (me?.teamRole === 'SMUGGLER' || me?.teamRole === 'INSPECTOR') return me.teamRole;
+      return null;
   }
 
   // --- Navigation ---

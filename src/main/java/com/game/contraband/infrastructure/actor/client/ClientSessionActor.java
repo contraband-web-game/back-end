@@ -8,7 +8,6 @@ import com.game.contraband.infrastructure.actor.directory.RoomDirectorySubscribe
 import com.game.contraband.infrastructure.websocket.ClientWebSocketMessageSender;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.PostStop;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -21,20 +20,21 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
             Long playerId,
             ClientWebSocketMessageSender clientWebSocketMessageSender,
             ActorRef<LocalDirectoryCommand> roomDirectoryCache,
-            ChatBlacklistRepository chatBlacklistRepository
+            ChatBlacklistRepository chatBlacklistRepository,
+            ActorRef<ClientSessionCommand> gateway
     ) {
         return Behaviors.setup(
                 context -> {
                     ActorRef<OutboundCommand> outbound = context.spawn(
-                            SessionOutboundActor.create(playerId, clientWebSocketMessageSender, context.getSelf()),
+                            SessionOutboundActor.create(playerId, clientWebSocketMessageSender, gateway),
                             "session-outbound-" + playerId
                     );
                     ActorRef<InboundCommand> inbound = context.spawn(
-                            SessionInboundActor.create(context.getSelf()),
+                            SessionInboundActor.create(gateway),
                             "session-inbound-" + playerId
                     );
                     ActorRef<PresenceCommand> presence = context.spawn(
-                            SessionPresenceActor.create(playerId, outbound, context.getSelf(), roomDirectoryCache),
+                            SessionPresenceActor.create(playerId, outbound, gateway, roomDirectoryCache),
                             "session-presence-" + playerId
                     );
                     ActorRef<ChatCommand> chat = context.spawn(
@@ -74,12 +74,12 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
                                   .onMessage(InboundCommand.class, this::forwardToInbound)
                                   .onMessage(PresenceCommand.class, this::forwardToPresence)
                                   .onMessage(ChatCommand.class, this::forwardToChat)
+                                  .onMessage(TerminateSession.class, this::onTerminateSession)
                                   .onMessage(UpdateActiveGame.class, this::onUpdateActiveGame)
                                   .onMessage(ClearActiveGame.class, this::onClearActiveGame)
                                   .onMessage(ReSyncClientSession.class, this::onReSyncClientSession)
                                   .onMessage(FetchRoomDirectoryPage.class, this::onFetchRoomDirectoryPage)
                                   .onMessage(QueryActiveGame.class, this::onQueryActiveGame)
-                                  .onSignal(PostStop.class, this::onPostStop)
                                   .build();
     }
 
@@ -137,9 +137,8 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
         return new ActiveGameView(activeGame.roomId(), activeGame.entityId());
     }
 
-    private Behavior<ClientSessionCommand> onPostStop(PostStop signal) {
-        presence.tell(new SessionPresenceActor.UnregisterSessionCommand());
-        return this;
+    private Behavior<ClientSessionCommand> onTerminateSession(TerminateSession command) {
+        return Behaviors.stopped();
     }
 
     public interface ClientSessionCommand extends CborSerializable { }
@@ -161,6 +160,12 @@ public class ClientSessionActor extends AbstractBehavior<ClientSessionCommand> {
     public record FetchRoomDirectoryPage(int page, int size) implements ClientSessionCommand { }
 
     public record QueryActiveGame(ActorRef<StatusReply<ActiveGameView>> replyTo) implements ClientSessionCommand { }
+
+    public record RegisterRuntimeSession(ActorRef<ClientSessionCommand> runtimeSession) implements ClientSessionCommand { }
+
+    public record UnregisterRuntimeSession(ActorRef<ClientSessionCommand> runtimeSession) implements ClientSessionCommand { }
+
+    public record TerminateSession() implements ClientSessionCommand { }
 
     private record ActiveGame(Long roomId, String entityId) { }
 }

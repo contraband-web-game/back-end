@@ -260,7 +260,7 @@
 
       const kicked = localStorage.getItem('kickReason');
       if (kicked) {
-          renderToast(container, kicked);
+          renderToast(container, '너는 작전에서 추방당했다.');
           localStorage.removeItem('kickReason');
       }
 
