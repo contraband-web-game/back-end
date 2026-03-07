@@ -103,18 +103,14 @@ public class GameService {
     }
 
     public CompletionStage<ActiveGameView> findActiveGame(Long userId) {
-        ActorRef<ClientSessionCommand> session = clientSessionActorManageService.findClientSession(userId)
-                                                                                .orElse(null);
-
-        if (session == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return AskPattern.ask(
-                session,
-                QueryActiveGame::new,
-                DEFAULT_RESUME_TIMEOUT,
-                actorSystem.scheduler()
-        ).thenApply(reply -> reply.isSuccess() ? reply.getValue() : null);
+        return clientSessionActorManageService.findOrCreateClientSession(userId)
+                                              .thenCompose(session -> AskPattern.ask(
+                                                      session,
+                                                      QueryActiveGame::new,
+                                                      DEFAULT_RESUME_TIMEOUT,
+                                                      actorSystem.scheduler()
+                                              ))
+                                              .thenApply(reply -> reply.isSuccess() ? reply.getValue() : null);
     }
 
     public static class ClientSessionNotFoundException extends IllegalStateException {
